@@ -19,6 +19,7 @@
     --glass: rgba(60, 20, 90, .45);
     --glass-border: rgba(255, 170, 240, .35);
     --done: #7cf2d0;
+    --warn: #ff7a9c;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; }
@@ -31,6 +32,7 @@
     padding-top: env(safe-area-inset-top);
     position: relative;
   }
+  button { font-family: inherit; }
 
   /* 星雲（背景でゆっくり動く） */
   .nebula {
@@ -50,7 +52,7 @@
   }
   #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-  header, .controls, .stage, form { position: relative; z-index: 1; }
+  header, .controls, .stage, .composer { position: relative; z-index: 1; }
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 16px 6px;
@@ -62,13 +64,13 @@
     filter: drop-shadow(0 0 8px rgba(255, 95, 200, .5));
   }
   .count { font-size: 13px; color: var(--muted); }
-  .controls { display: flex; gap: 8px; padding: 0 16px; }
+  .controls { display: flex; gap: 8px; padding: 0 16px; flex-wrap: wrap; }
   .chip {
     border: 1px solid var(--glass-border); background: var(--glass); color: var(--text);
     border-radius: 999px; padding: 7px 14px; font-size: 13px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
-  .chip[aria-pressed="true"] { border-color: var(--pink); color: var(--pink); }
+  .chip[aria-pressed="true"] { border-color: var(--pink); color: #fff; background: linear-gradient(135deg, rgba(255, 95, 200, .55), rgba(155, 92, 255, .55)); }
 
   /* タイムライン */
   .stage {
@@ -86,7 +88,9 @@
   .track {
     position: absolute; top: 0; bottom: 0; left: 0;
     display: flex; will-change: transform; transform-style: preserve-3d;
+    transition: opacity .5s, filter .5s;
   }
+  .stage.focusing .track, .stage.focusing .axis { opacity: .18; filter: blur(3px); }
   .slot { position: relative; width: 170px; flex: none; height: 100%; transform-style: preserve-3d; }
   .float { position: absolute; inset: 0; will-change: transform, opacity; }
   .dot {
@@ -95,9 +99,7 @@
     background: #fff;
     box-shadow: 0 0 6px #fff, 0 0 14px var(--pink), 0 0 28px var(--violet);
   }
-  .stem {
-    position: absolute; left: 50%; width: 1px; margin-left: -.5px; height: 28px;
-  }
+  .stem { position: absolute; left: 50%; width: 1px; margin-left: -.5px; height: 28px; }
   .slot.up .stem { bottom: 50%; margin-bottom: 6px; background: linear-gradient(to top, var(--pink), transparent); }
   .slot.down .stem { top: 50%; margin-top: 6px; background: linear-gradient(to bottom, var(--pink), transparent); }
   .card {
@@ -111,10 +113,12 @@
   }
   .slot.up .card { bottom: calc(50% + 34px); }
   .slot.down .card { top: calc(50% + 34px); }
-  .card time { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .due { display: block; font-size: 12px; color: var(--lilac); margin-top: 6px; }
+  .due.overdue { color: var(--warn); }
   .slot.done .dot { box-shadow: 0 0 6px #fff, 0 0 14px var(--done), 0 0 28px var(--done); }
   .slot.done .card { border-color: rgba(124, 242, 208, .4); }
   .slot.done .card .title { text-decoration: line-through; color: var(--muted); }
+  .slot.done .due { color: var(--muted); }
 
   .empty {
     position: absolute; inset: 0; display: grid; place-items: center;
@@ -122,13 +126,48 @@
     text-shadow: 0 0 12px rgba(255, 95, 200, .6);
   }
 
+  /* 今やる1つ */
+  .focus {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px; gap: 14px;
+  }
+  .focus[hidden] { display: none; }
+  .focus-label { font-size: 13px; letter-spacing: .2em; color: var(--lilac); text-shadow: 0 0 10px var(--pink); }
+  .focus-card {
+    width: min(320px, 100%); min-height: 150px;
+    padding: 24px 20px; border-radius: 22px; text-align: center;
+    background: linear-gradient(160deg, rgba(255, 95, 200, .35), rgba(120, 60, 220, .45));
+    border: 1px solid rgba(255, 190, 245, .6);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 0 30px rgba(255, 95, 200, .55), 0 0 70px rgba(155, 92, 255, .4);
+    display: flex; flex-direction: column; justify-content: center; gap: 10px;
+    touch-action: none; cursor: grab;
+    animation: glow 3s ease-in-out infinite;
+  }
+  @keyframes glow { 50% { box-shadow: 0 0 40px rgba(255, 95, 200, .8), 0 0 90px rgba(155, 92, 255, .6); } }
+  .focus-card.enter { animation: enter .45s cubic-bezier(.2, .9, .3, 1.3), glow 3s ease-in-out .45s infinite; }
+  @keyframes enter { from { transform: translateX(60vw) scale(.6) rotate(8deg); opacity: 0; } }
+  .focus-title { font-size: 22px; font-weight: 700; line-height: 1.4; word-break: break-word; }
+  .focus-card .due { font-size: 14px; margin: 0; }
+  .focus-hint { font-size: 12px; color: var(--muted); }
+  .focus-btns { display: flex; gap: 10px; }
+  .focus-btns button {
+    padding: 12px 22px; font-size: 15px; border-radius: 999px;
+    border: 1px solid var(--glass-border); background: var(--glass); color: var(--text);
+  }
+  .focus-btns .go { border: 0; background: linear-gradient(135deg, var(--pink), var(--violet)); font-weight: 700; box-shadow: 0 0 16px rgba(255, 95, 200, .5); }
+  .focus-clear { font-size: 20px; text-align: center; line-height: 1.8; text-shadow: 0 0 14px var(--pink); }
+
   /* 入力欄 */
-  form {
-    display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  .composer {
+    padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
     background: rgba(25, 8, 45, .6);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid var(--glass-border);
   }
+  .preview { min-height: 20px; font-size: 13px; color: var(--lilac); padding: 0 2px 6px; }
+  form { display: flex; gap: 8px; }
   input {
     flex: 1; min-width: 0; font-size: 16px; padding: 12px 14px;
     border-radius: 12px; border: 1px solid var(--glass-border);
@@ -136,11 +175,37 @@
   }
   input::placeholder { color: var(--muted); }
   input:focus { outline: none; border-color: var(--pink); box-shadow: 0 0 12px rgba(255, 95, 200, .4); }
+  .mic {
+    width: 48px; flex: none; border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, .06); color: var(--text); font-size: 20px;
+    display: grid; place-items: center;
+  }
+  .mic svg { width: 22px; height: 22px; }
+  .mic.listening {
+    border-color: var(--pink); color: #fff;
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    animation: listen 1s ease-in-out infinite;
+  }
+  @keyframes listen { 50% { box-shadow: 0 0 0 8px rgba(255, 95, 200, .25), 0 0 24px var(--pink); } }
   button.add {
     border: 0; border-radius: 12px; padding: 0 18px; font-size: 16px; font-weight: 700;
     background: linear-gradient(135deg, var(--pink), var(--violet)); color: #fff;
     box-shadow: 0 0 16px rgba(255, 95, 200, .5);
   }
+
+  /* お知らせ */
+  .toast {
+    position: fixed; left: 16px; right: 16px; z-index: 20;
+    bottom: calc(110px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 12px; justify-content: space-between;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(40, 14, 66, .95); border: 1px solid var(--glass-border);
+    box-shadow: 0 0 24px rgba(255, 95, 200, .35);
+    font-size: 14px; transform: translateY(20px); opacity: 0; pointer-events: none;
+    transition: transform .25s, opacity .25s;
+  }
+  .toast.show { transform: none; opacity: 1; pointer-events: auto; }
+  .toast button { flex: none; border: 0; background: none; color: var(--pink); font-size: 14px; font-weight: 700; padding: 4px; }
 
   /* シート */
   .sheet-bg {
@@ -156,14 +221,14 @@
     padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   }
   .sheet h2 { margin: 0 0 4px; font-size: 16px; }
-  .sheet p { margin: 0 0 14px; font-size: 16px; word-break: break-word; }
+  .sheet p { margin: 0 0 4px; font-size: 16px; word-break: break-word; }
   .sheet .hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
   .sheet button.row {
     display: block; width: 100%; padding: 14px; margin-top: 8px; font-size: 16px;
     border-radius: 12px; border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, .06); color: var(--text);
   }
-  .sheet .danger { color: #ff7a9c; }
+  .sheet .danger { color: var(--warn); }
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .grid button {
     padding: 12px 0; font-size: 14px; border-radius: 12px;
@@ -187,6 +252,7 @@
     <span class="count" id="count"></span>
   </header>
   <div class="controls">
+    <button class="chip" id="focusBtn" aria-pressed="false">✦ 今やる1つ</button>
     <button class="chip" id="pause" aria-pressed="false">一時停止</button>
     <button class="chip" id="lapBtn"></button>
   </div>
@@ -194,18 +260,31 @@
   <div class="stage" id="stage">
     <div class="axis"></div>
     <div class="track" id="track"></div>
-    <div class="empty" id="empty">下の入力欄からタスクを追加すると<br>ここに流れはじめます</div>
+    <div class="empty" id="empty">🎤 を押して「明日15時に歯医者」のように話すか<br>下の入力欄からタスクを追加してください</div>
+    <div class="focus" id="focus" hidden>
+      <div class="focus-label">今やること</div>
+      <div id="focusBody"></div>
+    </div>
   </div>
 
-  <form id="form" autocomplete="off">
-    <input id="input" placeholder="タスクを入力" maxlength="80" enterkeyhint="done">
-    <button class="add" type="submit">追加</button>
-  </form>
+  <div class="composer">
+    <div class="preview" id="preview"></div>
+    <form id="form" autocomplete="off">
+      <button class="mic" id="mic" type="button" aria-label="話して追加">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+      </button>
+      <input id="input" placeholder="例：明日15時に歯医者" maxlength="80" enterkeyhint="done">
+      <button class="add" type="submit">追加</button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" type="button">取り消す</button></div>
 
   <!-- タスク操作 -->
   <div class="sheet-bg" id="taskSheet">
     <div class="sheet">
       <p id="sheetTitle"></p>
+      <div class="hint" id="sheetDue"></div>
       <button class="row" id="toggleDone">完了にする</button>
       <button class="row danger" id="remove">削除</button>
       <button class="row" data-close>閉じる</button>
@@ -232,6 +311,8 @@ const KEY = 'task-app:tasks';
 const LAP_KEY = 'task-app:lapMinutes';
 const SLOT_W = 170;
 const LAP_CHOICES = [0.5, 1, 2, 3, 5, 10, 30, 60];
+const WD = '日月火水木金土';
+const DAY = 86400e3;
 
 function read(key, fallback) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; }
@@ -244,22 +325,110 @@ let tasks = read(KEY, []);
 let lapMinutes = read(LAP_KEY, 3);
 let offset = 0, paused = false, dragging = false, lastX = 0, moved = 0;
 let selectedId = null;
+let view = [];          // 表示順に並べたタスク
+let floats = [];
 
 const $ = id => document.getElementById(id);
 const track = $('track'), stage = $('stage');
-let floats = [];
-
-const fmt = ts => {
-  const d = new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-};
-const lapLabel = m => m < 1 ? `${Math.round(m * 60)}秒` : `${+m.toFixed(1)}分`;
-const setWidth = () => tasks.length * SLOT_W;
 const save = () => write(KEY, tasks);
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const pad = n => String(n).padStart(2, '0');
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+/* ───────── 日本語の日時を読み取る ───────── */
+function parseJa(raw) {
+  let text = raw.replace(/[０-９：／]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const now = new Date();
+  const today = startOfDay(now);
+  let date = null, h = null, mi = 0, m;
+  const take = re => { const r = text.match(re); if (r) text = text.replace(r[0], ' '); return r; };
+
+  // ○時間後・○分後
+  if ((m = take(/(\d+)\s*時間後/)) || (m = take(/(\d+)\s*分後/))) {
+    const ms = m[0].includes('時間') ? +m[1] * 3600e3 : +m[1] * 60e3;
+    return finish(text, raw, new Date(now.getTime() + ms), false);
+  }
+
+  // 日付
+  if ((m = take(/(\d+)\s*日後/))) date = addDays(today, +m[1]);
+  else if (take(/明後日|あさって/)) date = addDays(today, 2);
+  else if (take(/明日|あした/)) date = addDays(today, 1);
+  else if (take(/今日|きょう/)) date = today;
+  else if ((m = take(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/)) || (m = take(/(\d{1,2})\/(\d{1,2})/))) {
+    date = new Date(today.getFullYear(), +m[1] - 1, +m[2]);
+    if (date < today) date.setFullYear(date.getFullYear() + 1);
+  } else if ((m = take(/(今週|来週|再来週)?\s*の?\s*([日月火水木金土])曜日?/))) {
+    const target = WD.indexOf(m[2]);
+    const dow = today.getDay();
+    if (m[1]) {
+      const monday = addDays(today, -((dow + 6) % 7));
+      const weeks = { 今週: 0, 来週: 1, 再来週: 2 }[m[1]];
+      date = addDays(monday, (target + 6) % 7 + weeks * 7);
+    } else {
+      date = addDays(today, (target - dow + 7) % 7);
+    }
+  } else if ((m = take(/(\d{1,2})\s*日/))) {
+    date = new Date(today.getFullYear(), today.getMonth(), +m[1]);
+    if (date < today) date.setMonth(date.getMonth() + 1);
+  }
+
+  // 時刻
+  let ampm = null;
+  if ((m = take(/(午前|午後|朝|夜|夕方|夜中)?\s*(\d{1,2})\s*時\s*(半|(\d{1,2})\s*分)?/))) {
+    ampm = m[1]; h = +m[2]; mi = m[3] === '半' ? 30 : (m[4] ? +m[4] : 0);
+  } else if ((m = take(/(午前|午後|朝|夜|夕方)?\s*(\d{1,2}):(\d{2})/))) {
+    ampm = m[1]; h = +m[2]; mi = +m[3];
+  }
+  if (h !== null) {
+    if (['午後', '夜', '夕方'].includes(ampm) && h < 12) h += 12;
+    if (ampm === '午前' && h === 12) h = 0;
+    if (h > 23 || mi > 59) h = null;
+  }
+
+  if (date && h !== null) return finish(text, raw, new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, mi), false);
+  if (date) return finish(text, raw, date, true);
+  if (h !== null) {
+    let d = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, mi);
+    if (d < now) d = addDays(d, 1), d.setHours(h, mi);
+    return finish(text, raw, d, false);
+  }
+  return { title: raw.trim(), due: null, allDay: false };
+}
+function finish(text, raw, d, allDay) {
+  let title = text
+    .replace(/(^|\s)(までには|までに|まで|には|に|から|の|は|で|、|,)+/g, '$1')
+    .replace(/[\s。、]+/g, ' ').trim();
+  return { title: title || raw.trim(), due: d.getTime(), allDay };
+}
+
+function dueLabel(t) {
+  if (!t.due) return '';
+  const d = new Date(t.due);
+  const diff = Math.round((startOfDay(d) - startOfDay(new Date())) / DAY);
+  let day = diff === 0 ? '今日' : diff === 1 ? '明日' : diff === 2 ? 'あさって' : diff === -1 ? '昨日'
+    : `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`;
+  return t.allDay ? day : `${day} ${d.getHours()}:${pad(d.getMinutes())}`;
+}
+function isOverdue(t) {
+  if (!t.due || t.done) return false;
+  return t.allDay ? startOfDay(new Date(t.due)) < startOfDay(new Date()) : t.due < Date.now();
+}
+// 期限の扱い：終日は「その日の終わり」として比べる
+const dueKey = t => !t.due ? Infinity : t.allDay ? t.due + DAY - 1 : t.due;
+const byPriority = (a, b) => dueKey(a) - dueKey(b) || a.created - b.created;
+
+/* ───────── タイムライン ───────── */
+function dueHtml(t) {
+  const label = dueLabel(t);
+  if (!label) return '';
+  return `<span class="due${isOverdue(t) ? ' overdue' : ''}">${isOverdue(t) ? '⚠ 期限切れ・' : '📅 '}${label}</span>`;
+}
 
 function render() {
   track.innerHTML = '';
-  $('empty').style.display = tasks.length ? 'none' : 'grid';
+  view = [...tasks].sort(byPriority);
+  $('empty').style.display = tasks.length || focusMode ? 'none' : 'grid';
   const left = tasks.filter(t => !t.done).length;
   $('count').textContent = tasks.length ? `残り ${left} / ${tasks.length}` : '';
   floats = [];
@@ -269,11 +438,11 @@ function render() {
   const repeat = Math.ceil(stage.clientWidth / setWidth()) + 1;
   const frag = document.createDocumentFragment();
   for (let r = 0; r < repeat; r++) {
-    tasks.forEach((t, i) => {
+    view.forEach((t, i) => {
       const slot = document.createElement('div');
       slot.className = `slot ${i % 2 ? 'down' : 'up'}${t.done ? ' done' : ''}`;
       slot.innerHTML = `<div class="float"><div class="stem"></div><div class="dot"></div>
-        <div class="card" data-id="${t.id}"><span class="title"></span><time>${fmt(t.created)}</time></div></div>`;
+        <div class="card" data-id="${t.id}"><span class="title"></span>${dueHtml(t)}</div></div>`;
       slot.querySelector('.title').textContent = t.title;
       floats.push(slot.firstElementChild);
       frag.appendChild(slot);
@@ -283,8 +452,9 @@ function render() {
   const w = setWidth();
   offset = ((offset % w) + w) % w;
 }
+const setWidth = () => tasks.length * SLOT_W;
 
-// 星
+/* ───────── 星 ───────── */
 const cv = $('stars'), cx = cv.getContext('2d');
 let stars = [];
 function resizeStars() {
@@ -314,7 +484,7 @@ function drawStars(t, shift) {
   }
 }
 
-// 毎フレームの動き
+/* ───────── 毎フレームの動き ───────── */
 let prev = performance.now(), starShift = 0;
 function tick(now) {
   const dt = Math.min(now - prev, 100) / 1000;
@@ -336,10 +506,8 @@ function tick(now) {
       const d = Math.max(-1.4, Math.min(1.4, (center - W / 2) / (W / 2)));
       const scale = 1 - .28 * d * d;
       const wave = Math.sin(center / 130 + t * .8) * 14;
-      const rot = -d * 32;
-      const z = -Math.abs(d) * 120;
       const op = Math.max(0, 1 - Math.pow(Math.abs(d), 2.2) * .75);
-      floats[k].style.transform = `translate3d(0, ${wave}px, ${z}px) rotateY(${rot}deg) scale(${scale})`;
+      floats[k].style.transform = `translate3d(0, ${wave}px, ${-Math.abs(d) * 120}px) rotateY(${-d * 32}deg) scale(${scale})`;
       floats[k].style.opacity = op;
     }
   }
@@ -348,7 +516,10 @@ function tick(now) {
 }
 
 // 指でなぞって動かす
-stage.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; moved = 0; });
+stage.addEventListener('pointerdown', e => {
+  if (focusMode) return;
+  dragging = true; lastX = e.clientX; moved = 0;
+});
 window.addEventListener('pointermove', e => {
   if (!dragging) return;
   const dx = e.clientX - lastX;
@@ -365,28 +536,180 @@ window.addEventListener('pointerup', e => {
 });
 window.addEventListener('pointercancel', () => { dragging = false; });
 
-// 追加
+/* ───────── お知らせ（取り消し付き） ───────── */
+let toastTimer, undoFn = null;
+function toast(msg, undo) {
+  $('toastMsg').textContent = msg;
+  undoFn = undo || null;
+  $('toastUndo').style.display = undo ? '' : 'none';
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 4000);
+}
+$('toastUndo').onclick = () => {
+  if (undoFn) undoFn();
+  undoFn = null;
+  $('toast').classList.remove('show');
+};
+
+/* ───────── 追加 ───────── */
+function addTask(raw) {
+  const p = parseJa(raw);
+  if (!p.title) return;
+  const t = { id: newId(), title: p.title, due: p.due, allDay: p.allDay, created: Date.now(), done: false };
+  tasks.push(t);
+  save(); render();
+  if (focusMode) showFocus(false);
+  const label = dueLabel(t);
+  toast(`追加：${t.title}${label ? `（${label}）` : ''}`, () => {
+    tasks = tasks.filter(x => x.id !== t.id);
+    save(); render();
+    if (focusMode) showFocus(false);
+  });
+}
+function updatePreview() {
+  const v = $('input').value.trim();
+  if (!v) { $('preview').textContent = ''; return; }
+  const p = parseJa(v);
+  $('preview').textContent = p.due ? `📅 ${dueLabel(p)}　「${p.title}」として追加します` : '';
+}
+$('input').addEventListener('input', updatePreview);
 $('form').addEventListener('submit', e => {
   e.preventDefault();
-  const title = $('input').value.trim();
-  if (!title) return;
-  tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title, created: Date.now(), done: false });
-  save(); render();
+  const v = $('input').value.trim();
+  if (!v) return;
+  addTask(v);
   $('input').value = '';
+  updatePreview();
 });
 
-// シート共通
+/* ───────── 話して追加 ───────── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+$('mic').onclick = () => {
+  if (rec) { rec.stop(); return; }
+  if (!SR) {
+    toast('このブラウザは音声入力に未対応です。キーボードのマイクを使ってください');
+    $('input').focus();
+    return;
+  }
+  rec = new SR();
+  rec.lang = 'ja-JP';
+  rec.interimResults = true;
+  rec.continuous = false;
+  let finalText = '';
+  rec.onstart = () => { $('mic').classList.add('listening'); $('preview').textContent = '🎤 聞いています…'; };
+  rec.onresult = e => {
+    const text = Array.from(e.results).map(r => r[0].transcript).join('');
+    $('input').value = text;
+    updatePreview();
+    if (e.results[e.results.length - 1].isFinal) finalText = text;
+  };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('マイクの使用が許可されていません。ブラウザの設定で許可してください');
+    else if (e.error !== 'no-speech' && e.error !== 'aborted') toast('うまく聞き取れませんでした。もう一度どうぞ');
+  };
+  rec.onend = () => {
+    $('mic').classList.remove('listening');
+    rec = null;
+    const v = (finalText || $('input').value).trim();
+    if (v) { addTask(v); $('input').value = ''; }
+    updatePreview();
+  };
+  try { rec.start(); } catch { rec = null; toast('音声入力を開始できませんでした'); }
+};
+
+/* ───────── 今やる1つ ───────── */
+let focusMode = false, skipped = new Set(), current = null;
+
+function pickNext() {
+  const open = tasks.filter(t => !t.done).sort(byPriority);
+  if (!open.length) return null;
+  let rest = open.filter(t => !skipped.has(t.id));
+  if (!rest.length) { skipped.clear(); rest = open; }
+  return rest[0];
+}
+function showFocus(animate) {
+  current = pickNext();
+  const body = $('focusBody');
+  if (!current) {
+    body.innerHTML = `<div class="focus-clear">${tasks.length ? '🎉 全部おわりました！' : 'タスクを追加すると<br>ここに1つずつ出てきます'}</div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div class="focus-card${animate ? ' enter' : ''}" id="focusCard">
+      <div class="focus-title"></div>${dueHtml(current)}
+    </div>
+    <div class="focus-hint" style="text-align:center;margin-top:12px">→ 右にスワイプで完了　← 左で「あとで」</div>
+    <div class="focus-btns" style="justify-content:center;margin-top:12px">
+      <button type="button" id="fLater">あとで</button>
+      <button type="button" class="go" id="fDone">完了 ✓</button>
+    </div>`;
+  body.querySelector('.focus-title').textContent = current.title;
+  $('fLater').onclick = () => fling(-1);
+  $('fDone').onclick = () => fling(1);
+  bindSwipe($('focusCard'));
+}
+function fling(dir) {
+  const card = $('focusCard');
+  if (!card || !current) return;
+  const t = current;
+  card.style.transition = 'transform .3s ease-in, opacity .3s';
+  card.style.transform = `translateX(${dir * 120}vw) rotate(${dir * 20}deg)`;
+  card.style.opacity = '0';
+  if (dir > 0) {
+    t.done = true; save();
+    toast(`完了：${t.title}`, () => { t.done = false; save(); render(); showFocus(true); });
+  } else {
+    skipped.add(t.id);
+  }
+  setTimeout(() => { render(); showFocus(true); }, 280);
+}
+function bindSwipe(card) {
+  let sx = null, dx = 0;
+  card.addEventListener('pointerdown', e => {
+    sx = e.clientX; dx = 0;
+    card.setPointerCapture(e.pointerId);
+    card.style.transition = 'none';
+    card.style.animation = 'none';
+  });
+  card.addEventListener('pointermove', e => {
+    if (sx === null) return;
+    dx = e.clientX - sx;
+    card.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`;
+  });
+  const end = () => {
+    if (sx === null) return;
+    sx = null;
+    if (Math.abs(dx) > 90) return fling(Math.sign(dx));
+    card.style.transition = 'transform .25s';
+    card.style.transform = '';
+    card.style.animation = '';
+  };
+  card.addEventListener('pointerup', end);
+  card.addEventListener('pointercancel', end);
+}
+$('focusBtn').onclick = () => {
+  focusMode = !focusMode;
+  $('focusBtn').setAttribute('aria-pressed', focusMode);
+  stage.classList.toggle('focusing', focusMode);
+  $('focus').hidden = !focusMode;
+  if (focusMode) { skipped.clear(); showFocus(true); }
+  render();
+};
+
+/* ───────── タスク操作シート ───────── */
 const open = id => $(id).classList.add('open');
 const closeAll = () => document.querySelectorAll('.sheet-bg').forEach(s => s.classList.remove('open'));
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
 document.querySelectorAll('.sheet-bg').forEach(bg => bg.addEventListener('click', e => { if (e.target === bg) closeAll(); }));
 
-// タスク操作
 function openTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
   selectedId = id;
   $('sheetTitle').textContent = t.title;
+  $('sheetDue').textContent = t.due ? `📅 ${dueLabel(t)}` : '期限なし';
   $('toggleDone').textContent = t.done ? '未完了に戻す' : '完了にする';
   open('taskSheet');
 }
@@ -396,11 +719,15 @@ $('toggleDone').onclick = () => {
   closeAll();
 };
 $('remove').onclick = () => {
-  tasks = tasks.filter(t => t.id !== selectedId);
+  const i = tasks.findIndex(t => t.id === selectedId);
+  if (i < 0) return closeAll();
+  const [t] = tasks.splice(i, 1);
   save(); render(); closeAll();
+  toast(`削除：${t.title}`, () => { tasks.splice(i, 0, t); save(); render(); });
 };
 
-// 一周の時間
+/* ───────── 一周の時間 ───────── */
+const lapLabel = m => m < 1 ? `${Math.round(m * 60)}秒` : `${+m.toFixed(1)}分`;
 function setLap(m) {
   lapMinutes = m;
   write(LAP_KEY, m);
@@ -425,6 +752,9 @@ $('pause').onclick = () => {
   $('pause').setAttribute('aria-pressed', paused);
   $('pause').textContent = paused ? '再生' : '一時停止';
 };
+
+// 日付が変わったら「今日/明日」の表示を更新
+setInterval(render, 60e3);
 
 window.addEventListener('resize', () => { resizeStars(); render(); });
 resizeStars();
