@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fff5fa" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1e1424" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f1ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1528" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="タスク">
@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #fff5fa;
+    --bg: #f6f1ff;
     --surface: #ffffff;
     --text: #4a3550;
     --muted: #a08ba6;
@@ -26,9 +26,9 @@
     --warn: #ff5d7a;
     --shadow: 0 2px 4px rgba(214, 120, 170, .08), 0 10px 26px rgba(214, 120, 170, .16);
     --grad: linear-gradient(120deg, #ff7eb3 0%, #ff9ec4 40%, #b79bff 100%);
-    --blob1: rgba(255, 170, 205, .55);
-    --blob2: rgba(200, 180, 255, .5);
-    --blob3: rgba(255, 210, 180, .45);
+    --blob1: rgba(196, 168, 255, .55);
+    --blob2: rgba(165, 135, 250, .45);
+    --blob3: rgba(255, 180, 220, .38);
 
     /* カードのパステル5色：背景 / ふち / 文字 */
     --c0-bg: #ffe4ef; --c0-bd: #ffc6dc; --c0-ink: #d6457f;
@@ -39,8 +39,8 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1e1424;
-      --surface: #2a1f31;
+      --bg: #1b1528;
+      --surface: #2a2136;
       --text: #fbeef6;
       --muted: #b9a2c0;
       --line: #3d2d45;
@@ -50,9 +50,9 @@
       --done: #6fd9b0;
       --warn: #ff7d93;
       --shadow: 0 2px 4px rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .35);
-      --blob1: rgba(255, 110, 170, .22);
-      --blob2: rgba(150, 120, 255, .22);
-      --blob3: rgba(255, 150, 120, .14);
+      --blob1: rgba(150, 110, 255, .26);
+      --blob2: rgba(120, 90, 230, .24);
+      --blob3: rgba(255, 110, 180, .14);
 
       --c0-bg: #432739; --c0-bd: #6a3a57; --c0-ink: #ffa3c8;
       --c1-bg: #352b4f; --c1-bd: #514174; --c1-ink: #c6b3ff;
@@ -592,7 +592,7 @@ function metaHtml(t) {
 }
 
 /* ───────── タイムライン ───────── */
-// 一周の長さ：タスクが少なくても、1枚が画面を出きってから右端に戻ってくる長さにする
+// 一周の長さ：画面の幅＋カード1枚分。タスクが多いときは全部が並ぶ長さ
 const loopLen = () => Math.max(tasks.length * SLOT_W, stage.clientWidth + SLOT_W);
 let slots = [];
 
@@ -630,10 +630,11 @@ function render() {
 }
 function placeSlots() {
   const L = loopLen();
+  const gap = L / slots.length; // タスクの数で一周を均等に分ける
   offset = ((offset % L) + L) % L;
   slots.forEach((s, i) => {
-    // 右端の少し外から左へ流れ、左端の外へ出たら右端に戻る
-    const x = ((stage.clientWidth * .55 + i * SLOT_W - offset) % L + L) % L;
+    // 左へ流れ、左端の外へ出たら右端に戻る
+    const x = ((stage.clientWidth * .55 + i * gap - offset) % L + L) % L;
     s.style.transform = `translateX(${x - SLOT_W}px)`;
   });
 }
