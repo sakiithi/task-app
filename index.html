@@ -452,7 +452,7 @@
       <h2>⚙️ 設定</h2>
       <button class="row" id="notifyBtn">🔔 通知<small id="notifyState"></small></button>
       <div class="setting-note" id="notifyNote"></div>
-      <button class="row" id="exportBtn">💾 バックアップを保存<small>ファイルに書き出す</small></button>
+      <button class="row" id="exportBtn">💾 バックアップを保存<small id="backupState">ファイルに書き出す</small></button>
       <button class="row" id="importBtn">📂 バックアップから戻す<small>ファイルを選ぶ</small></button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
       <div class="setting-note">タスクはこの端末の中に保存されています。iPhoneでは「ホーム画面に追加」して使うと、データが消えにくくなります。</div>
@@ -464,6 +464,8 @@
 const KEY = 'task-app:tasks';
 const LOG_KEY = 'task-app:log';
 const SPEED_KEY = 'task-app:crossMinutes';
+const BACKUP_KEY = 'task-app:lastBackup';   // 最後にバックアップした時刻（ミリ秒）
+const NAG_KEY = 'task-app:backupNag';       // 最後に「保存しておく？」と出した時刻
 const SLOT_W = 180;
 const SPEED_CHOICES = [1 / 6, 0.5, 1, 2, 3, 5, 10, 30];
 const WD = '日月火水木金土';
@@ -804,13 +806,14 @@ window.addEventListener('pointercancel', () => { dragging = false; cancelPress()
 
 /* ───────── お知らせ（取り消し付き） ───────── */
 let toastTimer, undoFn = null;
-function toast(msg, undo) {
+function toast(msg, undo, { label = '取り消す', ms = 4500 } = {}) {
   $('toastMsg').textContent = msg;
   undoFn = undo || null;
+  $('toastUndo').textContent = label;
   $('toastUndo').style.display = undo ? '' : 'none';
   $('toast').classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $('toast').classList.remove('show'), 4500);
+  toastTimer = setTimeout(() => $('toast').classList.remove('show'), ms);
 }
 $('toastUndo').onclick = () => {
   if (undoFn) undoFn();
@@ -1378,6 +1381,7 @@ $('exportBtn').onclick = async () => {
     const file = new File([blob], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: 'タスクのバックアップ' });
+      markBackedUp();
       toast('💾 バックアップを保存したよ');
       return;
     }
@@ -1389,6 +1393,7 @@ $('exportBtn').onclick = async () => {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  markBackedUp();
   toast('💾 バックアップを保存したよ');
 };
 $('importBtn').onclick = () => $('importFile').click();
@@ -1406,6 +1411,7 @@ $('importFile').onchange = async e => {
     const addL = (Array.isArray(data.log) ? data.log : []).filter(x => x && x.id && !logIds.has(x.id));
     tasks.push(...addT);
     log.push(...addL);
+    markBackedUp();
     closeAll();
     refresh();
     toast(`📂 タスク${addT.length}個・記録${addL.length}個を戻したよ`);
@@ -1413,7 +1419,33 @@ $('importFile').onchange = async e => {
     toast('このファイルは読み込めなかったよ');
   }
 };
-$('settingsBtn').onclick = () => { updateNotifyUI(); open('settingsSheet'); };
+$('settingsBtn').onclick = () => { updateNotifyUI(); updateBackupUI(); open('settingsSheet'); };
+
+/* ───────── バックアップのお知らせ ───────── */
+// しばらく保存していないときに「保存しておく？」と出す（1日に1回まで）
+const BACKUP_EVERY = 7 * DAY;
+function markBackedUp() { write(BACKUP_KEY, Date.now()); updateBackupUI(); }
+function agoLabel(ts) {
+  const days = Math.floor((startOfDay(new Date()) - startOfDay(new Date(ts))) / DAY);
+  return days <= 0 ? '今日' : days === 1 ? '昨日' : `${days}日前`;
+}
+function updateBackupUI() {
+  const last = read(BACKUP_KEY, null);
+  $('backupState').textContent = last ? `最後に保存：${agoLabel(last)}` : 'まだ保存していません';
+}
+function checkBackup() {
+  if (!tasks.length) return;
+  const now = Date.now();
+  const last = read(BACKUP_KEY, null);
+  // 一度も保存していなければ、一番古いタスクを作った日から数える
+  const since = last ?? Math.min(...tasks.map(t => t.created || now));
+  if (now - since < BACKUP_EVERY) return;
+  if (now - read(NAG_KEY, 0) < DAY) return;
+  write(NAG_KEY, now);
+  const msg = last ? `💾 前の保存から${Math.floor((now - last) / DAY)}日。保存しとく？` : '💾 バックアップ保存しとく？';
+  toast(msg, () => $('exportBtn').click(), { label: '保存する', ms: 15000 });
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(checkBackup, 1500); });
 
 /* ───────── 起動 ───────── */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
@@ -1426,6 +1458,7 @@ window.addEventListener('resize', render);
 setSpeed(crossMinutes);
 render();
 checkDue();
+setTimeout(checkBackup, 1500);
 requestAnimationFrame(tick);
 </script>
 </body>
