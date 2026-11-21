@@ -715,8 +715,11 @@ const todayDone = () => log.filter(e => sameDay(e.at, Date.now())).length;
 /* ───────── タイムライン ───────── */
 // タイムラインに出すもの：未完了＋今日完了したもの（翌日には「できたこと」へ）
 const onTimeline = () => tasks.filter(t => !t.done || sameDay(t.doneAt, Date.now()));
-// 一周の長さ：画面の幅＋カード1枚分。タスクが多いときは全部が並ぶ長さ
-const loopLen = () => Math.max(view.length * SLOT_W, stage.clientWidth + SLOT_W);
+// カードは上下互い違いに並べるので、横の間隔はカード幅より詰められる
+const STEP = 118;
+// 一周の長さ：全部が1列に並ぶ長さ（奇数のときは先頭と最後が同じ側で重ならないよう1つ分あける）。
+// 画面より短いときは「画面の幅＋カード1枚分」にして、列が途切れず右端から戻ってくるようにする
+const loopLen = () => Math.max(view.length * STEP + (view.length % 2 ? STEP : 0), stage.clientWidth + SLOT_W);
 
 function greet() {
   const now = new Date(), h = now.getHours();
@@ -755,11 +758,10 @@ function render() {
 }
 function placeSlots() {
   const L = loopLen();
-  const gap = L / slots.length; // タスクの数で一周を均等に分ける
   offset = ((offset % L) + L) % L;
   slots.forEach((s, i) => {
-    // 左へ流れ、左端の外へ出たら右端に戻る
-    const x = ((stage.clientWidth * .55 + i * gap - offset) % L + L) % L;
+    // ひとつながりの列で左へ流れ、左端の外へ出たら右端に戻る
+    const x = ((stage.clientWidth * .3 + i * STEP - offset) % L + L) % L;
     s.style.transform = `translateX(${x - SLOT_W}px)`;
   });
 }
