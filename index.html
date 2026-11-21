@@ -353,8 +353,13 @@
   <div class="sheet-bg" id="taskSheet">
     <div class="sheet">
       <p id="sheetTitle"></p>
+      <form class="custom" id="editForm" hidden style="margin:0 0 6px">
+        <input id="editInput" maxlength="80" enterkeyhint="done" aria-label="新しいタイトル">
+        <button class="add" type="submit" style="padding:12px 16px">保存</button>
+      </form>
       <div class="hint" id="sheetDue"></div>
       <button class="row center go" id="toggleDone">完了にする</button>
+      <button class="row center" id="editBtn">✏️ タイトルを変更</button>
       <button class="row center" id="sheetSnooze">⏰ 延期する</button>
       <button class="row center danger" id="remove">削除</button>
       <button class="row center" data-close>閉じる</button>
@@ -996,8 +1001,32 @@ function openTask(id) {
   $('sheetTitle').textContent = `${emojiFor(t)} ${t.title}`;
   $('sheetDue').textContent = [t.due ? `🕒 ${dueLabel(t)}` : '期限なし', t.repeat && `🔁 ${repeatLabel(t.repeat)}`].filter(Boolean).join('　');
   $('toggleDone').textContent = t.done ? '未完了に戻す' : t.repeat ? '完了して次の回へ 🔁' : '完了にする 💖';
+  $('editForm').hidden = true;
+  $('sheetTitle').hidden = false;
+  $('editBtn').hidden = false;
   open('taskSheet');
 }
+$('editBtn').onclick = () => {
+  const t = tasks.find(t => t.id === selectedId);
+  if (!t) return;
+  $('editInput').value = t.title;
+  $('sheetTitle').hidden = true;
+  $('editBtn').hidden = true;
+  $('editForm').hidden = false;
+  $('editInput').focus();
+  $('editInput').select();
+};
+$('editForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = tasks.find(t => t.id === selectedId);
+  const title = $('editInput').value.trim();
+  closeAll();
+  if (!t || !title || title === t.title) return;
+  const before = t.title;
+  t.title = title;
+  refresh();
+  toast(`✏️ 「${title}」に変更したよ`, () => { t.title = before; refresh(); });
+});
 $('toggleDone').onclick = () => {
   const t = tasks.find(t => t.id === selectedId);
   closeAll();
