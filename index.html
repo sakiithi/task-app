@@ -6,9 +6,13 @@
 <meta name="theme-color" content="#f6f1ff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1528" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="タスク">
 <title>タスクタイムライン</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
@@ -18,13 +22,14 @@
     --surface: #ffffff;
     --text: #4a3550;
     --muted: #a08ba6;
-    --line: #f3dcea;
+    --line: #eadff5;
     --accent: #ff6fa8;
     --accent-2: #a98bff;
     --accent-soft: #ffe6f0;
     --done: #3fbf93;
     --warn: #ff5d7a;
-    --shadow: 0 2px 4px rgba(214, 120, 170, .08), 0 10px 26px rgba(214, 120, 170, .16);
+    --star: #ffb020;
+    --shadow: 0 2px 4px rgba(150, 110, 200, .08), 0 10px 26px rgba(150, 110, 200, .16);
     --grad: linear-gradient(120deg, #ff7eb3 0%, #ff9ec4 40%, #b79bff 100%);
     --blob1: rgba(196, 168, 255, .55);
     --blob2: rgba(165, 135, 250, .45);
@@ -43,12 +48,13 @@
       --surface: #2a2136;
       --text: #fbeef6;
       --muted: #b9a2c0;
-      --line: #3d2d45;
+      --line: #3d3048;
       --accent: #ff8ab8;
       --accent-2: #bba4ff;
       --accent-soft: #3a2538;
       --done: #6fd9b0;
       --warn: #ff7d93;
+      --star: #ffc94d;
       --shadow: 0 2px 4px rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .35);
       --blob1: rgba(150, 110, 255, .26);
       --blob2: rgba(120, 90, 230, .24);
@@ -74,6 +80,7 @@
     -webkit-font-smoothing: antialiased;
   }
   button { font-family: inherit; font-weight: 700; cursor: pointer; }
+  [hidden] { display: none !important; }
 
   /* ふんわり背景 */
   .bgfx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
@@ -96,13 +103,15 @@
   }
   .count b { font-size: 15px; font-weight: 900; }
 
-  .controls { display: flex; gap: 8px; padding: 2px 20px 4px; flex-wrap: wrap; }
+  .controls { display: flex; gap: 8px; padding: 2px 20px 4px; overflow-x: auto; scrollbar-width: none; }
+  .controls::-webkit-scrollbar { display: none; }
   .chip {
+    flex: none;
     border: 1.5px solid var(--line); background: var(--surface); color: var(--text);
     border-radius: 999px; padding: 8px 14px; font-size: 13px;
     transition: transform .15s;
   }
-  .chip:active, .btn:active, button.add:active, .mic:active { transform: scale(.94); }
+  .chip:active, .btn:active, button.add:active, .mic:active, .row:active { transform: scale(.95); }
   .chip.primary {
     border-color: transparent; background: var(--grad); color: #fff;
     box-shadow: 0 6px 16px rgba(255, 111, 168, .35);
@@ -112,13 +121,13 @@
   /* タイムライン */
   .stage {
     flex: 1; overflow: hidden;
-    touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
             mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   }
   .axis {
     position: absolute; left: 0; right: 0; top: 50%; height: 0;
-    border-top: 2.5px dotted var(--accent); opacity: .45;
+    border-top: 2.5px dotted var(--accent-2); opacity: .5;
   }
   .track { position: absolute; inset: 0; }
   .slot { position: absolute; top: 0; left: 0; width: 184px; height: 100%; will-change: transform; }
@@ -147,9 +156,17 @@
     background: var(--cbg); border: 2px solid var(--bd);
     border-radius: 22px; padding: 12px 14px 12px; box-shadow: var(--shadow);
     font-size: 15px; line-height: 1.45; word-break: break-word; cursor: pointer;
+    transition: transform .2s;
   }
-  .slot.up .card { bottom: calc(50% + 27px); }
-  .slot.down .card { top: calc(50% + 27px); }
+  .slot.up .card { bottom: calc(50% + 27px); transform-origin: bottom center; }
+  .slot.down .card { top: calc(50% + 27px); transform-origin: top center; }
+  .slot.star .card {
+    transform: scale(1.08); border-color: var(--star);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--star) 30%, transparent), 0 10px 28px color-mix(in srgb, var(--star) 35%, transparent);
+  }
+  .slot.star .dot { background: var(--star); }
+  .card .badge { position: absolute; top: -10px; right: -6px; font-size: 18px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.15)); }
+  .card.pressing { transform: scale(.92) !important; transition: transform .55s cubic-bezier(.3, .0, .3, 1); }
   .card-top { display: flex; gap: 8px; align-items: flex-start; }
   .emo {
     flex: none; width: 30px; height: 30px; border-radius: 50%;
@@ -158,10 +175,8 @@
   }
   .title { font-weight: 700; padding-top: 4px; }
   .meta { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 8px; font-size: 11px; }
-  .tag {
-    border-radius: 999px; padding: 2px 8px; background: var(--surface); color: var(--ink); font-weight: 700;
-  }
-  .tag.today { background: var(--ink); color: var(--surface); }
+  .tag { border-radius: 999px; padding: 2px 8px; background: var(--surface); color: var(--ink, var(--accent)); font-weight: 700; }
+  .tag.today { background: var(--ink, var(--accent)); color: var(--surface); }
   .tag.overdue { background: var(--warn); color: #fff; }
   .slot.done .card { opacity: .55; }
   .slot.done .title { text-decoration: line-through; text-decoration-thickness: 2px; }
@@ -172,6 +187,10 @@
   }
   .empty .big { font-size: 40px; line-height: 1.2; margin-bottom: 6px; }
   .empty b { color: var(--accent); font-weight: 700; }
+  .tip {
+    position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
+    font-size: 11px; color: var(--muted); pointer-events: none;
+  }
 
   /* 今やる1つ */
   .focus {
@@ -181,18 +200,20 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 20px; gap: 14px;
   }
-  .focus[hidden] { display: none; }
   .focus-label {
     font-size: 13px; font-weight: 700; color: var(--accent);
     background: var(--surface); border-radius: 999px; padding: 5px 14px; box-shadow: var(--shadow);
   }
   #focusBody { width: min(340px, 100%); display: flex; flex-direction: column; align-items: center; gap: 14px; }
   .focus-card {
+    position: relative;
     width: 100%; min-height: 170px; padding: 26px 22px 22px; border-radius: 30px; text-align: center;
     background: var(--cbg); border: 2.5px solid var(--bd); box-shadow: var(--shadow);
     display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;
     touch-action: none; cursor: grab;
   }
+  .focus-card.star { border-color: var(--star); }
+  .focus-card .badge { position: absolute; top: -12px; right: 14px; font-size: 26px; }
   .focus-card.enter { animation: enter .5s cubic-bezier(.2, .9, .3, 1.35); }
   @keyframes enter { from { transform: translateX(45vw) scale(.8) rotate(6deg); opacity: 0; } }
   .focus-card .emo { width: 56px; height: 56px; font-size: 30px; box-shadow: 0 0 0 3px var(--bd); animation: bob 3s ease-in-out infinite; }
@@ -224,7 +245,7 @@
     border-radius: 24px; box-shadow: var(--shadow);
   }
   .preview { min-height: 20px; font-size: 12px; color: var(--accent); padding: 0 6px 6px; font-weight: 700; }
-  form { display: flex; gap: 8px; }
+  form.input-row { display: flex; gap: 8px; }
   input {
     flex: 1; min-width: 0; font-size: 16px; padding: 11px 14px; font-family: inherit; font-weight: 500;
     border-radius: 16px; border: 1.5px solid var(--line); background: var(--bg); color: var(--text);
@@ -246,7 +267,7 @@
 
   /* お知らせ */
   .toast {
-    position: fixed; left: 16px; right: 16px; z-index: 20;
+    position: fixed; left: 16px; right: 16px; z-index: 40;
     bottom: calc(130px + env(safe-area-inset-bottom));
     display: flex; align-items: center; gap: 12px; justify-content: space-between;
     padding: 12px 16px; border-radius: 18px;
@@ -258,7 +279,7 @@
   .toast button { flex: none; border: 0; background: none; color: var(--accent); font-size: 14px; padding: 4px; }
 
   /* 紙吹雪 */
-  .confetti { position: fixed; inset: 0; z-index: 30; pointer-events: none; overflow: hidden; }
+  .confetti { position: fixed; inset: 0; z-index: 50; pointer-events: none; overflow: hidden; }
   .confetti span {
     position: absolute; left: var(--x); top: var(--y); font-size: var(--s);
     animation: pop 1.2s cubic-bezier(.15, .7, .3, 1) forwards;
@@ -272,29 +293,32 @@
 
   /* シート */
   .sheet-bg {
-    position: fixed; inset: 0; z-index: 10; background: rgba(74, 40, 70, .28);
+    position: fixed; inset: 0; z-index: 30; background: rgba(60, 40, 90, .28);
     display: none; align-items: flex-end;
   }
   .sheet-bg.open { display: flex; }
   .sheet {
     width: 100%; background: var(--surface); border-radius: 28px 28px 0 0;
     padding: 22px 16px calc(18px + env(safe-area-inset-bottom));
-    max-height: 85vh; overflow-y: auto;
+    max-height: 88vh; overflow-y: auto;
     animation: up .28s cubic-bezier(.2, .9, .3, 1.1);
   }
+  .sheet.tall { height: 88vh; }
   @keyframes up { from { transform: translateY(40px); opacity: 0; } }
-  .sheet h2 { margin: 0 0 4px; font-size: 17px; font-weight: 900; }
-  .sheet p { margin: 0 0 4px; font-size: 18px; font-weight: 700; word-break: break-word; }
-  .sheet .hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .sheet h2 { margin: 0 0 4px; font-size: 18px; font-weight: 900; }
+  .sheet p.title-line { margin: 0 0 4px; font-size: 18px; font-weight: 700; word-break: break-word; }
+  .sheet .hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.7; }
   .row {
     display: block; width: 100%; padding: 14px 16px; margin-top: 8px; font-size: 15px; text-align: left;
     border-radius: 16px; border: 1.5px solid var(--line); background: var(--bg); color: var(--text);
+    transition: transform .15s;
   }
   .row small { float: right; color: var(--muted); font-size: 13px; font-weight: 500; }
   .row.center { text-align: center; }
   .row.go { background: var(--grad); color: #fff; border-color: transparent; }
   .danger { color: var(--warn); }
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
   .grid button {
     padding: 12px 0; font-size: 14px; border-radius: 16px;
     border: 1.5px solid var(--line); background: var(--bg); color: var(--text);
@@ -303,6 +327,33 @@
   .custom { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
   .custom input { flex: 1; }
   .custom span { color: var(--muted); }
+  .sub-preview { min-height: 18px; font-size: 12px; color: var(--accent); font-weight: 700; padding: 6px 4px 0; }
+
+  /* できたこと */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 18px; }
+  .stat {
+    background: var(--bg); border: 1.5px solid var(--line); border-radius: 18px;
+    padding: 12px 6px; text-align: center;
+  }
+  .stat b { display: block; font-size: 26px; font-weight: 900; color: var(--accent); line-height: 1.2; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .stat.fire b { background: linear-gradient(120deg, #ff8a3d, #ff4f8b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .day-head { font-size: 13px; font-weight: 900; color: var(--muted); margin: 16px 4px 6px; display: flex; justify-content: space-between; }
+  .done-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 6px;
+    background: var(--bg); border-radius: 16px; border: 1.5px solid var(--line);
+  }
+  .done-item .emo { width: 32px; height: 32px; box-shadow: 0 0 0 2px var(--line); }
+  .done-item .txt { flex: 1; min-width: 0; font-weight: 700; word-break: break-word; font-size: 14px; }
+  .done-item .txt small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; }
+  .done-item button {
+    flex: none; border: 0; border-radius: 999px; padding: 6px 10px; font-size: 12px;
+    background: var(--surface); color: var(--accent); box-shadow: 0 0 0 1.5px var(--line);
+  }
+  .done-item button.x { color: var(--muted); padding: 6px 9px; }
+  .done-empty { text-align: center; color: var(--muted); padding: 30px 0; line-height: 2; }
+
+  .setting-note { font-size: 12px; color: var(--muted); margin: 6px 4px 0; line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -317,8 +368,10 @@
   </header>
   <div class="controls">
     <button class="chip primary" id="focusBtn" aria-pressed="false">✨ 今やる1つ</button>
+    <button class="chip" id="doneBtn">🏆 できたこと</button>
     <button class="chip" id="pause" aria-pressed="false">⏸ 一時停止</button>
     <button class="chip" id="speedBtn"></button>
+    <button class="chip" id="settingsBtn" aria-label="設定">⚙️</button>
   </div>
 
   <div class="stage" id="stage">
@@ -326,8 +379,9 @@
     <div class="track" id="track"></div>
     <div class="empty" id="empty">
       <div><div class="big">🌷</div>マイクを押して話すだけで追加できるよ<br>
-      <b>「明日15時に歯医者」</b><br><b>「毎朝7時に薬」</b><br><b>「金曜までにレポート」</b></div>
+      <b>「明日15時に歯医者」</b><br><b>「毎朝7時に薬」</b><br><b>「金曜までにレポート！」</b>（！で⭐大事）</div>
     </div>
+    <div class="tip" id="tip">タップでメニュー ・ 長押しで完了 💖</div>
     <div class="focus" id="focus" hidden>
       <div class="focus-label">✨ 今やること</div>
       <div id="focusBody"></div>
@@ -337,7 +391,7 @@
 
   <div class="composer">
     <div class="preview" id="preview"></div>
-    <form id="form" autocomplete="off">
+    <form class="input-row" id="form" autocomplete="off">
       <button class="mic" id="mic" type="button" aria-label="話して追加">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0M12 17v4"/></svg>
       </button>
@@ -352,15 +406,22 @@
   <!-- タスク操作 -->
   <div class="sheet-bg" id="taskSheet">
     <div class="sheet">
-      <p id="sheetTitle"></p>
-      <form class="custom" id="editForm" hidden style="margin:0 0 6px">
-        <input id="editInput" maxlength="80" enterkeyhint="done" aria-label="新しいタイトル">
-        <button class="add" type="submit" style="padding:12px 16px">保存</button>
-      </form>
+      <p class="title-line" id="sheetTitle"></p>
       <div class="hint" id="sheetDue"></div>
+      <div id="editBox" hidden>
+        <form class="custom input-row" id="editForm" style="margin:0" autocomplete="off">
+          <input id="editInput" maxlength="80" enterkeyhint="done" aria-label="新しい内容">
+          <button class="add" type="submit" style="padding:12px 16px">保存</button>
+        </form>
+        <div class="sub-preview" id="editPreview"></div>
+      </div>
       <button class="row center go" id="toggleDone">完了にする</button>
-      <button class="row center" id="editBtn">✏️ タイトルを変更</button>
-      <button class="row center" id="sheetSnooze">⏰ 延期する</button>
+      <div class="grid2">
+        <button class="row center" id="editTitleBtn">✏️ タイトル</button>
+        <button class="row center" id="editDueBtn">📅 日時</button>
+        <button class="row center" id="starBtn">⭐ 大事にする</button>
+        <button class="row center" id="sheetSnooze">⏰ 延期</button>
+      </div>
       <button class="row center danger" id="remove">削除</button>
       <button class="row center" data-close>閉じる</button>
     </div>
@@ -372,6 +433,16 @@
       <h2>⏰ いつにする？</h2>
       <div class="hint" id="snoozeHint"></div>
       <div id="snoozeList"></div>
+      <button class="row center" data-close>閉じる</button>
+    </div>
+  </div>
+
+  <!-- できたこと -->
+  <div class="sheet-bg" id="doneSheet">
+    <div class="sheet tall">
+      <h2>🏆 できたこと</h2>
+      <div class="stats" id="stats"></div>
+      <div id="doneList"></div>
       <button class="row center" data-close>閉じる</button>
     </div>
   </div>
@@ -391,8 +462,23 @@
     </div>
   </div>
 
+  <!-- 設定 -->
+  <div class="sheet-bg" id="settingsSheet">
+    <div class="sheet">
+      <h2>⚙️ 設定</h2>
+      <button class="row" id="notifyBtn">🔔 通知<small id="notifyState"></small></button>
+      <div class="setting-note" id="notifyNote"></div>
+      <button class="row" id="exportBtn">💾 バックアップを保存<small>ファイルに書き出す</small></button>
+      <button class="row" id="importBtn">📂 バックアップから戻す<small>ファイルを選ぶ</small></button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <div class="setting-note">タスクはこの端末の中に保存されています。iPhoneでは「ホーム画面に追加」して使うと、データが消えにくくなります。</div>
+      <button class="row center" data-close>閉じる</button>
+    </div>
+  </div>
+
 <script>
 const KEY = 'task-app:tasks';
+const LOG_KEY = 'task-app:log';
 const SPEED_KEY = 'task-app:crossMinutes';
 const SLOT_W = 184;
 const SPEED_CHOICES = [1 / 6, 0.5, 1, 2, 3, 5, 10, 30];
@@ -407,20 +493,33 @@ function write(key, value) {
 }
 
 let tasks = read(KEY, []);
+let log = read(LOG_KEY, []);   // 完了の記録 { id, taskId, title, at, repeat }
 let crossMinutes = read(SPEED_KEY, 1);
 let offset = 0, paused = false, dragging = false, lastX = 0, moved = 0;
 let selectedId = null;
-let view = [];
+let view = [], slots = [];
 let focusMode = false, skipped = new Set(), current = null;
 
 const $ = id => document.getElementById(id);
 const track = $('track'), stage = $('stage');
-const save = () => write(KEY, tasks);
+const save = () => { write(KEY, tasks); write(LOG_KEY, log); };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const pad = n => String(n).padStart(2, '0');
 const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const withTime = (d, h, mi) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi);
+const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const sameDay = (a, b) => dayKey(a) === dayKey(b);
+
+// 以前のデータの引き継ぎ：完了済みなのに記録がないものを記録に入れる
+tasks.forEach(t => {
+  if (t.done && !t.doneAt) {
+    t.doneAt = Date.now();
+    log.push({ id: newId(), taskId: t.id, title: t.title, at: t.doneAt, repeat: false });
+  }
+});
+save();
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
 
 /* ───────── 絵文字と色 ───────── */
 const EMOJI = [
@@ -428,25 +527,20 @@ const EMOJI = [
   [/ゴミ|ごみ/, '🗑️'], [/会議|ミーティング|打ち合わせ|mtg/i, '💼'], [/電話|連絡|tel/i, '📞'],
   [/メール|返信|LINE|ライン/i, '💌'], [/買|購入|スーパー|コンビニ|牛乳|卵/, '🛍️'],
   [/支払|払う|家賃|振込|請求|税/, '💸'], [/掃除|片付け|片づけ/, '🧹'], [/洗濯/, '🧺'],
-  [/料理|ご飯|ごはん|夕飯|朝ごはん|ランチ|弁当/, '🍳'], [/ジム|筋トレ|運動|ストレッチ|ヨガ|ランニング|散歩/, '💪'],
+  [/料理|ご飯|ごはん|夕飯|朝ごはん|ランチ|弁当/, '🍳'], [/ジム|筋トレ|運動|ストレッチ|ヨガ|ランニング/, '💪'],
   [/美容院|美容室|ネイル|まつげ|カット/, '💇‍♀️'], [/レポート|資料|書類|提出|課題|宿題/, '📝'],
   [/勉強|読書|本/, '📚'], [/日記|ノート/, '📔'], [/誕生日|プレゼント/, '🎁'],
   [/旅行|予約|ホテル|チケット/, '✈️'], [/出勤|仕事|会社/, '👜'], [/寝る|睡眠|早寝/, '🌙'],
-  [/水|ドリンク/, '🥤'], [/花|植物|水やり/, '🌱'], [/猫|ねこ/, '🐱'], [/犬|いぬ|散歩/, '🐶'],
+  [/水やり|花|植物/, '🌱'], [/水|ドリンク/, '🥤'], [/猫|ねこ/, '🐱'], [/犬|いぬ|散歩/, '🐶'],
   [/カフェ|コーヒー/, '☕'], [/デート|会う|友達/, '💕'], [/お風呂|風呂|シャワー/, '🛁'],
 ];
 const FALLBACK = ['🌷', '✨', '🍓', '🫧', '🎀', '🌈', '💫', '🍑'];
+const hash = (s, seed, mul) => { let h = seed; for (const c of String(s)) h = (h * mul + c.charCodeAt(0)) >>> 0; return h; };
 function emojiFor(t) {
   for (const [re, e] of EMOJI) if (re.test(t.title)) return e;
-  let h = 0;
-  for (const c of t.id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return FALLBACK[h % FALLBACK.length];
+  return FALLBACK[hash(t.id, 0, 31) % FALLBACK.length];
 }
-function colorFor(t) {
-  let h = 7;
-  for (const c of t.id) h = (h * 17 + c.charCodeAt(0)) >>> 0;
-  return `c${h % 5}`;
-}
+const colorFor = t => `c${hash(t.id, 7, 17) % 5}`;
 
 /* ───────── 繰り返し ───────── */
 function occurs(rep, d) {
@@ -492,6 +586,10 @@ function parseJa(raw) {
   let date = null, h = null, mi = 0, m, repeat = null, night = false;
   const take = re => { const r = text.match(re); if (r) text = text.replace(r[0], ' '); return r; };
 
+  // 最後に「！」があれば大事マーク
+  let star = false;
+  if (/[!！]+\s*$/.test(text)) { star = true; text = text.replace(/[!！]+\s*$/, ''); }
+
   // 繰り返し
   if (take(/平日/)) repeat = { type: 'weekdays' };
   else if ((m = take(/毎月\s*(\d{1,2})\s*日/))) repeat = { type: 'monthly', day: +m[1] };
@@ -506,7 +604,7 @@ function parseJa(raw) {
   // ○時間後・○分後
   if (!repeat && ((m = take(/(\d+)\s*時間後/)) || (m = take(/(\d+)\s*分後/)))) {
     const ms = m[0].includes('時間') ? +m[1] * 3600e3 : +m[1] * 60e3;
-    return finish(text, raw, new Date(now.getTime() + ms), false, null);
+    return finish(text, raw, new Date(now.getTime() + ms), false, null, star);
   }
 
   // 日付
@@ -550,41 +648,48 @@ function parseJa(raw) {
   if (repeat) {
     const allDay = h === null;
     const first = firstOccurrence(repeat, today, h ?? 0, mi, allDay);
-    return finish(text, raw, first, allDay, repeat);
+    return finish(text, raw, first, allDay, repeat, star);
   }
-  if (date && h !== null) return finish(text, raw, withTime(date, h, mi), false, null);
-  if (date) return finish(text, raw, date, true, null);
+  if (date && h !== null) return finish(text, raw, withTime(date, h, mi), false, null, star);
+  if (date) return finish(text, raw, date, true, null, star);
   if (h !== null) {
     let d = withTime(today, h, mi);
     if (d < now) d = withTime(addDays(today, 1), h, mi);
-    return finish(text, raw, d, false, null);
+    return finish(text, raw, d, false, null, star);
   }
-  return { title: raw.trim(), due: null, allDay: false, repeat: null };
+  return finish(text, raw, null, false, null, star);
 }
-function finish(text, raw, d, allDay, repeat) {
-  const title = text
-    .replace(/(^|\s)(までには|までに|まで|には|に|から|の|は|で|、|,)+/g, '$1')
-    .replace(/[\s。、]+/g, ' ').trim();
-  return { title: title || raw.trim(), due: d ? d.getTime() : null, allDay, repeat };
+function finish(text, raw, d, allDay, repeat, star) {
+  let title = text.replace(/[\s。、]+/g, ' ').trim();
+  if (d || repeat) {
+    title = text
+      .replace(/(^|\s)(までには|までに|まで|には|に|から|の|は|で|、|,)+/g, '$1')
+      .replace(/[\s。、]+/g, ' ').trim();
+  }
+  return { title: title || raw.replace(/[!！]+\s*$/, '').trim(), due: d ? d.getTime() : null, allDay, repeat, star };
 }
 
 /* ───────── 表示用 ───────── */
+function dayLabel(ts) {
+  const d = new Date(ts);
+  const diff = Math.round((startOfDay(d) - startOfDay(new Date())) / DAY);
+  return diff === 0 ? '今日' : diff === 1 ? '明日' : diff === 2 ? 'あさって' : diff === -1 ? '昨日'
+    : `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`;
+}
 function dueLabel(t) {
   if (!t.due) return '';
   const d = new Date(t.due);
-  const diff = Math.round((startOfDay(d) - startOfDay(new Date())) / DAY);
-  const day = diff === 0 ? '今日' : diff === 1 ? '明日' : diff === 2 ? 'あさって' : diff === -1 ? '昨日'
-    : `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`;
-  return t.allDay ? day : `${day} ${d.getHours()}:${pad(d.getMinutes())}`;
+  return t.allDay ? dayLabel(t.due) : `${dayLabel(t.due)} ${d.getHours()}:${pad(d.getMinutes())}`;
 }
 function isOverdue(t) {
   if (!t.due || t.done) return false;
   return t.allDay ? startOfDay(new Date(t.due)) < startOfDay(new Date()) : t.due < Date.now();
 }
-const isToday = t => t.due && !t.done && startOfDay(new Date(t.due)).getTime() === startOfDay(new Date()).getTime();
+const isToday = t => t.due && !t.done && sameDay(t.due, Date.now());
 // 終日は「その日の終わり」として比べる
 const dueKey = t => !t.due ? Infinity : t.allDay ? t.due + DAY - 1 : t.due;
-const byPriority = (a, b) => (a.done - b.done) || dueKey(a) - dueKey(b) || a.created - b.created;
+// 並び順：未完了 → ⭐大事 → 期限が近い → 古い順
+const byPriority = (a, b) => (!!a.done - !!b.done) || (!!b.star - !!a.star) || dueKey(a) - dueKey(b) || a.created - b.created;
 
 function metaHtml(t) {
   const parts = [];
@@ -596,10 +701,22 @@ function metaHtml(t) {
   return parts.length ? `<div class="meta">${parts.join('')}</div>` : '';
 }
 
+/* ───────── 記録（できたこと） ───────── */
+function streak() {
+  const days = new Set(log.map(e => dayKey(e.at)));
+  let d = startOfDay(new Date());
+  if (!days.has(dayKey(d))) d = addDays(d, -1); // 今日まだでも、昨日まで続いていれば継続中
+  let n = 0;
+  while (days.has(dayKey(d))) { n++; d = addDays(d, -1); }
+  return n;
+}
+const todayDone = () => log.filter(e => sameDay(e.at, Date.now())).length;
+
 /* ───────── タイムライン ───────── */
+// タイムラインに出すもの：未完了＋今日完了したもの（翌日には「できたこと」へ）
+const onTimeline = () => tasks.filter(t => !t.done || sameDay(t.doneAt, Date.now()));
 // 一周の長さ：画面の幅＋カード1枚分。タスクが多いときは全部が並ぶ長さ
-const loopLen = () => Math.max(tasks.length * SLOT_W, stage.clientWidth + SLOT_W);
-let slots = [];
+const loopLen = () => Math.max(view.length * SLOT_W, stage.clientWidth + SLOT_W);
 
 function greet() {
   const now = new Date(), h = now.getHours();
@@ -609,23 +726,26 @@ function greet() {
 
 function render() {
   $('hello').textContent = greet();
-  view = [...tasks].sort(byPriority);
+  view = onTimeline().sort(byPriority);
   const left = tasks.filter(t => !t.done).length;
   const todayN = tasks.filter(t => isToday(t) || isOverdue(t)).length;
   $('count').innerHTML = tasks.length ? `今日 <b>${todayN}</b> ・ 残り <b>${left}</b>` : 'タスク 0 🫧';
-  $('empty').style.display = tasks.length || focusMode ? 'none' : 'grid';
+  const s = streak(), td = todayDone();
+  $('doneBtn').textContent = `🏆 できたこと${td ? ` ${td}` : ''}${s >= 2 ? ` · 🔥${s}日` : ''}`;
+  $('empty').style.display = view.length || focusMode ? 'none' : 'grid';
+  $('tip').hidden = !view.length || focusMode;
 
   track.innerHTML = '';
   slots = [];
-  if (!tasks.length) return;
+  if (!view.length) return;
   // 1つのタスクにつきカードは1枚だけ
   const frag = document.createDocumentFragment();
   view.forEach((t, i) => {
     const slot = document.createElement('div');
-    const state = t.done ? ' done' : isOverdue(t) ? ' overdue' : '';
+    const state = (t.done ? ' done' : isOverdue(t) ? ' overdue' : '') + (t.star && !t.done ? ' star' : '');
     slot.className = `slot ${colorFor(t)} ${i % 2 ? 'down' : 'up'}${state}`;
     slot.innerHTML = `<div class="bob"><div class="stem"></div><div class="dot"></div>
-      <div class="card" data-id="${t.id}"><div class="card-top"><span class="emo">${t.done ? '✅' : emojiFor(t)}</span><div class="title"></div></div>${metaHtml(t)}</div></div>`;
+      <div class="card" data-id="${t.id}">${t.star && !t.done ? '<span class="badge">⭐</span>' : ''}<div class="card-top"><span class="emo">${t.done ? '✅' : emojiFor(t)}</span><div class="title"></div></div>${metaHtml(t)}</div></div>`;
     slot.querySelector('.title').textContent = t.title;
     slots.push(slot);
     frag.appendChild(slot);
@@ -648,7 +768,7 @@ let prev = performance.now();
 function tick(now) {
   const dt = Math.min(now - prev, 100) / 1000;
   prev = now;
-  if (tasks.length) {
+  if (slots.length) {
     // 画面の幅を crossMinutes 分で横切る速さ
     if (!paused && !dragging && !focusMode) offset += stage.clientWidth / (crossMinutes * 60) * dt;
     placeSlots();
@@ -656,25 +776,45 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
+/* ───────── なぞる・タップ・長押し ───────── */
+let pressTimer = null, pressCard = null, pressFired = false;
+function cancelPress() {
+  clearTimeout(pressTimer);
+  pressTimer = null;
+  if (pressCard) pressCard.classList.remove('pressing');
+}
+stage.addEventListener('contextmenu', e => e.preventDefault());
 stage.addEventListener('pointerdown', e => {
   if (focusMode) return;
-  dragging = true; lastX = e.clientX; moved = 0;
+  dragging = true; lastX = e.clientX; moved = 0; pressFired = false;
+  pressCard = e.target.closest && e.target.closest('.card');
+  const t = pressCard && tasks.find(t => t.id === pressCard.dataset.id);
+  if (t && !t.done) {
+    pressCard.classList.add('pressing');
+    pressTimer = setTimeout(() => {
+      pressFired = true;
+      const r = pressCard.getBoundingClientRect();
+      cancelPress();
+      complete(t, r.left + r.width / 2, r.top + r.height / 2);
+    }, 550);
+  }
 });
 window.addEventListener('pointermove', e => {
   if (!dragging) return;
   const dx = e.clientX - lastX;
   lastX = e.clientX; moved += Math.abs(dx);
   offset -= dx;
+  if (moved > 8) cancelPress();
 });
-window.addEventListener('pointerup', e => {
+window.addEventListener('pointerup', () => {
   if (!dragging) return;
   dragging = false;
-  if (moved < 8) {
-    const card = e.target.closest && e.target.closest('.card');
-    if (card) openTask(card.dataset.id);
-  }
+  const card = pressCard;
+  cancelPress();
+  if (!pressFired && moved < 8 && card) openTask(card.dataset.id);
+  pressCard = null;
 });
-window.addEventListener('pointercancel', () => { dragging = false; });
+window.addEventListener('pointercancel', () => { dragging = false; cancelPress(); pressCard = null; });
 
 /* ───────── お知らせ（取り消し付き） ───────── */
 let toastTimer, undoFn = null;
@@ -691,7 +831,11 @@ $('toastUndo').onclick = () => {
   undoFn = null;
   $('toast').classList.remove('show');
 };
-const refresh = () => { save(); render(); if (focusMode) showFocus(false); };
+const refresh = () => {
+  save(); render();
+  if (focusMode) showFocus(false);
+  if ($('doneSheet').classList.contains('open')) renderDone();
+};
 
 /* ───────── 紙吹雪 ───────── */
 const CHEERS = ['やったね！', 'えらい！', 'すごい！', 'さすが！', 'いい感じ！', 'ナイス！'];
@@ -722,20 +866,23 @@ const cheer = () => CHEERS[Math.floor(Math.random() * CHEERS.length)];
 function addTask(raw) {
   const p = parseJa(raw);
   if (!p.title) return;
-  const t = { id: newId(), title: p.title, due: p.due, allDay: p.allDay, repeat: p.repeat, created: Date.now(), done: false };
+  const t = { id: newId(), title: p.title, due: p.due, allDay: p.allDay, repeat: p.repeat, star: p.star, created: Date.now(), done: false };
   tasks.push(t);
   refresh();
   const extra = [dueLabel(t), repeatLabel(t.repeat) && `🔁${repeatLabel(t.repeat)}`].filter(Boolean).join(' ');
-  toast(`${emojiFor(t)} ${t.title}${extra ? `（${extra}）` : ''} を追加`, () => {
+  toast(`${t.star ? '⭐' : emojiFor(t)} ${t.title}${extra ? `（${extra}）` : ''} を追加`, () => {
     tasks = tasks.filter(x => x.id !== t.id);
     refresh();
   });
+}
+function describe(p) {
+  return [p.star && '⭐ 大事', p.due && `🕒 ${dueLabel(p)}`, p.repeat && `🔁 ${repeatLabel(p.repeat)}`].filter(Boolean).join('　');
 }
 function updatePreview() {
   const v = $('input').value.trim();
   if (!v) { $('preview').textContent = ''; return; }
   const p = parseJa(v);
-  const extra = [p.due && `🕒 ${dueLabel(p)}`, p.repeat && `🔁 ${repeatLabel(p.repeat)}`].filter(Boolean).join('　');
+  const extra = describe(p);
   $('preview').textContent = extra ? `${extra}　「${p.title}」` : '';
 }
 $('input').addEventListener('input', updatePreview);
@@ -748,19 +895,30 @@ $('form').addEventListener('submit', e => {
   updatePreview();
 });
 
-/* ───────── 完了（繰り返しは次の回へ） ───────── */
+/* ───────── 完了（繰り返しは次の回へ・記録に残す） ───────── */
 function complete(t, x, y) {
   confetti(x, y);
+  const entry = { id: newId(), taskId: t.id, title: t.title, at: Date.now(), repeat: !!t.repeat };
+  log.push(entry);
+  const dropEntry = () => { log = log.filter(e => e.id !== entry.id); };
   if (t.repeat && t.due) {
     const prevDue = t.due;
     t.due = nextDue(t);
     refresh();
-    toast(`${cheer()} 次は ${dueLabel(t)} 🔁`, () => { t.due = prevDue; refresh(); });
+    toast(`${cheer()} 次は ${dueLabel(t)} 🔁`, () => { t.due = prevDue; dropEntry(); refresh(); });
   } else {
     t.done = true;
+    t.doneAt = entry.at;
     refresh();
-    toast(`${cheer()} 「${t.title}」完了 🎉`, () => { t.done = false; refresh(); });
+    toast(`${cheer()} 「${t.title}」完了 🎉`, () => { t.done = false; t.doneAt = null; dropEntry(); refresh(); });
   }
+}
+function uncomplete(t) {
+  t.done = false;
+  t.doneAt = null;
+  const last = [...log].reverse().find(e => e.taskId === t.id);
+  if (last) log = log.filter(e => e !== last);
+  refresh();
 }
 
 /* ───────── 話して追加 ───────── */
@@ -867,7 +1025,8 @@ function showFocus(animate) {
     return;
   }
   body.innerHTML = `
-    <div class="focus-card ${colorFor(current)}${animate ? ' enter' : ''}" id="focusCard">
+    <div class="focus-card ${colorFor(current)}${current.star ? ' star' : ''}${animate ? ' enter' : ''}" id="focusCard">
+      ${current.star ? '<span class="badge">⭐</span>' : ''}
       <span class="emo">${emojiFor(current)}</span>
       <div class="focus-title"></div>${metaHtml(current)}
     </div>
@@ -970,6 +1129,7 @@ function stopTimer(finished) {
     chime();
     confetti();
     toast('⏱ 時間だよ！おつかれさま 💖');
+    sysNotify('⏱ 集中タイマー', '時間だよ！おつかれさま 💖');
   }
 }
 function chime() {
@@ -988,55 +1148,98 @@ function chime() {
   } catch {}
 }
 
-/* ───────── シート共通・タスク操作 ───────── */
+/* ───────── シート共通 ───────── */
 const open = id => $(id).classList.add('open');
 const closeAll = () => document.querySelectorAll('.sheet-bg').forEach(s => s.classList.remove('open'));
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
 document.querySelectorAll('.sheet-bg').forEach(bg => bg.addEventListener('click', e => { if (e.target === bg) closeAll(); }));
 
+/* ───────── タスク操作（タイトル・日時・大事・延期・削除） ───────── */
+let editMode = null; // 'title' | 'due'
+const selected = () => tasks.find(t => t.id === selectedId);
+function fillTaskSheet(t) {
+  $('sheetTitle').textContent = `${t.star ? '⭐ ' : ''}${emojiFor(t)} ${t.title}`;
+  $('sheetDue').textContent = [t.due ? `🕒 ${dueLabel(t)}` : '期限なし', t.repeat && `🔁 ${repeatLabel(t.repeat)}`].filter(Boolean).join('　');
+  $('toggleDone').textContent = t.done ? '↩︎ 未完了に戻す' : t.repeat ? '完了して次の回へ 🔁' : '完了にする 💖';
+  $('starBtn').textContent = t.star ? '☆ 大事を外す' : '⭐ 大事にする';
+}
 function openTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
   selectedId = id;
-  $('sheetTitle').textContent = `${emojiFor(t)} ${t.title}`;
-  $('sheetDue').textContent = [t.due ? `🕒 ${dueLabel(t)}` : '期限なし', t.repeat && `🔁 ${repeatLabel(t.repeat)}`].filter(Boolean).join('　');
-  $('toggleDone').textContent = t.done ? '未完了に戻す' : t.repeat ? '完了して次の回へ 🔁' : '完了にする 💖';
-  $('editForm').hidden = true;
-  $('sheetTitle').hidden = false;
-  $('editBtn').hidden = false;
+  editMode = null;
+  $('editBox').hidden = true;
+  fillTaskSheet(t);
   open('taskSheet');
 }
-$('editBtn').onclick = () => {
-  const t = tasks.find(t => t.id === selectedId);
+function startEdit(mode) {
+  const t = selected();
   if (!t) return;
-  $('editInput').value = t.title;
-  $('sheetTitle').hidden = true;
-  $('editBtn').hidden = true;
-  $('editForm').hidden = false;
-  $('editInput').focus();
-  $('editInput').select();
-};
+  editMode = mode;
+  $('editBox').hidden = false;
+  const input = $('editInput');
+  if (mode === 'title') {
+    input.value = t.title;
+    input.placeholder = '新しいタイトル';
+    $('editPreview').textContent = '';
+  } else {
+    input.value = '';
+    input.placeholder = '例：明日10時 / 金曜 / 毎週月曜 / なし';
+    $('editPreview').textContent = '「なし」で期限を外せるよ';
+  }
+  input.focus();
+  if (mode === 'title') input.select();
+}
+$('editTitleBtn').onclick = () => startEdit('title');
+$('editDueBtn').onclick = () => startEdit('due');
+$('editInput').addEventListener('input', () => {
+  if (editMode !== 'due') return;
+  const v = $('editInput').value.trim();
+  if (/^(なし|期限なし|無し)$/.test(v)) { $('editPreview').textContent = '期限を外します'; return; }
+  const p = parseJa(v);
+  $('editPreview').textContent = v ? (p.due ? `→ ${describe({ ...p, star: false })}` : '日時が読み取れないよ…') : '「なし」で期限を外せるよ';
+});
 $('editForm').addEventListener('submit', e => {
   e.preventDefault();
-  const t = tasks.find(t => t.id === selectedId);
-  const title = $('editInput').value.trim();
-  closeAll();
-  if (!t || !title || title === t.title) return;
-  const before = t.title;
-  t.title = title;
-  refresh();
-  toast(`✏️ 「${title}」に変更したよ`, () => { t.title = before; refresh(); });
+  const t = selected();
+  const v = $('editInput').value.trim();
+  if (!t || !v) return;
+  const before = { title: t.title, due: t.due, allDay: t.allDay, repeat: t.repeat, notified: t.notified };
+  const restore = () => { Object.assign(t, before); refresh(); };
+  if (editMode === 'title') {
+    if (v === t.title) return closeAll();
+    t.title = v;
+    closeAll(); refresh();
+    toast(`✏️ 「${v}」に変更したよ`, restore);
+  } else {
+    if (/^(なし|期限なし|無し)$/.test(v)) {
+      t.due = null; t.allDay = false; t.repeat = null;
+    } else {
+      const p = parseJa(v);
+      if (!p.due) { $('editPreview').textContent = '日時が読み取れないよ…「明日10時」のように書いてね'; return; }
+      t.due = p.due; t.allDay = p.allDay;
+      if (p.repeat) t.repeat = p.repeat;
+    }
+    t.notified = null;
+    closeAll(); refresh();
+    toast(`📅 ${t.due ? dueLabel(t) : '期限なし'} にしたよ`, restore);
+  }
 });
+$('starBtn').onclick = () => {
+  const t = selected();
+  if (!t) return;
+  t.star = !t.star;
+  fillTaskSheet(t);
+  refresh();
+  if (t.star) confetti(innerWidth / 2, innerHeight * .6);
+};
 $('toggleDone').onclick = () => {
-  const t = tasks.find(t => t.id === selectedId);
+  const t = selected();
   closeAll();
   if (!t) return;
-  if (t.done) { t.done = false; refresh(); } else complete(t);
+  if (t.done) uncomplete(t); else complete(t);
 };
-$('sheetSnooze').onclick = () => {
-  const t = tasks.find(t => t.id === selectedId);
-  if (t) openSnooze(t);
-};
+$('sheetSnooze').onclick = () => { const t = selected(); if (t) openSnooze(t); };
 $('remove').onclick = () => {
   const i = tasks.findIndex(t => t.id === selectedId);
   closeAll();
@@ -1045,6 +1248,58 @@ $('remove').onclick = () => {
   refresh();
   toast(`🗑️ 「${t.title}」を削除`, () => { tasks.splice(i, 0, t); refresh(); });
 };
+
+/* ───────── できたこと ───────── */
+function renderDone() {
+  const s = streak(), td = todayDone();
+  $('stats').innerHTML = `
+    <div class="stat"><b>${td}</b><span>今日できた</span></div>
+    <div class="stat fire"><b>🔥${s}</b><span>日連続</span></div>
+    <div class="stat"><b>${log.length}</b><span>これまでの合計</span></div>`;
+  const list = $('doneList');
+  if (!log.length) {
+    list.innerHTML = '<div class="done-empty">まだないよ<br>1つ完了してみよう 💪</div>';
+    return;
+  }
+  const groups = new Map();
+  [...log].sort((a, b) => b.at - a.at).forEach(e => {
+    const k = dayKey(e.at);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  });
+  list.innerHTML = '';
+  for (const entries of groups.values()) {
+    const head = document.createElement('div');
+    head.className = 'day-head';
+    head.innerHTML = `<span>${dayLabel(entries[0].at)}</span><span>${entries.length}個 ✨</span>`;
+    list.appendChild(head);
+    for (const e of entries) {
+      const t = tasks.find(x => x.id === e.taskId);
+      const canRestore = t && t.done && !e.repeat;
+      const d = new Date(e.at);
+      const row = document.createElement('div');
+      row.className = 'done-item';
+      row.innerHTML = `<span class="emo">${emojiFor({ title: e.title, id: e.taskId })}</span>
+        <div class="txt"><span class="t"></span><small>${d.getHours()}:${pad(d.getMinutes())}${e.repeat ? ' ・ 🔁 繰り返し' : ''}</small></div>
+        ${canRestore ? '<button type="button" class="back">↩︎ 戻す</button>' : ''}
+        <button type="button" class="x" aria-label="記録を消す">✕</button>`;
+      row.querySelector('.t').textContent = e.title;
+      if (canRestore) row.querySelector('.back').onclick = () => {
+        uncomplete(t);
+        toast(`↩︎ 「${t.title}」をタイムラインに戻したよ`);
+      };
+      row.querySelector('.x').onclick = () => {
+        const prevLog = log.slice(), prevTasks = tasks.slice();
+        log = log.filter(x => x.id !== e.id);
+        if (t && t.done && !e.repeat) tasks = tasks.filter(x => x.id !== t.id);
+        refresh();
+        toast('記録を消したよ', () => { log = prevLog; tasks = prevTasks; refresh(); });
+      };
+      list.appendChild(row);
+    }
+  }
+}
+$('doneBtn').onclick = () => { renderDone(); open('doneSheet'); };
 
 /* ───────── 流れる速さ ───────── */
 const speedLabel = m => m < 1 ? `${Math.round(m * 60)}秒` : `${+m.toFixed(1)}分`;
@@ -1073,11 +1328,118 @@ $('pause').onclick = () => {
   $('pause').textContent = paused ? '▶ 再生' : '⏸ 一時停止';
 };
 
-// 時間の経過で「今日・期限切れ」の表示を更新
+/* ───────── 通知（アプリを開いているとき） ───────── */
+let swReg = null;
+const canNotify = () => 'Notification' in window;
+function updateNotifyUI() {
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let state, note;
+  if (!canNotify()) {
+    state = '未対応';
+    note = isIOS && !standalone ? 'iPhoneでは「ホーム画面に追加」したアプリから開くと、通知をオンにできます。' : 'このブラウザは通知に未対応です。アプリの中のお知らせと音で知らせます。';
+  } else if (Notification.permission === 'granted') {
+    state = 'オン';
+    note = '期限の時間になると通知します（今はアプリを開いているときだけ）。';
+  } else if (Notification.permission === 'denied') {
+    state = 'ブロック中';
+    note = '端末の設定で、このアプリの通知を許可してください。';
+  } else {
+    state = 'オフ';
+    note = 'タップすると通知をオンにできます。オフでも、アプリの中のお知らせと音で知らせます。';
+  }
+  $('notifyState').textContent = state;
+  $('notifyNote').textContent = note;
+}
+$('notifyBtn').onclick = async () => {
+  if (!canNotify() || Notification.permission !== 'default') return updateNotifyUI();
+  try { await Notification.requestPermission(); } catch {}
+  updateNotifyUI();
+  if (Notification.permission === 'granted') sysNotify('🔔 通知をオンにしたよ', '期限の時間になったら知らせるね');
+};
+function sysNotify(title, body) {
+  if (!canNotify() || Notification.permission !== 'granted') return;
+  const opts = { body, icon: 'icon-192.png', badge: 'icon-192.png' };
+  try {
+    if (swReg) swReg.showNotification(title, opts);
+    else new Notification(title, opts);
+  } catch {}
+}
+function checkDue() {
+  const now = Date.now();
+  let changed = false;
+  for (const t of tasks) {
+    if (t.done || !t.due || t.allDay || t.notified === t.due) continue;
+    if (t.due <= now && now - t.due < 10 * 60e3) {
+      t.notified = t.due;
+      changed = true;
+      chime();
+      try { navigator.vibrate && navigator.vibrate([150, 80, 150]); } catch {}
+      toast(`🔔 「${t.title}」の時間だよ`);
+      sysNotify(`🔔 ${t.title}`, `${dueLabel(t)} の予定だよ`);
+    }
+  }
+  if (changed) save();
+}
+
+/* ───────── バックアップ ───────── */
+$('exportBtn').onclick = async () => {
+  const data = { app: 'task-app', version: 1, exportedAt: new Date().toISOString(), tasks, log, crossMinutes };
+  const d = new Date();
+  const name = `task-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  try {
+    const file = new File([blob], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'タスクのバックアップ' });
+      toast('💾 バックアップを保存したよ');
+      return;
+    }
+  } catch (err) { if (err && err.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('💾 バックアップを保存したよ');
+};
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').onchange = async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || data.app !== 'task-app' || !Array.isArray(data.tasks)) throw new Error('bad');
+    // 今あるものは残して、ないものだけ足す
+    const ids = new Set(tasks.map(t => t.id));
+    const addT = data.tasks.filter(t => t && t.id && t.title && !ids.has(t.id));
+    const logIds = new Set(log.map(x => x.id));
+    const addL = (Array.isArray(data.log) ? data.log : []).filter(x => x && x.id && !logIds.has(x.id));
+    tasks.push(...addT);
+    log.push(...addL);
+    closeAll();
+    refresh();
+    toast(`📂 タスク${addT.length}個・記録${addL.length}個を戻したよ`);
+  } catch {
+    toast('このファイルは読み込めなかったよ');
+  }
+};
+$('settingsBtn').onclick = () => { updateNotifyUI(); open('settingsSheet'); };
+
+/* ───────── 起動 ───────── */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
+}
+// 時間の経過で表示を更新し、期限が来たら知らせる
 setInterval(render, 60e3);
+setInterval(checkDue, 20e3);
 window.addEventListener('resize', render);
 setSpeed(crossMinutes);
 render();
+checkDue();
 requestAnimationFrame(tick);
 </script>
 </body>
