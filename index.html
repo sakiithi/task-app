@@ -130,41 +130,28 @@
     border-top: 2.5px dotted var(--accent-2); opacity: .5;
   }
   .track { position: absolute; inset: 0; }
-  .slot { position: absolute; top: 0; left: 0; width: 184px; height: 100%; will-change: transform; }
-  .bob { position: absolute; inset: 0; animation: bob 4s ease-in-out infinite; }
+  .slot { position: absolute; top: 0; left: 0; width: 180px; height: 100%; will-change: transform; }
+  .bob { position: absolute; inset: 0; display: flex; align-items: center; animation: bob 4s ease-in-out infinite; }
   .slot:nth-child(2n) .bob { animation-delay: -2s; }
   .slot:nth-child(3n) .bob { animation-delay: -1s; }
   @keyframes bob { 50% { transform: translateY(-5px); } }
-  .dot {
-    position: absolute; left: 50%; top: 50%; width: 14px; height: 14px;
-    margin: -7px 0 0 -7px; border-radius: 50%;
-    background: var(--ink); border: 3px solid var(--surface);
-    box-shadow: 0 0 0 2px var(--bd);
-  }
-  .slot.overdue .dot { background: var(--warn); }
-  .slot.done .dot { background: var(--done); }
-  .stem { position: absolute; left: 50%; width: 0; height: 20px; border-left: 2px dotted var(--bd); }
-  .slot.up .stem { bottom: 50%; margin-bottom: 7px; }
-  .slot.down .stem { top: 50%; margin-top: 7px; }
   .c0 { --cbg: var(--c0-bg); --bd: var(--c0-bd); --ink: var(--c0-ink); }
   .c1 { --cbg: var(--c1-bg); --bd: var(--c1-bd); --ink: var(--c1-ink); }
   .c2 { --cbg: var(--c2-bg); --bd: var(--c2-bd); --ink: var(--c2-ink); }
   .c3 { --cbg: var(--c3-bg); --bd: var(--c3-bd); --ink: var(--c3-ink); }
   .c4 { --cbg: var(--c4-bg); --bd: var(--c4-bd); --ink: var(--c4-ink); }
   .card {
-    position: absolute; left: 8px; right: 8px;
+    position: relative; width: calc(100% - 12px); margin: 0 auto; min-height: 96px;
     background: var(--cbg); border: 2px solid var(--bd);
     border-radius: 22px; padding: 12px 14px 12px; box-shadow: var(--shadow);
     font-size: 15px; line-height: 1.45; word-break: break-word; cursor: pointer;
     transition: transform .2s;
   }
-  .slot.up .card { bottom: calc(50% + 27px); transform-origin: bottom center; }
-  .slot.down .card { top: calc(50% + 27px); transform-origin: top center; }
+  .slot.overdue .card { border-color: var(--warn); }
   .slot.star .card {
     transform: scale(1.08); border-color: var(--star);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--star) 30%, transparent), 0 10px 28px color-mix(in srgb, var(--star) 35%, transparent);
   }
-  .slot.star .dot { background: var(--star); }
   .card .badge { position: absolute; top: -10px; right: -6px; font-size: 18px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.15)); }
   .card.pressing { transform: scale(.92) !important; transition: transform .55s cubic-bezier(.3, .0, .3, 1); }
   .card-top { display: flex; gap: 8px; align-items: flex-start; }
@@ -480,7 +467,7 @@
 const KEY = 'task-app:tasks';
 const LOG_KEY = 'task-app:log';
 const SPEED_KEY = 'task-app:crossMinutes';
-const SLOT_W = 184;
+const SLOT_W = 180;
 const SPEED_CHOICES = [1 / 6, 0.5, 1, 2, 3, 5, 10, 30];
 const WD = '日月火水木金土';
 const DAY = 86400e3;
@@ -715,11 +702,11 @@ const todayDone = () => log.filter(e => sameDay(e.at, Date.now())).length;
 /* ───────── タイムライン ───────── */
 // タイムラインに出すもの：未完了＋今日完了したもの（翌日には「できたこと」へ）
 const onTimeline = () => tasks.filter(t => !t.done || sameDay(t.doneAt, Date.now()));
-// カードは上下互い違いに並べるので、横の間隔はカード幅より詰められる
-const STEP = 118;
-// 一周の長さ：全部が1列に並ぶ長さ（奇数のときは先頭と最後が同じ側で重ならないよう1つ分あける）。
-// 画面より短いときは「画面の幅＋カード1枚分」にして、列が途切れず右端から戻ってくるようにする
-const loopLen = () => Math.max(view.length * STEP + (view.length % 2 ? STEP : 0), stage.clientWidth + SLOT_W);
+// カードは横一列に並べる
+const STEP = SLOT_W;
+// 一周の長さ：全部が1列に並ぶ長さ。画面より短いときは「画面の幅＋カード1枚分」にして、
+// 列が途切れず右端から戻ってくるようにする
+const loopLen = () => Math.max(view.length * STEP, stage.clientWidth + SLOT_W);
 
 function greet() {
   const now = new Date(), h = now.getHours();
@@ -746,8 +733,8 @@ function render() {
   view.forEach((t, i) => {
     const slot = document.createElement('div');
     const state = (t.done ? ' done' : isOverdue(t) ? ' overdue' : '') + (t.star && !t.done ? ' star' : '');
-    slot.className = `slot ${colorFor(t)} ${i % 2 ? 'down' : 'up'}${state}`;
-    slot.innerHTML = `<div class="bob"><div class="stem"></div><div class="dot"></div>
+    slot.className = `slot ${colorFor(t)}${state}`;
+    slot.innerHTML = `<div class="bob">
       <div class="card" data-id="${t.id}">${t.star && !t.done ? '<span class="badge">⭐</span>' : ''}<div class="card-top"><span class="emo">${t.done ? '✅' : emojiFor(t)}</span><div class="title"></div></div>${metaHtml(t)}</div></div>`;
     slot.querySelector('.title').textContent = t.title;
     slots.push(slot);
