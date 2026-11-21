@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="タスク">
+<title>タスクタイムライン</title>
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --surface: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d9d6cf;
+    --accent: #e8590c;
+    --done: #2f9e44;
+    --shadow: 0 2px 10px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --surface: #1b1e24;
+      --text: #f2f2f2;
+      --muted: #9a9ca3;
+      --line: #2e323a;
+      --accent: #ff8a3d;
+      --done: #51cf66;
+      --shadow: 0 2px 12px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 6px;
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
+  .count { font-size: 13px; color: var(--muted); }
+  .controls { display: flex; gap: 8px; padding: 0 16px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+  /* タイムライン */
+  .stage {
+    position: relative; flex: 1; overflow: hidden;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none;
+  }
+  .axis {
+    position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+    background: var(--line); transform: translateY(-1px);
+  }
+  .track {
+    position: absolute; top: 0; bottom: 0; left: 0;
+    display: flex; will-change: transform;
+  }
+  .slot {
+    position: relative; width: 170px; flex: none; height: 100%;
+  }
+  .dot {
+    position: absolute; left: 50%; top: 50%; width: 12px; height: 12px;
+    margin: -6px 0 0 -6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 4px var(--bg);
+  }
+  .stem {
+    position: absolute; left: 50%; width: 2px; margin-left: -1px;
+    background: var(--line); height: 28px;
+  }
+  .slot.up .stem { bottom: 50%; margin-bottom: 6px; }
+  .slot.down .stem { top: 50%; margin-top: 6px; }
+  .card {
+    position: absolute; left: 10px; right: 10px;
+    background: var(--surface); border-radius: 14px; padding: 12px;
+    box-shadow: var(--shadow); font-size: 15px; line-height: 1.4;
+    word-break: break-word; cursor: pointer;
+  }
+  .slot.up .card { bottom: calc(50% + 34px); }
+  .slot.down .card { top: calc(50% + 34px); }
+  .card time { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .slot.done .dot { background: var(--done); }
+  .slot.done .card .title { text-decoration: line-through; color: var(--muted); }
+
+  .empty {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--muted); font-size: 15px; text-align: center; padding: 16px;
+  }
+
+  /* 入力欄 */
+  form {
+    display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface); border-top: 1px solid var(--line);
+  }
+  input {
+    flex: 1; min-width: 0; font-size: 16px; padding: 12px 14px;
+    border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text);
+  }
+  button.add {
+    border: 0; border-radius: 12px; padding: 0 18px; font-size: 16px; font-weight: 600;
+    background: var(--accent); color: #fff;
+  }
+
+  /* 操作シート */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    display: none; align-items: flex-end;
+  }
+  .sheet-bg.open { display: flex; }
+  .sheet {
+    width: 100%; background: var(--surface); border-radius: 18px 18px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  .sheet p { margin: 0 0 14px; font-size: 16px; word-break: break-word; }
+  .sheet button {
+    display: block; width: 100%; padding: 14px; margin-top: 8px; font-size: 16px;
+    border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  }
+  .sheet .danger { color: #e03131; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>タスクタイムライン</h1>
+    <span class="count" id="count"></span>
+  </header>
+  <div class="controls">
+    <button class="chip" id="pause" aria-pressed="false">一時停止</button>
+    <button class="chip" id="speed">速さ：ふつう</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="axis"></div>
+    <div class="track" id="track"></div>
+    <div class="empty" id="empty">下の入力欄からタスクを追加すると<br>ここに流れはじめます</div>
+  </div>
+
+  <form id="form" autocomplete="off">
+    <input id="input" placeholder="タスクを入力" maxlength="80" enterkeyhint="done">
+    <button class="add" type="submit">追加</button>
+  </form>
+
+  <div class="sheet-bg" id="sheetBg">
+    <div class="sheet">
+      <p id="sheetTitle"></p>
+      <button id="toggleDone">完了にする</button>
+      <button id="remove" class="danger">削除</button>
+      <button id="close">閉じる</button>
+    </div>
+  </div>
+
+<script>
+const KEY = 'task-app:tasks';
+const SLOT_W = 170;
+const SPEEDS = [{ label: 'ゆっくり', v: 20 }, { label: 'ふつう', v: 40 }, { label: 'はやい', v: 80 }];
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch {}
+}
+
+let tasks = load();
+let offset = 0, paused = false, speedIdx = 1, dragging = false, lastX = 0, moved = 0;
+let selectedId = null;
+
+const $ = id => document.getElementById(id);
+const track = $('track'), stage = $('stage');
+
+function fmt(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// 一周分の幅（タスク数 × カード幅）
+const setWidth = () => tasks.length * SLOT_W;
+
+function render() {
+  track.innerHTML = '';
+  $('empty').style.display = tasks.length ? 'none' : 'grid';
+  const left = tasks.filter(t => !t.done).length;
+  $('count').textContent = tasks.length ? `残り ${left} / ${tasks.length}` : '';
+  if (!tasks.length) return;
+
+  // 画面を埋めてさらに一周分余るまで繰り返し並べる
+  const repeat = Math.ceil(stage.clientWidth / setWidth()) + 1;
+  const frag = document.createDocumentFragment();
+  for (let r = 0; r < repeat; r++) {
+    tasks.forEach((t, i) => {
+      const slot = document.createElement('div');
+      slot.className = `slot ${i % 2 ? 'down' : 'up'}${t.done ? ' done' : ''}`;
+      slot.innerHTML = `<div class="stem"></div><div class="dot"></div>
+        <div class="card" data-id="${t.id}"><span class="title"></span><time>${fmt(t.created)}</time></div>`;
+      slot.querySelector('.title').textContent = t.title;
+      frag.appendChild(slot);
+    });
+  }
+  track.appendChild(frag);
+  offset = ((offset % setWidth()) + setWidth()) % setWidth();
+}
+
+let prev = performance.now();
+function tick(now) {
+  const dt = Math.min(now - prev, 100) / 1000;
+  prev = now;
+  if (tasks.length) {
+    if (!paused && !dragging) offset += SPEEDS[speedIdx].v * dt;
+    const w = setWidth();
+    offset = ((offset % w) + w) % w;
+    track.style.transform = `translateX(${-offset}px)`;
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// 指でなぞって動かす
+stage.addEventListener('pointerdown', e => {
+  dragging = true; lastX = e.clientX; moved = 0;
+});
+window.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - lastX;
+  lastX = e.clientX; moved += Math.abs(dx);
+  offset -= dx;
+});
+window.addEventListener('pointerup', e => {
+  if (!dragging) return;
+  dragging = false;
+  if (moved < 8) {
+    const card = e.target.closest && e.target.closest('.card');
+    if (card) openSheet(card.dataset.id);
+  }
+});
+window.addEventListener('pointercancel', () => { dragging = false; });
+
+// 追加
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const title = $('input').value.trim();
+  if (!title) return;
+  tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title, created: Date.now(), done: false });
+  save(); render();
+  $('input').value = '';
+});
+
+// 操作シート
+function openSheet(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  selectedId = id;
+  $('sheetTitle').textContent = t.title;
+  $('toggleDone').textContent = t.done ? '未完了に戻す' : '完了にする';
+  $('sheetBg').classList.add('open');
+}
+function closeSheet() { $('sheetBg').classList.remove('open'); selectedId = null; }
+$('close').onclick = closeSheet;
+$('sheetBg').addEventListener('click', e => { if (e.target === $('sheetBg')) closeSheet(); });
+$('toggleDone').onclick = () => {
+  const t = tasks.find(t => t.id === selectedId);
+  if (t) { t.done = !t.done; save(); render(); }
+  closeSheet();
+};
+$('remove').onclick = () => {
+  tasks = tasks.filter(t => t.id !== selectedId);
+  save(); render(); closeSheet();
+};
+
+// 一時停止・速さ
+$('pause').onclick = () => {
+  paused = !paused;
+  $('pause').setAttribute('aria-pressed', paused);
+  $('pause').textContent = paused ? '再生' : '一時停止';
+};
+$('speed').onclick = () => {
+  speedIdx = (speedIdx + 1) % SPEEDS.length;
+  $('speed').textContent = `速さ：${SPEEDS[speedIdx].label}`;
+};
+
+window.addEventListener('resize', render);
+render();
+</script>
+</body>
+</html>
