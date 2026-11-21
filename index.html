@@ -3,32 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#12061f">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="タスク">
 <title>タスクタイムライン</title>
 <style>
   :root {
-    --bg: #f6f5f2;
-    --surface: #ffffff;
-    --text: #1d1d1f;
-    --muted: #6e6e73;
-    --line: #d9d6cf;
-    --accent: #e8590c;
-    --done: #2f9e44;
-    --shadow: 0 2px 10px rgba(0,0,0,.08);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1115;
-      --surface: #1b1e24;
-      --text: #f2f2f2;
-      --muted: #9a9ca3;
-      --line: #2e323a;
-      --accent: #ff8a3d;
-      --done: #51cf66;
-      --shadow: 0 2px 12px rgba(0,0,0,.4);
-    }
+    --bg: #12061f;
+    --text: #fbeaff;
+    --muted: #c7a6e0;
+    --pink: #ff5fc8;
+    --violet: #9b5cff;
+    --lilac: #d9a8ff;
+    --glass: rgba(60, 20, 90, .45);
+    --glass-border: rgba(255, 170, 240, .35);
+    --done: #7cf2d0;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; }
@@ -39,105 +29,166 @@
     display: flex; flex-direction: column;
     overflow: hidden;
     padding-top: env(safe-area-inset-top);
+    position: relative;
   }
+
+  /* 星雲（背景でゆっくり動く） */
+  .nebula {
+    position: fixed; inset: -30%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(40% 35% at 25% 35%, rgba(255, 70, 190, .45), transparent 70%),
+      radial-gradient(45% 40% at 75% 60%, rgba(140, 70, 255, .5), transparent 70%),
+      radial-gradient(30% 30% at 55% 20%, rgba(255, 150, 230, .25), transparent 70%),
+      radial-gradient(35% 30% at 40% 85%, rgba(90, 40, 200, .4), transparent 70%);
+    filter: blur(30px);
+    animation: drift 40s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    0%   { transform: rotate(0deg) scale(1); filter: blur(30px) hue-rotate(0deg); }
+    50%  { transform: rotate(8deg) scale(1.1); filter: blur(36px) hue-rotate(-20deg); }
+    100% { transform: rotate(-6deg) scale(1.05); filter: blur(30px) hue-rotate(15deg); }
+  }
+  #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  header, .controls, .stage, form { position: relative; z-index: 1; }
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 16px 6px;
   }
-  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
+  h1 {
+    font-size: 20px; margin: 0; letter-spacing: .08em; font-weight: 700;
+    background: linear-gradient(90deg, var(--pink), var(--lilac), var(--violet));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 8px rgba(255, 95, 200, .5));
+  }
   .count { font-size: 13px; color: var(--muted); }
   .controls { display: flex; gap: 8px; padding: 0 16px; }
   .chip {
-    border: 1px solid var(--line); background: var(--surface); color: var(--text);
-    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+    border: 1px solid var(--glass-border); background: var(--glass); color: var(--text);
+    border-radius: 999px; padding: 7px 14px; font-size: 13px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
-  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  .chip[aria-pressed="true"] { border-color: var(--pink); color: var(--pink); }
 
   /* タイムライン */
   .stage {
-    position: relative; flex: 1; overflow: hidden;
+    flex: 1; overflow: hidden;
     touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    perspective: 700px;
   }
   .axis {
-    position: absolute; left: 0; right: 0; top: 50%; height: 2px;
-    background: var(--line); transform: translateY(-1px);
+    position: absolute; left: -10%; right: -10%; top: 50%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pink), var(--lilac), var(--violet), transparent);
+    box-shadow: 0 0 12px var(--pink), 0 0 30px var(--violet);
+    animation: pulse 4s ease-in-out infinite;
   }
+  @keyframes pulse { 50% { opacity: .55; } }
   .track {
     position: absolute; top: 0; bottom: 0; left: 0;
-    display: flex; will-change: transform;
+    display: flex; will-change: transform; transform-style: preserve-3d;
   }
-  .slot {
-    position: relative; width: 170px; flex: none; height: 100%;
-  }
+  .slot { position: relative; width: 170px; flex: none; height: 100%; transform-style: preserve-3d; }
+  .float { position: absolute; inset: 0; will-change: transform, opacity; }
   .dot {
     position: absolute; left: 50%; top: 50%; width: 12px; height: 12px;
     margin: -6px 0 0 -6px; border-radius: 50%;
-    background: var(--accent); box-shadow: 0 0 0 4px var(--bg);
+    background: #fff;
+    box-shadow: 0 0 6px #fff, 0 0 14px var(--pink), 0 0 28px var(--violet);
   }
   .stem {
-    position: absolute; left: 50%; width: 2px; margin-left: -1px;
-    background: var(--line); height: 28px;
+    position: absolute; left: 50%; width: 1px; margin-left: -.5px; height: 28px;
   }
-  .slot.up .stem { bottom: 50%; margin-bottom: 6px; }
-  .slot.down .stem { top: 50%; margin-top: 6px; }
+  .slot.up .stem { bottom: 50%; margin-bottom: 6px; background: linear-gradient(to top, var(--pink), transparent); }
+  .slot.down .stem { top: 50%; margin-top: 6px; background: linear-gradient(to bottom, var(--pink), transparent); }
   .card {
     position: absolute; left: 10px; right: 10px;
-    background: var(--surface); border-radius: 14px; padding: 12px;
-    box-shadow: var(--shadow); font-size: 15px; line-height: 1.4;
-    word-break: break-word; cursor: pointer;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px; padding: 12px;
+    box-shadow: 0 0 18px rgba(255, 95, 200, .25), inset 0 0 20px rgba(155, 92, 255, .15);
+    font-size: 15px; line-height: 1.4; word-break: break-word; cursor: pointer;
   }
   .slot.up .card { bottom: calc(50% + 34px); }
   .slot.down .card { top: calc(50% + 34px); }
   .card time { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .slot.done .dot { background: var(--done); }
+  .slot.done .dot { box-shadow: 0 0 6px #fff, 0 0 14px var(--done), 0 0 28px var(--done); }
+  .slot.done .card { border-color: rgba(124, 242, 208, .4); }
   .slot.done .card .title { text-decoration: line-through; color: var(--muted); }
 
   .empty {
     position: absolute; inset: 0; display: grid; place-items: center;
-    color: var(--muted); font-size: 15px; text-align: center; padding: 16px;
+    color: var(--muted); font-size: 15px; text-align: center; padding: 16px; line-height: 1.8;
+    text-shadow: 0 0 12px rgba(255, 95, 200, .6);
   }
 
   /* 入力欄 */
   form {
     display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: var(--surface); border-top: 1px solid var(--line);
+    background: rgba(25, 8, 45, .6);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--glass-border);
   }
   input {
     flex: 1; min-width: 0; font-size: 16px; padding: 12px 14px;
-    border-radius: 12px; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text);
+    border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, .06); color: var(--text);
   }
+  input::placeholder { color: var(--muted); }
+  input:focus { outline: none; border-color: var(--pink); box-shadow: 0 0 12px rgba(255, 95, 200, .4); }
   button.add {
-    border: 0; border-radius: 12px; padding: 0 18px; font-size: 16px; font-weight: 600;
-    background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 0 18px; font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, var(--pink), var(--violet)); color: #fff;
+    box-shadow: 0 0 16px rgba(255, 95, 200, .5);
   }
 
-  /* 操作シート */
+  /* シート */
   .sheet-bg {
-    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    position: fixed; inset: 0; z-index: 10; background: rgba(10, 0, 20, .55);
     display: none; align-items: flex-end;
   }
   .sheet-bg.open { display: flex; }
   .sheet {
-    width: 100%; background: var(--surface); border-radius: 18px 18px 0 0;
+    width: 100%; background: rgba(40, 14, 66, .92);
+    border-top: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px 20px 0 0;
     padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   }
+  .sheet h2 { margin: 0 0 4px; font-size: 16px; }
   .sheet p { margin: 0 0 14px; font-size: 16px; word-break: break-word; }
-  .sheet button {
+  .sheet .hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .sheet button.row {
     display: block; width: 100%; padding: 14px; margin-top: 8px; font-size: 16px;
-    border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, .06); color: var(--text);
   }
-  .sheet .danger { color: #e03131; }
+  .sheet .danger { color: #ff7a9c; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid button {
+    padding: 12px 0; font-size: 14px; border-radius: 12px;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, .06); color: var(--text);
+  }
+  .grid button.on {
+    border-color: var(--pink); color: #fff;
+    background: linear-gradient(135deg, rgba(255, 95, 200, .5), rgba(155, 92, 255, .5));
+  }
+  .custom { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .custom input { flex: 1; }
+  .custom span { color: var(--muted); }
 </style>
 </head>
 <body>
+  <div class="nebula"></div>
+  <canvas id="stars"></canvas>
+
   <header>
     <h1>タスクタイムライン</h1>
     <span class="count" id="count"></span>
   </header>
   <div class="controls">
     <button class="chip" id="pause" aria-pressed="false">一時停止</button>
-    <button class="chip" id="speed">速さ：ふつう</button>
+    <button class="chip" id="lapBtn"></button>
   </div>
 
   <div class="stage" id="stage">
@@ -151,47 +202,67 @@
     <button class="add" type="submit">追加</button>
   </form>
 
-  <div class="sheet-bg" id="sheetBg">
+  <!-- タスク操作 -->
+  <div class="sheet-bg" id="taskSheet">
     <div class="sheet">
       <p id="sheetTitle"></p>
-      <button id="toggleDone">完了にする</button>
-      <button id="remove" class="danger">削除</button>
-      <button id="close">閉じる</button>
+      <button class="row" id="toggleDone">完了にする</button>
+      <button class="row danger" id="remove">削除</button>
+      <button class="row" data-close>閉じる</button>
+    </div>
+  </div>
+
+  <!-- 一周の時間 -->
+  <div class="sheet-bg" id="lapSheet">
+    <div class="sheet">
+      <h2>一周にかかる時間</h2>
+      <div class="hint">全部のタスクが流れて最初に戻るまでの時間です</div>
+      <div class="grid" id="lapGrid"></div>
+      <div class="custom">
+        <input id="lapInput" type="number" inputmode="decimal" min="0.1" max="180" step="0.1" placeholder="好きな時間">
+        <span>分</span>
+        <button class="add" id="lapSet" type="button" style="padding:12px 16px">決定</button>
+      </div>
+      <button class="row" data-close>閉じる</button>
     </div>
   </div>
 
 <script>
 const KEY = 'task-app:tasks';
+const LAP_KEY = 'task-app:lapMinutes';
 const SLOT_W = 170;
-const SPEEDS = [{ label: 'ゆっくり', v: 20 }, { label: 'ふつう', v: 40 }, { label: 'はやい', v: 80 }];
+const LAP_CHOICES = [0.5, 1, 2, 3, 5, 10, 30, 60];
 
-function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
+function read(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; }
 }
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch {}
+function write(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
-let tasks = load();
-let offset = 0, paused = false, speedIdx = 1, dragging = false, lastX = 0, moved = 0;
+let tasks = read(KEY, []);
+let lapMinutes = read(LAP_KEY, 3);
+let offset = 0, paused = false, dragging = false, lastX = 0, moved = 0;
 let selectedId = null;
 
 const $ = id => document.getElementById(id);
 const track = $('track'), stage = $('stage');
+let floats = [];
 
-function fmt(ts) {
+const fmt = ts => {
   const d = new Date(ts);
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-// 一周分の幅（タスク数 × カード幅）
+};
+const lapLabel = m => m < 1 ? `${Math.round(m * 60)}秒` : `${+m.toFixed(1)}分`;
 const setWidth = () => tasks.length * SLOT_W;
+const save = () => write(KEY, tasks);
 
 function render() {
   track.innerHTML = '';
   $('empty').style.display = tasks.length ? 'none' : 'grid';
   const left = tasks.filter(t => !t.done).length;
   $('count').textContent = tasks.length ? `残り ${left} / ${tasks.length}` : '';
+  floats = [];
   if (!tasks.length) return;
 
   // 画面を埋めてさらに一周分余るまで繰り返し並べる
@@ -201,34 +272,83 @@ function render() {
     tasks.forEach((t, i) => {
       const slot = document.createElement('div');
       slot.className = `slot ${i % 2 ? 'down' : 'up'}${t.done ? ' done' : ''}`;
-      slot.innerHTML = `<div class="stem"></div><div class="dot"></div>
-        <div class="card" data-id="${t.id}"><span class="title"></span><time>${fmt(t.created)}</time></div>`;
+      slot.innerHTML = `<div class="float"><div class="stem"></div><div class="dot"></div>
+        <div class="card" data-id="${t.id}"><span class="title"></span><time>${fmt(t.created)}</time></div></div>`;
       slot.querySelector('.title').textContent = t.title;
+      floats.push(slot.firstElementChild);
       frag.appendChild(slot);
     });
   }
   track.appendChild(frag);
-  offset = ((offset % setWidth()) + setWidth()) % setWidth();
+  const w = setWidth();
+  offset = ((offset % w) + w) % w;
 }
 
-let prev = performance.now();
+// 星
+const cv = $('stars'), cx = cv.getContext('2d');
+let stars = [];
+function resizeStars() {
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const n = Math.round(innerWidth * innerHeight / 3500);
+  stars = Array.from({ length: n }, () => ({
+    x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+    r: Math.random() * 1.3 + .2, depth: Math.random() * .6 + .1,
+    tw: Math.random() * Math.PI * 2, sp: Math.random() * 1.5 + .5,
+    hue: Math.random() < .5 ? 315 : 275,
+  }));
+}
+function drawStars(t, shift) {
+  cx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const s of stars) {
+    const x = ((s.x - shift * s.depth) % innerWidth + innerWidth) % innerWidth;
+    const a = .35 + .65 * (0.5 + 0.5 * Math.sin(t * s.sp + s.tw));
+    cx.beginPath();
+    cx.arc(x, s.y, s.r, 0, Math.PI * 2);
+    cx.fillStyle = `hsla(${s.hue}, 100%, 88%, ${a})`;
+    cx.shadowColor = `hsla(${s.hue}, 100%, 70%, ${a})`;
+    cx.shadowBlur = s.r * 4;
+    cx.fill();
+  }
+}
+
+// 毎フレームの動き
+let prev = performance.now(), starShift = 0;
 function tick(now) {
   const dt = Math.min(now - prev, 100) / 1000;
   prev = now;
+  const t = now / 1000;
+  const W = stage.clientWidth;
+
   if (tasks.length) {
-    if (!paused && !dragging) offset += SPEEDS[speedIdx].v * dt;
     const w = setWidth();
+    const before = offset;
+    if (!paused && !dragging) offset += w / (lapMinutes * 60) * dt;
+    starShift += offset - before;
     offset = ((offset % w) + w) % w;
     track.style.transform = `translateX(${-offset}px)`;
+
+    // 中央は大きく、端は小さく傾いて奥へ消えていく
+    for (let k = 0; k < floats.length; k++) {
+      const center = k * SLOT_W + SLOT_W / 2 - offset;
+      const d = Math.max(-1.4, Math.min(1.4, (center - W / 2) / (W / 2)));
+      const scale = 1 - .28 * d * d;
+      const wave = Math.sin(center / 130 + t * .8) * 14;
+      const rot = -d * 32;
+      const z = -Math.abs(d) * 120;
+      const op = Math.max(0, 1 - Math.pow(Math.abs(d), 2.2) * .75);
+      floats[k].style.transform = `translate3d(0, ${wave}px, ${z}px) rotateY(${rot}deg) scale(${scale})`;
+      floats[k].style.opacity = op;
+    }
   }
+  drawStars(t, starShift * 4);
   requestAnimationFrame(tick);
 }
-requestAnimationFrame(tick);
 
 // 指でなぞって動かす
-stage.addEventListener('pointerdown', e => {
-  dragging = true; lastX = e.clientX; moved = 0;
-});
+stage.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; moved = 0; });
 window.addEventListener('pointermove', e => {
   if (!dragging) return;
   const dx = e.clientX - lastX;
@@ -240,7 +360,7 @@ window.addEventListener('pointerup', e => {
   dragging = false;
   if (moved < 8) {
     const card = e.target.closest && e.target.closest('.card');
-    if (card) openSheet(card.dataset.id);
+    if (card) openTask(card.dataset.id);
   }
 });
 window.addEventListener('pointercancel', () => { dragging = false; });
@@ -255,41 +375,62 @@ $('form').addEventListener('submit', e => {
   $('input').value = '';
 });
 
-// 操作シート
-function openSheet(id) {
+// シート共通
+const open = id => $(id).classList.add('open');
+const closeAll = () => document.querySelectorAll('.sheet-bg').forEach(s => s.classList.remove('open'));
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
+document.querySelectorAll('.sheet-bg').forEach(bg => bg.addEventListener('click', e => { if (e.target === bg) closeAll(); }));
+
+// タスク操作
+function openTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
   selectedId = id;
   $('sheetTitle').textContent = t.title;
   $('toggleDone').textContent = t.done ? '未完了に戻す' : '完了にする';
-  $('sheetBg').classList.add('open');
+  open('taskSheet');
 }
-function closeSheet() { $('sheetBg').classList.remove('open'); selectedId = null; }
-$('close').onclick = closeSheet;
-$('sheetBg').addEventListener('click', e => { if (e.target === $('sheetBg')) closeSheet(); });
 $('toggleDone').onclick = () => {
   const t = tasks.find(t => t.id === selectedId);
   if (t) { t.done = !t.done; save(); render(); }
-  closeSheet();
+  closeAll();
 };
 $('remove').onclick = () => {
   tasks = tasks.filter(t => t.id !== selectedId);
-  save(); render(); closeSheet();
+  save(); render(); closeAll();
 };
 
-// 一時停止・速さ
+// 一周の時間
+function setLap(m) {
+  lapMinutes = m;
+  write(LAP_KEY, m);
+  $('lapBtn').textContent = `一周 ${lapLabel(m)}`;
+  document.querySelectorAll('#lapGrid button').forEach(b => b.classList.toggle('on', +b.dataset.m === m));
+}
+LAP_CHOICES.forEach(m => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.m = m; b.textContent = lapLabel(m);
+  b.onclick = () => { setLap(m); closeAll(); };
+  $('lapGrid').appendChild(b);
+});
+$('lapBtn').onclick = () => { $('lapInput').value = ''; open('lapSheet'); };
+$('lapSet').onclick = () => {
+  const m = parseFloat($('lapInput').value);
+  if (!(m >= 0.1 && m <= 180)) { $('lapInput').focus(); return; }
+  setLap(Math.round(m * 10) / 10); closeAll();
+};
+
 $('pause').onclick = () => {
   paused = !paused;
   $('pause').setAttribute('aria-pressed', paused);
   $('pause').textContent = paused ? '再生' : '一時停止';
 };
-$('speed').onclick = () => {
-  speedIdx = (speedIdx + 1) % SPEEDS.length;
-  $('speed').textContent = `速さ：${SPEEDS[speedIdx].label}`;
-};
 
-window.addEventListener('resize', render);
+window.addEventListener('resize', () => { resizeStars(); render(); });
+resizeStars();
+setLap(lapMinutes);
 render();
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>
