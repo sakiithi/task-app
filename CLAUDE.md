@@ -30,7 +30,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - 繰り返しタスク：完了すると次の回の期限に進む
 - できたこと：完了の記録を日付ごとに表示。連続日数・合計。完了したカードは翌日タイムラインから外れるが、記録は残る
 - 通知：アプリを開いているときだけ（サーバーなし）
-- バックアップ：JSON の書き出し・読み込み（設定 ⚙️）
+- バックアップ：JSON の書き出し・読み込み（設定 ⚙️）。最後の保存から7日たつと「保存しとく？」のお知らせが出る（1日1回まで、タスクがあるときだけ）
 
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
@@ -39,6 +39,8 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
   - `repeat` は `null` か `{type:'daily'}` / `{type:'weekdays'}` / `{type:'weekly', days:[0-6]}` / `{type:'monthly', day:1-31}`
 - `task-app:log` … 完了の記録 `{ id, taskId, title, at, repeat }`
 - `task-app:crossMinutes` … 流れる速さ（分）
+- `task-app:lastBackup` … 最後にバックアップを保存（または読み込み）した時刻（ミリ秒）
+- `task-app:backupNag` … 最後に「保存しとく？」を出した時刻（ミリ秒）
 
 ## 変更の進め方
 - クラウド（携帯の Claude）から作業するときは、**ブランチで作業してプルリクエストを作る**。`main` にマージされると GitHub Pages に1〜2分で反映される
