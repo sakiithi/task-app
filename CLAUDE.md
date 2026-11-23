@@ -20,6 +20,11 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `food-db.js` … ごはんの栄養データ（よく食べるもの約110品、1人前の kcal・たんぱく質・脂質・炭水化物のめやす）。品目を足すときはここに1行足す
 - `body.html` … 💪からだ。上の切り替えで「⚖️ からだ」と「🍽 ごはん」（体重・グラフ・目標・BMI・体脂肪などの記録・生理の予想・まとめ・気づき・CSV書き出し）
 - `shared.js` / `shared.css` … today・night・body で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
+- `sync.js` … ☁️同期（Supabase、プロジェクト `tzbqsudphypzvjbuoyrz`・東京）。index.html だけが読み込む。ライブラリなしで fetch だけを使う
+  - ⚙️設定 →「☁️ 同期」でメール＋パスワードでログイン。データは `public.kv`（user_id, key, value text, client_at bigint, updated_at timestamptz）に localStorage のキーごとに1行。RLS で本人の行だけ読み書きできる
+  - `localStorage.setItem` を包んで変更に気づく（iframe の変更は storage イベント）。2.5秒後・画面に戻ったとき・1分ごとに「取ってくる→送る」。同じキーは client_at の新しいほうが勝つ。初めての同期だけ、id つき配列と日付ごとのデータは「まぜる」
+  - 同期しないキー：`morning:weather`・`body:view`・`body:range`・`task-app:backupNag`、`sync:` で始まるもの
+  - アプリに書いてある鍵は **publishable（公開してよい鍵）**。secret / service_role の鍵は絶対にリポジトリに入れない
 - `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
 - `manifest.webmanifest`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png` … ホーム画面用
 
@@ -105,6 +110,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
+- `sync:auth`（ログイン情報）／ `sync:meta`（キーごとの最終変更時刻）／ `sync:dirty`（まだ送っていないキー）／ `sync:state` ／ `sync:last` … 同期用。端末ごとのもので、同期しない
 - `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
 - `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`
 - `morning:checks` … `{ 'YYYY-MM-DD': { ステップid: true|false } }`（朝のカードの手動✓）

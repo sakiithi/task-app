@@ -359,6 +359,9 @@
   .done-empty { text-align: center; color: var(--muted); padding: 30px 0; line-height: 2; }
 
   .setting-note { font-size: 12px; color: var(--muted); margin: 6px 4px 0; line-height: 1.7; }
+  .sync-in { width: 100%; padding: 13px 14px; margin-bottom: 8px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; outline: none; }
+  .sync-in:focus { border-color: var(--accent); }
+  #syncInfo { white-space: pre-line; font-size: 14px; color: var(--text); }
 </style>
 </head>
 <body>
@@ -476,12 +479,35 @@
     </div>
   </div>
 
+  <!-- 同期 -->
+  <div class="sheet-bg" id="syncSheet">
+    <div class="sheet">
+      <h2>☁️ 同期</h2>
+      <div class="hint" id="syncHint"></div>
+      <div id="syncOut">
+        <input class="sync-in" id="syncEmail" type="email" autocomplete="username" inputmode="email" placeholder="メールアドレス">
+        <input class="sync-in" id="syncPw" type="password" autocomplete="current-password" placeholder="パスワード（6文字以上）">
+        <div class="grid2">
+          <button class="row center go" id="syncLogin">ログイン</button>
+          <button class="row center" id="syncSignup">はじめて登録</button>
+        </div>
+      </div>
+      <div id="syncIn" hidden>
+        <div class="setting-note" id="syncInfo"></div>
+        <button class="row center go" id="syncNowBtn">今すぐ同期</button>
+        <button class="row center danger" id="syncLogout">ログアウト</button>
+      </div>
+      <button class="row center" data-close>閉じる</button>
+    </div>
+  </div>
+
   <!-- 設定 -->
   <div class="sheet-bg" id="settingsSheet">
     <div class="sheet">
       <h2>⚙️ 設定</h2>
       <button class="row" id="notifyBtn">🔔 通知<small id="notifyState"></small></button>
       <div class="setting-note" id="notifyNote"></div>
+      <button class="row" id="syncBtn">☁️ 同期<small id="syncState"></small></button>
       <button class="row" id="exportBtn">💾 バックアップを保存<small id="backupState">ファイルに書き出す</small></button>
       <button class="row" id="importBtn">📂 バックアップから戻す<small>ファイルを選ぶ</small></button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
@@ -490,6 +516,7 @@
     </div>
   </div>
 
+<script src="sync.js"></script>
 <script>
 const KEY = 'task-app:tasks';
 const LOG_KEY = 'task-app:log';
@@ -1449,7 +1476,59 @@ $('importFile').onchange = async e => {
     toast('このファイルは読み込めなかったよ');
   }
 };
-$('settingsBtn').onclick = () => { updateNotifyUI(); updateBackupUI(); open('settingsSheet'); };
+$('settingsBtn').onclick = () => { updateNotifyUI(); updateBackupUI(); updateSyncUI(); open('settingsSheet'); };
+
+/* ───────── ☁️ 同期 ───────── */
+const syncTime = ts => sameDay(ts, Date.now()) ? `${new Date(ts).getHours()}:${pad(new Date(ts).getMinutes())}` : agoLabel(ts);
+function updateSyncUI(st = window.Sync ? Sync.status() : { loggedIn: false }) {
+  $('syncState').textContent = !window.Sync ? '' : st.loggedIn ? (st.busy ? '同期中…' : st.error ? '⚠️ うまくいかなかった' : '✓ オン') : 'オフ';
+  $('syncOut').hidden = st.loggedIn; $('syncIn').hidden = !st.loggedIn;
+  $('syncHint').textContent = st.loggedIn
+    ? 'タスク・朝・今日・夜・からだ・ごはんのデータを、同じアカウントの端末どうしでそろえます'
+    : 'メールアドレスとパスワードでログインすると、iPhone と Mac で同じデータを使えます。最初の1回だけ「はじめて登録」してね';
+  if (st.loggedIn) $('syncInfo').textContent = `${st.email} でログイン中\n最後に同期：${st.last ? syncTime(st.last) : 'まだ'}${st.busy ? '（同期中…）' : ''}${st.error ? '\n⚠️ ' + st.error : ''}`;
+}
+function syncErr(e) {
+  const m = String(e.message || e);
+  if (/Invalid login/i.test(m)) return 'メールかパスワードがちがうよ';
+  if (/not confirmed/i.test(m)) return 'メールの確認がまだだよ。届いたメールのリンクを押してね';
+  if (/already registered|already been registered/i.test(m)) return 'そのメールはもう登録ずみ。「ログイン」を押してね';
+  if (/Password should be|at least 6/i.test(m)) return 'パスワードは6文字以上にしてね';
+  if (/rate limit|too many/i.test(m)) return 'しばらく待ってから、もう一度ためしてね';
+  if (/valid email|invalid format/i.test(m)) return 'メールアドレスを確認してね';
+  return m;
+}
+async function syncAuth(kind) {
+  const email = $('syncEmail').value.trim(), pw = $('syncPw').value;
+  if (!email || !pw) { toast('メールアドレスとパスワードを入れてね'); return; }
+  const btn = $(kind === 'login' ? 'syncLogin' : 'syncSignup');
+  btn.disabled = true;
+  try {
+    if (kind === 'login') { await Sync.login(email, pw); toast('☁️ ログインして同期したよ'); }
+    else {
+      const r = await Sync.signup(email, pw);
+      toast(r === 'in' ? '☁️ 登録して同期したよ' : '📩 確認メールを送ったよ。メールのリンクを押してから「ログイン」してね', null, { ms: 9000 });
+    }
+    $('syncPw').value = '';
+  } catch (e) { toast(syncErr(e), null, { ms: 6000 }); }
+  finally { btn.disabled = false; updateSyncUI(); }
+}
+$('syncBtn').onclick = () => { closeAll(); updateSyncUI(); open('syncSheet'); };
+$('syncLogin').onclick = () => syncAuth('login');
+$('syncSignup').onclick = () => syncAuth('signup');
+$('syncNowBtn').onclick = async () => { await Sync.syncNow(); const st = Sync.status(); toast(st.error ? syncErr(st.error) : '☁️ 同期したよ'); };
+$('syncLogout').onclick = () => { if (confirm('ログアウトする？（この端末のデータは消えないよ）')) { Sync.logout(); toast('ログアウトしたよ'); } };
+if (window.Sync) {
+  Sync.onStatus(st => updateSyncUI(st));
+  // ほかの端末の変更を取り込んだら、タスク画面も読み直す
+  Sync.onChange(keys => {
+    if (keys.includes(KEY)) tasks = read(KEY, []);
+    if (keys.includes(LOG_KEY)) log = read(LOG_KEY, []);
+    if (keys.includes(SPEED_KEY)) setSpeed(read(SPEED_KEY, crossMinutes));
+    render();
+    if ($('doneSheet').classList.contains('open')) renderDone();
+  });
+}
 
 /* ───────── バックアップのお知らせ ───────── */
 // しばらく保存していないときに「保存しておく？」と出す（1日に1回まで）
