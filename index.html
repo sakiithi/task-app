@@ -281,8 +281,10 @@
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: var(--surface); border-top: 1.5px solid var(--line);
   }
+  .tabbar { overflow-x: auto; scrollbar-width: none; }
+  .tabbar::-webkit-scrollbar { display: none; }
   .tabbar button {
-    flex: 1; border: 0; background: none; color: var(--muted);
+    flex: 1 0 58px; border: 0; background: none; color: var(--muted);
     font-size: 13px; padding: 6px 0; border-radius: 16px;
     display: flex; flex-direction: column; align-items: center; gap: 1px;
   }
@@ -415,6 +417,7 @@
     <button type="button" data-tab="today"><span>🗓</span>今日</button>
     <button type="button" data-tab="night"><span>🌙</span>夜</button>
     <button type="button" data-tab="body"><span>💪</span>からだ</button>
+    <button type="button" data-tab="dance"><span>💃</span>ダンス</button>
   </nav>
 
   <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" type="button">取り消す</button></div>
@@ -1563,7 +1566,8 @@ const PAGES = {
   morning: { src: 'morning.html', title: 'Good Morning Routine' },
   today: { src: 'today.html', title: '今日のプラン' },
   night: { src: 'night.html', title: '夜のふりかえり' },
-  body: { src: 'body.html', title: 'からだ' }
+  body: { src: 'body.html', title: 'からだ' },
+  dance: { src: 'dance.html', title: 'ダンス' }
 };
 const frames = {};
 let tab = 'tasks';

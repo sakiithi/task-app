@@ -38,6 +38,7 @@
     <div class="donelist" id="donelist"></div>
   </section>
 
+  <section class="card mini" id="dlesson" hidden></section>
   <section class="card mini left" id="left"></section>
 
   <section class="card mini">
@@ -111,6 +112,12 @@ function render() {
   ].map(([l, v]) => `<div class="tile"><small>${l}</small><b>${v}</b></div>`).join('');
   $('#donelist').innerHTML = tl.slice(-12).map(e => `<span>🎉 ${esc(e.title)}</span>`).join('');
 
+  // 💃 今日のレッスンのふりかえり
+  const dl = lessonsOn(today()).filter(l => Date.now() > atDay(l.c.end) - 10 * MIN);
+  $('#dlesson').hidden = !dl.length;
+  $('#dlesson').innerHTML = '<h3>💃 今日のレッスン</h3>' + dl.map(l => `<div class="row"><div class="t">${esc(l.c.name)}<small>${l.c.start}〜${l.c.end} ・ ${l.note.fb && l.note.fb.done ? '✓ ふりかえり済み' : 'どうだった？'}</small></div>
+    <button class="pill${l.note.fb && l.note.fb.done ? '' : ' go'}" data-dnote="${l.key}">${l.note.fb && l.note.fb.done ? '見る' : 'ふりかえる'}</button></div>`).join('');
+
   // 終わらなかったタスク
   const left = leftTasks();
   $('#left').innerHTML = `<h3>🌀 終わらなかったタスク ${left.length > 1 ? '<button class="link" data-act="allmove">ぜんぶ明日へ</button>' : ''}</h3>`
@@ -151,10 +158,14 @@ function renderTomorrow() {
     $('#bed').innerHTML = txt;
   } else $('#bed').innerHTML = '⏰ 起きる時間を入れると、何時までに寝ればいいか教えるよ';
   const tt = getTasks().filter(t => !t.done && t.due && t.due >= sod(1) && t.due < sod(2)).sort((a, b) => a.due - b.due);
-  $('#tmrTasks').innerHTML = tt.length ? `<span class="fl">📋 明日の予定</span>` + tt.map(t => `<div class="row"><div class="t">${taskEmoji(t)} ${esc(t.title)}<small>${t.allDay ? '終日' : hm(t.due)}</small></div></div>`).join('') : '';
+  const tl = lessonsOn(keyOf(1));
+  $('#tmrTasks').innerHTML = (tl.length ? `<span class="fl">💃 明日のレッスン</span>` + tl.map(l => { const pr = lessonPrep(l.c, l.note); return `<div class="row"><div class="t">${l.c.start} ${esc(l.c.name)}<small>📍 ${esc(l.c.place || '')} ・ ${pr.ok ? '✓ 準備OK' : `準備 ${pr.done}/${pr.total}`}</small></div><button class="pill" data-dnote="${l.key}">準備</button></div>`; }).join('') : '')
+    + (tt.length ? `<span class="fl">📋 明日の予定</span>` + tt.map(t => `<div class="row"><div class="t">${taskEmoji(t)} ${esc(t.title)}<small>${t.allDay ? '終日' : hm(t.due)}</small></div></div>`).join('') : '');
 }
 
 document.body.addEventListener('click', e => {
+  const dn0 = e.target.closest('[data-dnote]');
+  if (dn0) { openDance('note=' + dn0.dataset.dnote); return; }
   const m = e.target.closest('[data-mood]');
   if (m) { mood = +m.dataset.mood; render(); }
   const mv = e.target.closest('[data-move]');

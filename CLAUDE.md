@@ -10,7 +10,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **お金がかかるもの（有料のAPI・有料プラン・使った分だけ払うサービスなど）は、作る前に必ず金額を伝えて「はい」をもらう**。基本は無料でできる方法を選ぶ
 
 ## ファイル構成
-- 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜 / 💪からだ**。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
+- 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜 / 💪からだ / 💃ダンス**（増えたら横にスクロール）。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
 - `index.html` … アプリ本体（📋タスク）。HTML・CSS・JavaScript をこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
   - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / due / allDay / est）
   - ほかに受け取るメッセージ：`{type:'tab', tab, action}`（タブ切り替え）、`{type:'running', on}`（朝の実行中は下のタブを隠す）。iframe には `{type:'refresh'}` / `{type:'action', action}` を送る
@@ -20,11 +20,12 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `night.html` … 🌙夜（ふりかえり・終わらなかったタスクを明日へ・気分と日記・明日の準備）
 - `food-db.js` … ごはんの栄養データ（よく食べるもの約110品、1人前の kcal・たんぱく質・脂質・炭水化物のめやす）。品目を足すときはここに1行足す
 - `body.html` … 💪からだ。上の切り替えで「⚖️ からだ」と「🍽 ごはん」（体重・グラフ・目標・BMI・体脂肪などの記録・生理の予想・まとめ・気づき・CSV書き出し）
-- `shared.js` / `shared.css` … today・night・body で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
+- `dance.html` … 💃ダンス。中を［📅 レッスン］［🩰 練習］［🧘 ストレッチ］で切り替える（練習とストレッチ・ヨガはこれから作る）
+- `shared.js` / `shared.css` … today・night・body・dance で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
 - `sync.js` … ☁️同期（Supabase、プロジェクト `tzbqsudphypzvjbuoyrz`・東京）。index.html だけが読み込む。ライブラリなしで fetch だけを使う
   - ⚙️設定 →「☁️ 同期」でメール＋パスワードでログイン。データは `public.kv`（user_id, key, value text, client_at bigint, updated_at timestamptz）に localStorage のキーごとに1行。RLS で本人の行だけ読み書きできる
   - `localStorage.setItem` を包んで変更に気づく（iframe の変更は storage イベント）。2.5秒後・画面に戻ったとき・1分ごとに「取ってくる→送る」。同じキーは client_at の新しいほうが勝つ。初めての同期だけ、id つき配列と日付ごとのデータは「まぜる」
-  - **新しくデータを保存するときは、キーを `task-app:` `morning:` `plan:` `habits:` `night:` `pet:` `body:` `food:` のどれかで始める。新しい頭の文字を使うなら、`sync.js` の `SYNC_RE` と `shared.js` の `onDataChange` の正規表現にも足す**（足さないと同期されない）。新しいページを作ったら `sw.js` の `CORE` にも足して `CACHE` の番号を上げる
+  - **新しくデータを保存するときは、キーを `task-app:` `morning:` `plan:` `habits:` `night:` `pet:` `body:` `food:` `dance:` のどれかで始める。新しい頭の文字を使うなら、`sync.js` の `SYNC_RE` と `shared.js` の `onDataChange` の正規表現にも足す**（足さないと同期されない）。新しいページを作ったら `sw.js` の `CORE` にも足して `CACHE` の番号を上げる
   - 同期しないキー：`morning:weather`・`body:view`・`body:range`・`task-app:backupNag`、`sync:` で始まるもの
   - アプリに書いてある鍵は **publishable（公開してよい鍵）**。secret / service_role の鍵は絶対にリポジトリに入れない
 - `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
@@ -92,6 +93,14 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - いま並べかえられるもの：☀️朝のステップ・ルーティーンのボタン、🗓今日の「今日の3つ」（上から時間割に入る）・習慣チェック
 - 入れていないもの：📋タスクの流れるカード（期限の順に自動で並ぶ）、記録の一覧（日付順）、夜のよかったこと・ごはんの品目（順番に意味がない）
 
+## 💃 ダンス（レッスン）の機能
+- オーナーはダンスのレギュラーレッスン（オープンクラス）を持っている。**だいたい2週で1曲**、リクエストで3週になることもある。生徒は日によって来たり来なかったりなので、1人ずつではなく「だいたいの人数・雰囲気」を残す
+- **レギュラークラス**：曜日・時間・場所・地図リンク・移動時間・レベル/ジャンル・いつもの持ち物
+- **レッスンノート**（クラス×日付で自動）：振り付けの曲（何週目／何週の予定）、ほかに使う曲、⏱時間の使い方（ブロックを並べて帯グラフ・開始からの時刻、「いつもの流れにする」でクラスのテンプレート）、教え方・ポイント、✅準備チェック（曲・振り・流れ＋持ち物＋その日だけ）、前回の「次回やること」、💬ふりかえり（人数・雰囲気・よかった・むずかしかった・次回やること）、休講
+- **曲**：「＋1週のばす」「完成！次の曲へ」。使った曲の一覧
+- ほかの画面：🗓今日（今日のレッスンカード、時間割にレッスンと移動を固定で入れる）、☀️朝（今日のレッスンと出発時刻）、🌙夜（終わったレッスンのふりかえり、明日のレッスンの準備）。ノートは `openDance('note=クラスid_日付')` で開く
+- ポイント：準備OK +10、ふりかえり +20
+
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
@@ -118,6 +127,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
+- `dance:classes` … `[{ id, name, dow(0-6), start, end, place, map, travel(分), level, items:[] }]` ／ `dance:notes` … `{ 'クラスid_YYYY-MM-DD': { plan:[{label,min}], music, teach, checks:{id:true}, extra:[{id,text}], canceled, fb:{ count, mood(0-3), good, hard, next, done, at } } }` ／ `dance:pieces` … `[{ id, classId, title, artist, bpm, link, weeks, start, doneAt }]` ／ `dance:templates` … `{ クラスid: [{label,min}] }`
 - `sync:auth`（ログイン情報）／ `sync:meta`（キーごとの最終変更時刻）／ `sync:dirty`（まだ送っていないキー）／ `sync:state` ／ `sync:last` … 同期用。端末ごとのもので、同期しない
 - `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:fav` … 「よく食べる」に固定した名前（最初は `['カフェラテ']`）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
 - `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`

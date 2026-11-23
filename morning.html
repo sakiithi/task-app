@@ -309,6 +309,7 @@ ul{list-style:none;margin:0;padding:0}
   <div class="tl" id="tl"></div>
   <p class="tl-tip">タップで編集 ・ 長押しでつかんで並べかえ ・ 指でずらせるよ</p>
   <div id="sugg"></div>
+  <section id="dlesson" class="card mini" hidden></section>
   <section id="tasks" class="card mini" hidden></section>
   <section id="recCard" class="card mini"></section>
 
@@ -781,7 +782,7 @@ document.addEventListener('click', e => { if (e.target.closest('[data-act="wt"]'
 
 // ---------- ほかの画面でデータが変わったら読み直す ----------
 window.addEventListener('storage', e => {
-  if (e.key && !/^(morning|night|task-app):/.test(e.key)) return;
+  if (e.key && !/^(morning|night|task-app|dance):/.test(e.key)) return;
   routines = load(K.routines, routines); log = load(K.log, log); records = load(K.rec, records);
   if (!run) render();
 });
@@ -835,6 +836,18 @@ function render() {
   // 見直し提案
   $('#sugg').innerHTML = suggestions(r).map(({ s, avg }) => `<div class="sugg">💡 「<b>${esc(s.title)}</b>」はいつも約 <b>${avg}分</b>かかってるよ（いまは${s.min}分）。直す？`
     + `<div class="sb"><button class="yes" data-sid="${s.id}" data-min="${avg}">${avg}分にする</button><button data-sid="${s.id}">このままでいい</button></div></div>`).join('');
+
+  // 💃 今日のレッスン（ダンスタブのデータを読むだけ）
+  const dcs = load('dance:classes', []), dns = load('dance:notes', {}), dow = new Date().getDay();
+  const dls = dcs.filter(c => c.dow === dow && !(dns[c.id + '_' + today()] || {}).canceled).sort((a, b) => minOf(a.start) - minOf(b.start));
+  $('#dlesson').hidden = !dls.length;
+  $('#dlesson').innerHTML = '<h3>💃 今日のレッスン</h3>' + dls.map(c => {
+    const n = dns[c.id + '_' + today()] || {}, ids = ['music', 'choreo', 'flow'].concat((c.items || []).map((x, i) => 'item' + i)).concat((n.extra || []).map(x => x.id));
+    const done = ids.filter(id => (n.checks || {})[id]).length;
+    return `<div class="tlist" style="padding:4px 0"><button data-dl="${c.id}_${today()}" style="width:100%;text-align:left;display:flex;gap:8px;align-items:baseline">
+      <b>${c.start}〜${c.end}</b><span style="flex:1">${esc(c.name)}<br><small style="color:var(--sub)">📍 ${esc(c.place || '')}${c.travel ? ` ・ 🚃 ${minToHm(minOf(c.start) - c.travel)}に出発` : ''}</small></span>
+      <small style="font-weight:900;color:${done === ids.length ? 'var(--ok)' : 'var(--pink)'}">${done === ids.length ? '準備OK' : `準備 ${done}/${ids.length}`}</small></button></div>`;
+  }).join('');
 
   // タスク
   const ts = todayTasks();
@@ -1037,6 +1050,7 @@ $('#rushBtn').addEventListener('click', () => {
 });
 $('#recCard').addEventListener('click', e => { if (e.target.dataset.act === 'rec') openRec(today()); });
 $('#tasks').addEventListener('click', e => { if (e.target.dataset.act === 'tasks') goTasks(); });
+$('#dlesson').addEventListener('click', e => { const b = e.target.closest('[data-dl]'); if (!b) return; if (EMBED) tellParent({ type: 'tab', tab: 'dance', action: 'note=' + b.dataset.dl }); else location.href = 'dance.html#note=' + b.dataset.dl; });
 $('#hist').addEventListener('click', e => { const li = e.target.closest('li[data-d]'); if (li) openRec(li.dataset.d); });
 $('#voiceBtn').addEventListener('click', () => {
   voiceOn = !voiceOn; store(K.voice, voiceOn); render(); renderSettings();

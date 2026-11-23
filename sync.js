@@ -7,7 +7,7 @@
 (() => {
   const URL_ = 'https://tzbqsudphypzvjbuoyrz.supabase.co';
   const KEY_ = 'sb_publishable_Ue1rb78TVjAOhf59ssBylg_SDywtSps';
-  const SYNC_RE = /^(task-app|morning|plan|habits|night|pet|body|food):/;
+  const SYNC_RE = /^(task-app|morning|plan|habits|night|pet|body|food|dance):/;
   const EXCLUDE = new Set(['morning:weather', 'body:view', 'body:range', 'task-app:backupNag']);
   const AUTH = 'sync:auth', META = 'sync:meta', STATE = 'sync:state';
   const ls = window.localStorage;

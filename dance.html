@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ダンス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.views{display:flex;gap:6px;background:var(--surface);border-radius:999px;padding:4px;box-shadow:var(--shadow);margin-bottom:14px}
+.views button{flex:1;padding:9px 0;border-radius:999px;font-weight:900;font-size:14px;color:var(--sub)}
+.views button.on{background:var(--grad);color:#fff}
+.views button:disabled{opacity:.45}
+
+/* 次のレッスン */
+.next{position:relative;overflow:hidden}
+.next::before{content:"";position:absolute;inset:0;background:var(--grad);opacity:.13}
+.next > *{position:relative}
+.nlabel{font-size:12px;font-weight:900;color:var(--pink);letter-spacing:.04em}
+.ntime{font-size:30px;font-weight:900;line-height:1.2;margin-top:2px}
+.ntime small{font-size:15px;color:var(--sub);margin-left:6px}
+.nname{font-size:17px;font-weight:900;margin-top:2px}
+.nplace{font-size:14px;font-weight:700;color:var(--sub);margin-top:2px}
+.nplace a{color:var(--pink);text-decoration:none}
+.nleave{display:inline-block;margin-top:8px;background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.prep{margin-top:12px}
+.prep .bar{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:4px}
+.prep .bar i{display:block;height:100%;background:var(--grad);border-radius:999px}
+.prep.ok .bar i{background:var(--ok)}
+.prep small{font-size:13px;font-weight:700;color:var(--sub)}
+.prep.ok small{color:var(--ok)}
+.piece{margin-top:10px;font-size:14px;font-weight:700}
+.next .big{margin-top:14px}
+
+/* 一覧 */
+.lrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.lrow:last-child{border:0}
+.ldate{width:56px;flex:none;text-align:center;font-weight:900;font-size:14px;line-height:1.2}
+.ldate small{display:block;font-size:11px;color:var(--sub)}
+.ldate.today{color:var(--pink)}
+.lmain{flex:1;min-width:0}
+.lmain b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lmain small{color:var(--sub);font-size:12px;font-weight:700}
+.chip2{flex:none;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:900;background:var(--c1)}
+.chip2.ok{background:var(--c3);color:var(--ok)}
+.chip2.fb{background:var(--c0);color:var(--pink)}
+.chip2.off{background:var(--line);color:var(--sub)}
+.crow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.crow:last-child{border:0}
+.cdot{width:40px;height:40px;flex:none;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff;background:var(--grad)}
+.crow .t{flex:1;min-width:0;font-weight:700}
+.crow .t small{display:block;color:var(--sub);font-size:12px}
+.song{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+.song:last-child{border:0}
+.song .e{font-size:20px}
+.song .t{flex:1;min-width:0;font-weight:700;font-size:14px}
+.song .t small{display:block;color:var(--sub);font-size:12px}
+.song a{color:var(--pink);font-size:13px;font-weight:700;text-decoration:none}
+
+/* ノート（全画面） */
+.note{position:fixed;inset:0;z-index:25;background:var(--bg);overflow-y:auto}
+.note .wrap{padding-top:calc(12px + env(safe-area-inset-top))}
+.ntop{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ntop .back{width:40px;height:40px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);font-weight:900;flex:none}
+.ntop h2{margin:0;font-size:18px;flex:1;min-width:0}
+.ntop h2 small{display:block;font-size:12px;color:var(--sub)}
+.sec h3{margin:0 0 10px}
+.blocks .blk{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.blocks .blk:last-child{border:0}
+.blocks .tm{width:44px;flex:none;font-size:12px;font-weight:900;color:var(--sub);font-variant-numeric:tabular-nums}
+.blocks input.lab{flex:1;min-width:0;border:0;background:transparent;font-weight:700;font-size:15px;outline:none;padding:4px 0}
+.blocks .mn{display:flex;align-items:center;gap:4px;flex:none}
+.blocks .mn button{width:28px;height:28px;border-radius:50%;background:var(--c1);font-weight:900}
+.blocks .mn b{width:42px;text-align:center;font-size:14px}
+.blocks .del{color:var(--sub);font-size:16px;padding:0 4px}
+.stack{display:flex;height:16px;border-radius:999px;overflow:hidden;margin:6px 0 4px;background:var(--line)}
+.stack i{display:block;height:100%}
+.tsum{font-size:13px;font-weight:700;color:var(--sub)}
+.tsum.over{color:var(--warn)}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
+.tin.w{width:100%}
+.lbl{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 6px}
+.lbl:first-child{margin-top:0}
+.ck{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border-bottom:1px dashed var(--line);font-weight:700;font-size:15px}
+.ck:last-child{border:0}
+.ck .box{width:28px;height:28px;flex:none;border-radius:9px;border:2.5px solid var(--accent);display:grid;place-items:center;color:#fff;font-weight:900}
+.ck.on .box{background:var(--ok);border-color:var(--ok)}
+.ck.on span{color:var(--sub);text-decoration:line-through}
+.prev{background:var(--c4);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:700;line-height:1.6;white-space:pre-wrap}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:40px;height:40px;border-radius:50%;background:var(--c1);font-size:20px;font-weight:900}
+.stepper b{font-size:26px;min-width:44px;text-align:center}
+.pinfo{background:var(--c1);border-radius:16px;padding:12px 14px}
+.pinfo b{font-size:16px}
+.pinfo small{display:block;color:var(--sub);font-weight:700;font-size:12px;margin-top:2px}
+.pweeks{display:flex;gap:4px;margin-top:8px}
+.pweeks i{flex:1;height:8px;border-radius:999px;background:var(--line)}
+.pweeks i.on{background:var(--grad)}
+.grid2f{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.days7{display:flex;gap:5px}
+.days7 button{flex:1;height:40px;border-radius:12px;background:var(--line);font-weight:900}
+.days7 button.on{background:var(--grad);color:#fff}
+.danger{width:100%;margin-top:10px;padding:12px;color:var(--warn);font-weight:700}
+.offbtn{width:100%;padding:11px;border-radius:14px;background:var(--line);font-weight:700;color:var(--sub);margin-top:14px}
+.offbtn.on{background:var(--warn);color:#fff}
+.stat{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.stat span{background:var(--c1);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700}
+.soon{text-align:center;color:var(--sub);font-weight:700;padding:30px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="brand">Dance</div><small id="date"></small><h1>ダンス</h1></div>
+  </header>
+  <div class="views" id="views">
+    <button data-view="lesson" class="on">📅 レッスン</button>
+    <button data-view="practice">🩰 練習</button>
+    <button data-view="stretch">🧘 ストレッチ</button>
+  </div>
+
+  <div id="vLesson">
+    <section class="card next" id="next"></section>
+    <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px">2週間</small></h3><div id="upcoming"></div></section>
+    <section class="card mini"><h3>🎵 いまの振り付け</h3><div id="pieces"></div></section>
+    <section class="card mini"><h3>👯 レギュラークラス <button class="link" data-act="addclass">＋ 追加</button></h3><div id="classes"></div></section>
+    <section class="card mini"><h3>📚 使った曲</h3><div id="songs"></div></section>
+  </div>
+  <div id="vSoon" hidden><div class="card soon" id="soonMsg"></div></div>
+</div>
+
+<!-- レッスンノート -->
+<div class="note" id="note" hidden><div class="wrap" id="noteBody"></div></div>
+
+<!-- クラス編集 -->
+<div id="classSheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3 id="csTitle">クラスを追加</h3>
+    <span class="lbl">クラス名</span><input class="tin w" id="csName" placeholder="例：K-POP 初級">
+    <span class="lbl">曜日</span><div class="days7" id="csDow"></div>
+    <span class="lbl">時間</span><div class="grid2f"><input class="tin" type="time" id="csStart"><input class="tin" type="time" id="csEnd"></div>
+    <span class="lbl">場所</span><input class="tin w" id="csPlace" placeholder="例：〇〇スタジオ 3F">
+    <span class="lbl">地図のリンク（あれば）</span><input class="tin w" id="csMap" placeholder="Googleマップのリンクなど" inputmode="url">
+    <div class="grid2f">
+      <div><span class="lbl">移動の時間（分）</span><input class="tin w" type="number" inputmode="numeric" id="csTravel" placeholder="30"></div>
+      <div><span class="lbl">レベル・ジャンル</span><input class="tin w" id="csLevel" placeholder="例：初級・K-POP"></div>
+    </div>
+    <span class="lbl">いつもの持ち物（「、」で区切る）</span><input class="tin w" id="csItems" placeholder="例：スピーカー、タオル、着替え">
+    <button class="big" id="csSave" style="margin-top:16px">保存</button>
+    <button class="danger" id="csDel">このクラスを削除</button>
+  </div>
+</div>
+
+<!-- 新しい曲 -->
+<div id="pieceSheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3>🎵 新しい曲</h3>
+    <p class="muted" id="psFor"></p>
+    <span class="lbl">曲名</span><input class="tin w" id="psTitle" placeholder="例：Dynamite">
+    <span class="lbl">アーティスト</span><input class="tin w" id="psArtist" placeholder="例：BTS">
+    <div class="grid2f">
+      <div><span class="lbl">BPM（あれば）</span><input class="tin w" type="number" inputmode="numeric" id="psBpm" placeholder="114"></div>
+      <div><span class="lbl">何週でやる？</span><input class="tin w" type="number" inputmode="numeric" id="psWeeks" value="2"></div>
+    </div>
+    <span class="lbl">リンク（YouTube・Spotify など）</span><input class="tin w" id="psLink" inputmode="url" placeholder="https://">
+    <button class="big" id="psSave" style="margin-top:16px">この曲ではじめる</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+const C_KEY = 'dance:classes', N_KEY = 'dance:notes', P_KEY = 'dance:pieces', T_KEY = 'dance:templates';
+const COLORS = ['#ff8cc0', '#b896ff', '#ffb38a', '#6fd6ae', '#ffd166', '#8fd3ff', '#f7a1c4'];
+const BLK_COLORS = ['#ffb38a', '#ffd166', '#ff8cc0', '#b896ff', '#8fd3ff', '#6fd6ae', '#f7a1c4'];
+const MOODS = [['🔥', 'もりあがった'], ['😊', 'いい感じ'], ['😐', 'ふつう'], ['😢', 'いまいち']];
+const classes = () => load(C_KEY, []);
+const saveClasses = cs => store(C_KEY, cs);
+const notes = () => load(N_KEY, {});
+const pieces = () => load(P_KEY, []);
+const savePieces = ps => store(P_KEY, ps);
+const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const lenMin = c => ((minOf(c.end) - minOf(c.start)) + 1440) % 1440 || 60;
+const shortDate = k => { const d = parseKey(k); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const colorOf = c => COLORS[Math.max(0, classes().findIndex(x => x.id === c.id)) % COLORS.length];
+function getNote(key) { return notes()[key] || {}; }
+function setNote(key, patch) { const all = notes(); all[key] = Object.assign({}, all[key] || {}, patch); store(N_KEY, all); return all[key]; }
+function defaultPlan(c) {
+  const L = lenMin(c), main = Math.max(15, L - 40);
+  return [['ウォームアップ', 10], ['基礎・アイソレーション', 15], ['振り付け', main], ['通し・撮影', 10], ['クールダウン', 5]].map(([label, min]) => ({ label, min }));
+}
+const planOf = (c, n) => n.plan || (load(T_KEY, {})[c.id] || defaultPlan(c));
+
+// ---------- 振り付けの曲（だいたい2週で1曲）----------
+function activePiece(c, k) {
+  // その日の時点で進めている曲（はじめた日 ≤ その日、まだ完成していない or 完成日 ≥ その日）
+  const ps = pieces().filter(p => p.classId === c.id && p.start <= k && (!p.doneAt || p.doneAt >= k));
+  return ps.sort((a, b) => a.start < b.start ? 1 : -1)[0] || null;
+}
+function weekOf(p, c, k) {
+  // はじめた日からその日まで、休講をのぞいて何回目か
+  const ns = notes(); let n = 0;
+  const d = parseKey(p.start), end = parseKey(k);
+  while (d <= end) { const kk = dayKey(d); if (d.getDay() === c.dow && !(ns[c.id + '_' + kk] || {}).canceled) n++; d.setDate(d.getDate() + 1); }
+  return Math.max(1, n);
+}
+function pieceLine(c, k) {
+  const p = activePiece(c, k);
+  if (!p) return '';
+  const w = weekOf(p, c, k);
+  return `🎵 ${esc(p.title)}${p.artist ? ' / ' + esc(p.artist) : ''} ・ <b>${w}週目</b>／${p.weeks}週の予定`;
+}
+
+// ---------- 画面 ----------
+function upcomingList(days) {
+  const out = [];
+  for (let i = 0; i < days; i++) out.push(...lessonsOn(keyOf(i), true));
+  return out;
+}
+function nextLesson() {
+  const now = Date.now();
+  return upcomingList(14).find(l => !l.note.canceled && atDayKey(l.date, l.c.end) > now) || null;
+}
+const atDayKey = (k, t) => parseKey(k).getTime() + minOf(t) * MIN;
+
+function renderNext() {
+  const l = nextLesson();
+  if (!classes().length) {
+    $('#next').innerHTML = `<div class="nlabel">はじめに</div><div class="nname" style="margin-top:6px">レギュラークラスを登録しよう</div>
+      <p class="muted" style="margin-top:6px">曜日・時間・場所を入れると、毎週のレッスンノートが自動でできて、「今日」の時間割にも入るよ</p>
+      <button class="big" data-act="addclass">＋ クラスを追加</button>`;
+    return;
+  }
+  if (!l) { $('#next').innerHTML = '<div class="nlabel">次のレッスン</div><p class="muted" style="margin-top:6px">2週間以内のレッスンはないよ</p>'; return; }
+  const c = l.c, n = l.note, pr = lessonPrep(c, n), isToday = l.date === today();
+  const leaveAt = atDayKey(l.date, c.start) - (c.travel || 0) * MIN;
+  const left = leaveAt - Date.now();
+  const d = parseKey(l.date);
+  $('#next').innerHTML = `<div class="nlabel">${isToday ? '今日のレッスン' : l.date === keyOf(1) ? '明日のレッスン' : '次のレッスン'}</div>
+    <div class="ntime">${c.start}〜${c.end}<small>${isToday ? '' : `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）`}</small></div>
+    <div class="nname">${esc(c.name)}</div>
+    <div class="nplace">📍 ${c.map ? `<a href="${esc(c.map)}" target="_blank" rel="noopener">${esc(c.place || '地図')}</a>` : esc(c.place || '場所未設定')}</div>
+    ${isToday && c.travel ? `<span class="nleave">🚃 ${hm(leaveAt)} に出発${left > 0 ? `（あと${durLabel(left)}）` : ''}</span>` : ''}
+    ${pieceLine(c, l.date) ? `<div class="piece">${pieceLine(c, l.date)}</div>` : ''}
+    <div class="prep${pr.ok ? ' ok' : ''}"><small>${pr.ok ? '✓ 準備OK！' : `準備 ${pr.done}/${pr.total}`}</small><div class="bar"><i style="width:${pr.done / pr.total * 100}%"></i></div></div>
+    <button class="big" data-note="${l.key}">📝 レッスンノートを開く</button>`;
+}
+function statusChip(l) {
+  if (l.note.canceled) return '<span class="chip2 off">休講</span>';
+  if (l.note.fb && l.note.fb.done) return '<span class="chip2 fb">ふりかえり済</span>';
+  const pr = lessonPrep(l.c, l.note);
+  return pr.ok ? '<span class="chip2 ok">準備OK</span>' : `<span class="chip2">準備 ${pr.done}/${pr.total}</span>`;
+}
+function renderUpcoming() {
+  const ls = upcomingList(14);
+  $('#upcoming').innerHTML = ls.length ? ls.map(l => {
+    const d = parseKey(l.date), isT = l.date === today();
+    return `<div class="lrow" data-note="${l.key}"><div class="ldate${isT ? ' today' : ''}">${isT ? '今日' : `${d.getMonth() + 1}/${d.getDate()}`}<small>${WD[d.getDay()]}曜</small></div>
+      <div class="lmain"><b>${esc(l.c.name)}</b><small>${l.c.start}〜${l.c.end} ・ ${esc(l.c.place || '')}</small></div>${statusChip(l)}</div>`;
+  }).join('') : '<p class="muted">クラスを登録すると、ここに並ぶよ</p>';
+}
+function renderPieces() {
+  const cs = classes();
+  $('#pieces').innerHTML = cs.length ? cs.map(c => {
+    const p = activePiece(c, today());
+    if (!p) return `<div class="song"><span class="e">🎵</span><div class="t">${esc(c.name)}<small>まだ曲が決まってないよ</small></div><button class="link" data-newpiece="${c.id}">＋ 曲を決める</button></div>`;
+    const w = weekOf(p, c, today());
+    let bars = ''; for (let i = 1; i <= Math.max(p.weeks, w); i++) bars += `<i class="${i <= w ? 'on' : ''}"></i>`;
+    return `<div class="pinfo" style="margin-bottom:8px"><small>${esc(c.name)}</small><b>🎵 ${esc(p.title)}</b>${p.artist ? `<small>${esc(p.artist)}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small>` : ''}
+      <div class="pweeks">${bars}</div><small>${w}週目／${p.weeks}週の予定${w > p.weeks ? '（のびてるよ）' : ''}</small>
+      <div class="rowbtns"><button class="pill" data-extend="${p.id}">＋1週のばす</button><button class="pill go" data-finish="${p.id}">完成！次の曲へ</button>${p.link ? `<a class="pill" href="${esc(p.link)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">▶ 曲</a>` : ''}</div></div>`;
+  }).join('') : '<p class="muted">クラスを登録すると、曲の進み具合が出るよ</p>';
+}
+function classStats(c) {
+  const ns = notes(), fbs = Object.keys(ns).filter(k => k.startsWith(c.id + '_') && ns[k].fb && ns[k].fb.done).sort().slice(-4).map(k => ns[k].fb);
+  if (!fbs.length) return '';
+  const cnt = fbs.filter(f => f.count != null).map(f => f.count);
+  return `<div class="stat">${cnt.length ? `<span>👥 最近の平均 ${Math.round(avg(cnt) * 10) / 10}人</span>` : ''}<span>雰囲気 ${fbs.map(f => f.mood != null ? MOODS[f.mood][0] : '・').join('')}</span></div>`;
+}
+function renderClasses() {
+  const cs = classes().slice().sort((a, b) => ((a.dow + 6) % 7) - ((b.dow + 6) % 7) || minOf(a.start) - minOf(b.start));
+  $('#classes').innerHTML = cs.length ? cs.map(c => `<div class="crow" data-class="${c.id}"><div class="cdot" style="background:${colorOf(c)}">${WD[c.dow]}</div>
+    <div class="t">${esc(c.name)}<small>${c.start}〜${c.end} ・ ${esc(c.place || '')}${c.level ? ' ・ ' + esc(c.level) : ''}</small>${classStats(c)}</div></div>`).join('')
+    : '<p class="muted">「＋ 追加」から、毎週のレッスンを登録してね</p>';
+}
+function renderSongs() {
+  const cs = classes(), ps = pieces().slice().sort((a, b) => a.start < b.start ? 1 : -1);
+  $('#songs').innerHTML = ps.length ? ps.map(p => {
+    const c = cs.find(x => x.id === p.classId);
+    return `<div class="song"><span class="e">${p.doneAt ? '✅' : '🎵'}</span><div class="t">${esc(p.title)}${p.artist ? ' / ' + esc(p.artist) : ''}<small>${c ? esc(c.name) + ' ・ ' : ''}${shortDate(p.start)}〜${p.doneAt ? shortDate(p.doneAt) : 'いま'}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small></div>${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">▶</a>` : ''}</div>`;
+  }).join('') : '<p class="muted">曲を決めると、ここにたまっていくよ</p>';
+}
+function render() {
+  const d = new Date();
+  $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  renderNext(); renderUpcoming(); renderPieces(); renderClasses(); renderSongs();
+  if (!$('#note').hidden && curKey) renderNote(true);
+  checkLevelUp();
+}
+
+// ---------- レッスンノート ----------
+let curKey = null;
+function openNote(key) {
+  curKey = key; renderNote(); $('#note').hidden = false; $('#note').scrollTop = 0;
+}
+function closeNote() { $('#note').hidden = true; curKey = null; render(); }
+function noteCtx() {
+  const i = curKey.indexOf('_'), cid = curKey.slice(0, i), k = curKey.slice(i + 1);
+  const c = classes().find(x => x.id === cid);
+  return { c, k, n: getNote(curKey) };
+}
+function prevNote(c, k) {
+  const ns = notes();
+  const ks = Object.keys(ns).filter(x => x.startsWith(c.id + '_') && x.slice(c.id.length + 1) < k && ns[x].fb && ns[x].fb.done).sort();
+  return ks.length ? { k: ks[ks.length - 1].slice(c.id.length + 1), n: ns[ks[ks.length - 1]] } : null;
+}
+function renderNote(soft) {
+  const { c, k, n } = noteCtx();
+  if (!c) { closeNote(); return; }
+  if (soft && document.activeElement && $('#note').contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+  const d = parseKey(k), plan = planOf(c, n), total = plan.reduce((a, b) => a + (+b.min || 0), 0), L = lenMin(c);
+  const pr = lessonPrep(c, n), checks = lessonChecks(c, n), pv = prevNote(c, k), p = activePiece(c, k);
+  let t = minOf(c.start);
+  const fb = n.fb || {};
+  const ended = Date.now() > atDayKey(k, c.end) - 10 * MIN;
+  const fbSec = `<section class="card mini sec"><h3>💬 ふりかえり ${fb.done ? '<small class="muted" style="font-size:12px">✓ 保存ずみ</small>' : ''}</h3>
+      <span class="lbl">だいたい何人？</span><div class="stepper"><button data-cnt="-1">−</button><b>${fb.count != null ? fb.count : '—'}</b><button data-cnt="1">＋</button><span class="muted">人くらい</span></div>
+      <span class="lbl">雰囲気</span><div class="seg">${MOODS.map(([e, l], i) => `<button data-mood="${i}" class="${fb.mood === i ? 'on' : ''}">${e}<small>${l}</small></button>`).join('')}</div>
+      <span class="lbl">よかったこと</span><textarea class="tin" data-fb="good" placeholder="例：サビの振りがみんなそろった！">${esc(fb.good || '')}</textarea>
+      <span class="lbl">むずかしかったこと</span><textarea class="tin" data-fb="hard" placeholder="例：2エイト目のターンで止まる人が多かった">${esc(fb.hard || '')}</textarea>
+      <span class="lbl">次回やること</span><textarea class="tin" data-fb="next" placeholder="例：ターンを分解して練習 → 通しを2回">${esc(fb.next || '')}</textarea>
+      <button class="big" data-act="fbsave" style="margin-top:12px">${fb.done ? 'ふりかえりを更新' : 'ふりかえりを保存（+20pt）'}</button></section>`;
+
+  $('#noteBody').innerHTML = `
+    <div class="ntop"><button class="back" data-act="close" aria-label="もどる">‹</button>
+      <h2>${esc(c.name)}<small>${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${c.start}〜${c.end} ・ ${esc(c.place || '')}</small></h2></div>
+    ${n.canceled ? '<div class="card" style="text-align:center;font-weight:900">この日は休講だよ 🌙</div>' : ''}
+    ${ended && !n.canceled ? fbSec : ''}
+    ${pv && pv.n.fb.next ? `<section class="card mini sec"><h3>📌 前回（${shortDate(pv.k)}）の「次回やること」</h3><div class="prev">${esc(pv.n.fb.next)}</div></section>` : ''}
+
+    <section class="card mini sec"><h3>🎵 振り付けの曲</h3>
+      ${p ? `<div class="pinfo"><b>${esc(p.title)}</b><small>${p.artist ? esc(p.artist) : ''}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small><small>${weekOf(p, c, k)}週目／${p.weeks}週の予定</small>
+        ${p.link ? `<div class="rowbtns"><a class="pill" href="${esc(p.link)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">▶ 曲をひらく</a></div>` : ''}</div>`
+        : `<p class="muted">まだ曲が決まってないよ</p><div class="rowbtns"><button class="pill go" data-newpiece="${c.id}" data-from="${k}">＋ 曲を決める</button></div>`}
+      <span class="lbl">ほかに使う曲（アップ・クールダウンなど）</span><textarea class="tin" data-f="music" placeholder="例：アップ → Butter / クールダウン → ゆったりめのR&B">${esc(n.music || '')}</textarea>
+    </section>
+
+    <section class="card mini sec"><h3>⏱ 時間の使い方</h3>
+      <div class="stack">${plan.map((b, i) => `<i style="width:${(+b.min || 0) / Math.max(total, L) * 100}%;background:${BLK_COLORS[i % BLK_COLORS.length]}"></i>`).join('')}</div>
+      <div class="tsum${total > L ? ' over' : ''}">${total}分 ／ レッスン${L}分 ${total > L ? `（${total - L}分オーバー）` : total < L ? `（あと${L - total}分）` : 'ぴったり！'}</div>
+      <div class="blocks">${plan.map((b, i) => { const s = t; t += +b.min || 0; return `<div class="blk"><span class="tm">${minToHm(s)}</span>
+        <span style="width:10px;height:10px;border-radius:50%;flex:none;background:${BLK_COLORS[i % BLK_COLORS.length]}"></span>
+        <input class="lab" data-lab="${i}" value="${esc(b.label)}">
+        <span class="mn"><button data-bm="${i}" data-d="-5">−</button><b>${b.min}分</b><button data-bm="${i}" data-d="5">＋</button></span>
+        <button class="del" data-bdel="${i}" aria-label="削除">✕</button></div>`; }).join('')}</div>
+      <div class="rowbtns"><button class="pill" data-act="baddd">＋ 項目を足す</button><button class="pill" data-act="tsave">いつもの流れにする</button></div>
+    </section>
+
+    <section class="card mini sec"><h3>📝 教え方・ポイント</h3>
+      <textarea class="tin" data-f="teach" placeholder="例：最初はゆっくりカウントで → 8カウントずつ → 曲に合わせる&#10;注意：ひじの角度、目線">${esc(n.teach || '')}</textarea>
+    </section>
+
+    <section class="card mini sec"><h3>✅ 準備チェック <small class="muted" style="font-size:12px">${pr.ok ? '✓ 準備OK！ +10pt' : `${pr.done}/${pr.total}`}</small></h3>
+      ${checks.map(x => `<button class="ck${(n.checks || {})[x.id] ? ' on' : ''}" data-ck="${x.id}"><span class="box">${(n.checks || {})[x.id] ? '✓' : ''}</span><span>${esc(x.text)}</span></button>`).join('')}
+      <div class="rowbtns"><button class="pill" data-act="ckadd">＋ この日だけの準備を足す</button></div>
+    </section>
+
+    ${!ended && !n.canceled ? fbSec : ''}
+    <button class="offbtn${n.canceled ? ' on' : ''}" data-act="cancel">${n.canceled ? '休講を取り消す' : 'この日は休講にする'}</button>
+    <div style="height:20px"></div>`;
+}
+// 書いているあいだは、そのまま保存（画面は描き直さない）
+$('#noteBody').addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.f) setNote(curKey, { [el.dataset.f]: el.value });
+  if (el.dataset.fb) { const n = getNote(curKey); setNote(curKey, { fb: Object.assign({}, n.fb || {}, { [el.dataset.fb]: el.value }) }); }
+  if (el.dataset.lab != null) { const { c, n } = noteCtx(); const plan = planOf(c, n).map(x => Object.assign({}, x)); plan[+el.dataset.lab].label = el.value; setNote(curKey, { plan }); }
+});
+$('#noteBody').addEventListener('click', e => {
+  const { c, k, n } = noteCtx();
+  const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
+  if (act === 'close') { closeNote(); return; }
+  const plan = planOf(c, n).map(x => Object.assign({}, x));
+  const bm = e.target.closest('[data-bm]');
+  if (bm) { const i = +bm.dataset.bm; plan[i].min = Math.max(5, (+plan[i].min || 0) + +bm.dataset.d); setNote(curKey, { plan }); renderNote(); return; }
+  const bd = e.target.closest('[data-bdel]');
+  if (bd) { plan.splice(+bd.dataset.bdel, 1); setNote(curKey, { plan }); renderNote(); return; }
+  if (act === 'baddd') { plan.push({ label: '新しい項目', min: 10 }); setNote(curKey, { plan }); renderNote(); return; }
+  if (act === 'tsave') { const tp = load(T_KEY, {}); tp[c.id] = plan; store(T_KEY, tp); toast('次からこの流れで始まるよ'); return; }
+  const ck = e.target.closest('[data-ck]');
+  if (ck) {
+    const before = lessonPrep(c, n).ok;
+    const checks = Object.assign({}, n.checks || {}); checks[ck.dataset.ck] = !checks[ck.dataset.ck];
+    const nn = setNote(curKey, { checks });
+    if (!before && lessonPrep(c, nn).ok) { confetti(); toast('💃 準備OK！ +10pt'); }
+    try { navigator.vibrate && navigator.vibrate(15); } catch (er) {}
+    renderNote(); return;
+  }
+  if (act === 'ckadd') {
+    const tx = prompt('この日だけの準備（例：新しい振りの動画を撮る）'); if (!tx || !tx.trim()) return;
+    setNote(curKey, { extra: (n.extra || []).concat({ id: 'x' + uid(), text: '📌 ' + tx.trim() }) }); renderNote(); return;
+  }
+  const cn = e.target.closest('[data-cnt]');
+  if (cn) { const fb = Object.assign({}, n.fb || {}); fb.count = Math.max(0, (fb.count != null ? fb.count : (prevNote(c, k) || { n: { fb: {} } }).n.fb.count || 8) + (fb.count != null ? +cn.dataset.cnt : 0)); setNote(curKey, { fb }); renderNote(); return; }
+  const md = e.target.closest('[data-mood]');
+  if (md) { const fb = Object.assign({}, n.fb || {}); fb.mood = fb.mood === +md.dataset.mood ? null : +md.dataset.mood; setNote(curKey, { fb }); renderNote(); return; }
+  if (act === 'fbsave') {
+    const first = !(n.fb && n.fb.done);
+    setNote(curKey, { fb: Object.assign({}, n.fb || {}, { done: true, at: Date.now() }) });
+    if (first) { confetti(); toast('💬 ふりかえり保存！ +20pt おつかれさま'); } else toast('更新したよ');
+    renderNote(); return;
+  }
+  if (act === 'cancel') { setNote(curKey, { canceled: !n.canceled }); toast(n.canceled ? '休講を取り消したよ' : 'この日は休講にしたよ'); renderNote(); return; }
+});
+
+// ---------- クラス ----------
+let csEdit = null, csDow = 1;
+function openClass(id) {
+  const c = classes().find(x => x.id === id);
+  csEdit = c ? c.id : null;
+  $('#csTitle').textContent = c ? 'クラスの設定' : 'クラスを追加';
+  $('#csName').value = c ? c.name : ''; csDow = c ? c.dow : 1;
+  $('#csStart').value = padT(c ? c.start : '19:00'); $('#csEnd').value = padT(c ? c.end : '20:30');
+  $('#csPlace').value = c ? c.place || '' : ''; $('#csMap').value = c ? c.map || '' : '';
+  $('#csTravel').value = c && c.travel ? c.travel : ''; $('#csLevel').value = c ? c.level || '' : '';
+  $('#csItems').value = c ? (c.items || []).join('、') : '';
+  $('#csDel').hidden = !c;
+  renderDow(); $('#classSheet').hidden = false;
+}
+function renderDow() { $('#csDow').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => `<button data-dow="${d}" class="${d === csDow ? 'on' : ''}">${WD[d]}</button>`).join(''); }
+$('#csDow').addEventListener('click', e => { const b = e.target.closest('[data-dow]'); if (b) { csDow = +b.dataset.dow; renderDow(); } });
+$('#csSave').addEventListener('click', () => {
+  const name = $('#csName').value.trim();
+  if (!name) { toast('クラス名を入れてね'); return; }
+  if (!$('#csStart').value || !$('#csEnd').value) { toast('時間を入れてね'); return; }
+  const cs = classes();
+  const data = { name, dow: csDow, start: $('#csStart').value, end: $('#csEnd').value, place: $('#csPlace').value.trim(), map: $('#csMap').value.trim(),
+    travel: parseInt($('#csTravel').value, 10) || 0, level: $('#csLevel').value.trim(),
+    items: $('#csItems').value.split(/[、,，\n]/).map(x => x.trim()).filter(Boolean) };
+  if (csEdit) Object.assign(cs.find(x => x.id === csEdit), data); else cs.push(Object.assign({ id: uid() }, data));
+  saveClasses(cs); $('#classSheet').hidden = true; toast('保存したよ'); render();
+});
+$('#csDel').addEventListener('click', () => {
+  if (!csEdit || !confirm('このクラスを削除する？（ノートは残るよ）')) return;
+  saveClasses(classes().filter(x => x.id !== csEdit)); $('#classSheet').hidden = true; render();
+});
+
+// ---------- 曲 ----------
+let psClass = null, psFrom = null;
+function openPiece(cid, from) {
+  psClass = cid; psFrom = from || today();
+  const c = classes().find(x => x.id === cid);
+  $('#psFor').textContent = c ? `${c.name} ・ ${shortDate(psFrom)}から` : '';
+  ['#psTitle', '#psArtist', '#psBpm', '#psLink'].forEach(id => { $(id).value = ''; });
+  $('#psWeeks').value = 2; $('#pieceSheet').hidden = false;
+}
+$('#psSave').addEventListener('click', () => {
+  const title = $('#psTitle').value.trim(); if (!title) { toast('曲名を入れてね'); return; }
+  const ps = pieces();
+  // 進めていた曲があれば、前の日で完成にする
+  const c = classes().find(x => x.id === psClass), cur = c && activePiece(c, psFrom);
+  if (cur && !cur.doneAt) { const d = parseKey(psFrom); d.setDate(d.getDate() - 1); ps.find(x => x.id === cur.id).doneAt = dayKey(d); }
+  ps.push({ id: uid(), classId: psClass, title, artist: $('#psArtist').value.trim(), bpm: parseInt($('#psBpm').value, 10) || null,
+    link: $('#psLink').value.trim(), weeks: Math.max(1, parseInt($('#psWeeks').value, 10) || 2), start: psFrom });
+  savePieces(ps); $('#pieceSheet').hidden = true; toast(`🎵 「${title}」ではじめよう！`); render();
+});
+
+// ---------- 全体の操作 ----------
+document.body.addEventListener('click', e => {
+  if (e.target.closest('#noteBody')) { const np = e.target.closest('[data-newpiece]'); if (np) openPiece(np.dataset.newpiece, np.dataset.from); return; }
+  const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
+  if (act === 'addclass') openClass(null);
+  const nt = e.target.closest('[data-note]'); if (nt) openNote(nt.dataset.note);
+  const cl = e.target.closest('[data-class]'); if (cl) openClass(cl.dataset.class);
+  const np = e.target.closest('[data-newpiece]'); if (np) openPiece(np.dataset.newpiece, np.dataset.from);
+  const ex = e.target.closest('[data-extend]');
+  if (ex) { const ps = pieces(), p = ps.find(x => x.id === ex.dataset.extend); p.weeks++; savePieces(ps); toast(`${p.weeks}週にのばしたよ`); render(); }
+  const fi = e.target.closest('[data-finish]');
+  if (fi) {
+    const ps = pieces(), p = ps.find(x => x.id === fi.dataset.finish);
+    p.doneAt = today(); savePieces(ps); confetti(); toast(`🎉「${p.title}」完成！おつかれさま`);
+    render(); setTimeout(() => openPiece(p.classId, keyOf(1)), 600);
+  }
+  const v = e.target.closest('[data-view]');
+  if (v) setView(v.dataset.view);
+});
+document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) w.hidden = true; }));
+function setView(v) {
+  document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  $('#vLesson').hidden = v !== 'lesson'; $('#vSoon').hidden = v === 'lesson';
+  $('#soonMsg').innerHTML = v === 'practice' ? '🩰 練習のページは、次に作るよ' : '🧘 ストレッチ・アップ・ヨガのページは、次に作るよ';
+}
+function doAction(a) {
+  if (!a) return;
+  if (a.startsWith('note=')) openNote(a.slice(5));
+  if (a === 'next') { const l = nextLesson(); if (l) openNote(l.key); }
+}
+window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.type === 'action') doAction(e.data.action); });
+onDataChange(render);
+render();
+if (location.hash) doAction(decodeURIComponent(location.hash.slice(1)));
+</script>
+</body>
+</html>
