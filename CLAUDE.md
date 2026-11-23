@@ -82,7 +82,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - 今日のからだ：体脂肪率・ウエスト・歩数・水分（＋ボタン）・生理（最初はオフ）・メモ、ねむりは朝のきろくから表示。項目は設定でオン/オフ
 - 生理：記録から周期を出して次の予定日を予想（記録が1回だけなら28日として予想）
 - まとめ・気づき（先週との差、曜日のくせ、歩数やねむりと次の日の体重、記録の連続）、30日分の一覧（タップで編集）、CSVの書き出し
-- **🍽 ごはん**：朝・昼・夜・間食ごとに食べたものを記録。検索（ひらがな・カタカナどちらでも）か「よく食べる」からタップで追加、量（半分〜3倍）と食事の区分はあとで変えられる。リストにないものは自分で入力して保存（次から検索に出る）。空の食事は「昨日と同じにする」でコピー。1日の kcal・たんぱく質・脂質・炭水化物と目標（kcal＋バランスのプリセット）、1週間の棒グラフ。過去の日も ‹ › で見られる
+- **🍽 ごはん**：朝・昼・夜・間食ごとに食べたものを記録。検索（ひらがな・カタカナどちらでも）か「よく食べる」（☆で固定したもの＋回数の多いもの）からタップで追加、量（半分〜3倍）と食事の区分はあとで変えられる。リストにないものは自分で入力して保存（次から検索に出る）。空の食事は「昨日と同じにする」でコピー。1日の kcal・たんぱく質・脂質・炭水化物と目標（kcal＋バランスのプリセット）、1週間の棒グラフ。過去の日も ‹ › で見られる
 - 写真から中身を推測する機能は、Supabase（AIの鍵を隠しておく場所）ができてから足す予定
 
 ## 並べかえ（長押しでつかんで動かす）
@@ -118,7 +118,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
 - `sync:auth`（ログイン情報）／ `sync:meta`（キーごとの最終変更時刻）／ `sync:dirty`（まだ送っていないキー）／ `sync:state` ／ `sync:last` … 同期用。端末ごとのもので、同期しない
-- `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
+- `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:fav` … 「よく食べる」に固定した名前（最初は `['カフェラテ']`）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
 - `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`
 - `morning:checks` … `{ 'YYYY-MM-DD': { ステップid: true|false } }`（朝のカードの手動✓）
 - タスクには任意で `est`（かかる時間・分）がつく
