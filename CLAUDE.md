@@ -23,6 +23,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `sync.js` … ☁️同期（Supabase、プロジェクト `tzbqsudphypzvjbuoyrz`・東京）。index.html だけが読み込む。ライブラリなしで fetch だけを使う
   - ⚙️設定 →「☁️ 同期」でメール＋パスワードでログイン。データは `public.kv`（user_id, key, value text, client_at bigint, updated_at timestamptz）に localStorage のキーごとに1行。RLS で本人の行だけ読み書きできる
   - `localStorage.setItem` を包んで変更に気づく（iframe の変更は storage イベント）。2.5秒後・画面に戻ったとき・1分ごとに「取ってくる→送る」。同じキーは client_at の新しいほうが勝つ。初めての同期だけ、id つき配列と日付ごとのデータは「まぜる」
+  - **新しくデータを保存するときは、キーを `task-app:` `morning:` `plan:` `habits:` `night:` `pet:` `body:` `food:` のどれかで始める。新しい頭の文字を使うなら、`sync.js` の `SYNC_RE` と `shared.js` の `onDataChange` の正規表現にも足す**（足さないと同期されない）。新しいページを作ったら `sw.js` の `CORE` にも足して `CACHE` の番号を上げる
   - 同期しないキー：`morning:weather`・`body:view`・`body:range`・`task-app:backupNag`、`sync:` で始まるもの
   - アプリに書いてある鍵は **publishable（公開してよい鍵）**。secret / service_role の鍵は絶対にリポジトリに入れない
 - `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
