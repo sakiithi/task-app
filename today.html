@@ -320,6 +320,7 @@ function renderInsight() {
 
 // ---------- 全体 ----------
 function renderAll() {
+  if (sorting) return;   // 長押しで並べかえている最中は描き直さない
   const d = new Date();
   $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
   $('#pet').innerHTML = petHtml();
@@ -345,6 +346,18 @@ document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click'
 bindPet($('#pet'), renderAll);
 window.addEventListener('message', e => {
   if (e.origin === location.origin && e.data && e.data.type === 'action' && e.data.action === 'pick3') openPick();
+});
+// 長押しでつかんで並べかえ（今日の3つ・習慣）
+sortable($('#top3'), '.row', 'y', (from, to) => {
+  const tasks = getTasks(), all = getTop3();
+  const shown = all.filter(id => tasks.some(t => t.id === id));
+  moveItem(shown, from, to);
+  setTop3(shown.concat(all.filter(id => !shown.includes(id))));
+  renderAll(); toast('順番を変えたよ（上から時間割に入るよ）');
+});
+sortable($('#habits'), '.hab', 'y', (from, to) => {
+  const hs = getHabits(), h = moveItem(hs, from, to);
+  store('habits:list', hs); renderAll(); toast(`${h.emoji} 「${h.name}」の場所を変えたよ`);
 });
 onDataChange(renderAll);
 renderAll();
