@@ -124,6 +124,10 @@ ul{list-style:none;margin:0;padding:0}
 .tl{position:relative;height:168px;margin:0 -16px;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .tl-slot{position:absolute;top:0;left:0;width:156px;height:100%;padding:8px 5px 14px;will-change:transform}
+.tl{-webkit-touch-callout:none}
+.tl.reordering{cursor:grabbing}
+.tl-slot.lift{z-index:5}
+.tl-slot.lift .tcard,.tl-slot.lift .tcard:active{transform:scale(1.07) translateY(-4px);box-shadow:0 16px 32px rgba(120,90,200,.32)}
 .tcard{height:100%;border-radius:22px;padding:12px 12px 10px;background:var(--c1);box-shadow:var(--shadow);display:flex;flex-direction:column;position:relative;transition:transform .12s}
 .tcard:active{transform:scale(.96)}
 .tl-slot.c0 .tcard{background:var(--c0)} .tl-slot.c1 .tcard{background:var(--c1)} .tl-slot.c2 .tcard{background:var(--c2)} .tl-slot.c3 .tcard{background:var(--c3)} .tl-slot.c4 .tcard{background:var(--c4)}
@@ -301,7 +305,7 @@ ul{list-style:none;margin:0;padding:0}
     <div><button id="editRBtn" class="add">⚙︎ 設定</button> <button id="addBtn" class="add">＋ 追加</button></div>
   </div>
   <div class="tl" id="tl"></div>
-  <p class="tl-tip">タップで編集 ・ さわると止まる ・ 指でずらせるよ</p>
+  <p class="tl-tip">タップで編集 ・ 長押しでつかんで並べかえ ・ 指でずらせるよ</p>
   <div id="sugg"></div>
   <section id="tasks" class="card mini" hidden></section>
   <section id="recCard" class="card mini"></section>
@@ -584,10 +588,13 @@ const todayWx = () => { const w = load(K.wx, null); return w && w.date === today
 function wxSpeech(w) {
   return `今日は${wxInfo(w.code)[1]}、最高${Math.round(w.max)}度、最低${Math.round(w.min)}度。` + clothes(w).join('。').replace('☂️ ', '') + '。';
 }
-let wxBusy = false, wxErr = false;
+let wxBusy = false, wxErr = false, wxFailAt = 0;
+// 失敗したら10分はあける（すぐ読みに行き直すと、電波がないときにずっと繰り返してしまう）
+const wxWait = () => wxErr && Date.now() - wxFailAt < 10 * MIN;
 function fetchWeather(force) {
   const geo = load(K.geo, null);
   if (!geo || wxBusy) return;
+  if (!force && wxWait()) return;
   const w = load(K.wx, null);
   if (!force && w && w.date === today() && Date.now() - w.at < 3 * 3600e3) return;
   wxBusy = true;
@@ -601,7 +608,7 @@ function fetchWeather(force) {
       now: d.current.temperature_2m
     });
     wxErr = false;
-  }).catch(() => { wxErr = true; }).then(() => { wxBusy = false; renderWeather(); });
+  }).catch(() => { wxErr = true; wxFailAt = Date.now(); }).then(() => { wxBusy = false; renderWeather(); });
 }
 function askGeo() {
   if (!navigator.geolocation) { toast('位置情報が使えない端末みたい'); return; }
@@ -617,7 +624,7 @@ function renderWeather() {
   if (!load(K.geo, null)) { el.innerHTML = '<button class="wx-ask" data-act="geo">📍 今日の天気と服装を表示する</button>'; return; }
   const w = todayWx();
   if (!w) {
-    if (wxErr) { el.innerHTML = '<button class="wx-ask" data-act="retry">天気を読み込めなかったよ（タップでもう一回）</button>'; return; }
+    if (wxErr) { el.innerHTML = '<button class="wx-ask" data-act="retry">天気を読み込めなかったよ（タップでもう一回）</button>'; fetchWeather(); return; }
     el.innerHTML = '<div class="wx-load">天気を読み込み中…</div>'; fetchWeather(); return;
   }
   const [e, l] = wxInfo(w.code);
@@ -788,6 +795,7 @@ function streak() {
 }
 
 function render() {
+  if (tlReordering()) return;   // カードをつかんでいる最中は描き直さない（指を離したら描き直す）
   const now = new Date(), h = now.getHours();
   $('#date').textContent = `${now.getMonth() + 1}月${now.getDate()}日（${WD[now.getDay()]}）`;
   $('#greet').textContent = h < 4 ? 'まだ夜だよ🌙' : h < 11 ? 'おはよう☀️' : h < 17 ? 'こんにちは🌷' : 'こんばんは🌙';
@@ -878,6 +886,7 @@ function render() {
     </div></div>`;
   }).join('') : '<div class="tl-empty">「＋ 追加」でステップを作ってね</div>';
   tlSlots = [...document.querySelectorAll('#tl .tl-slot')];
+  tlPos = [];
   placeTl();
 
   renderStats();
@@ -958,11 +967,14 @@ $('#voiceBtn').addEventListener('click', () => {
 document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) hide('#' + w.id); }));
 
 // ---------- ステップ編集 ----------
-let editing = -1, emojiTouched = false, fMin = 3, fStar = false;
+let editing = -1, editId = null, emojiTouched = false, fMin = 3, fStar = false;
+// 編集中のステップが今のデータの何番目か（同期などで読み直していても id で探す）
+const editIdx = r => editId ? r.steps.findIndex(s => s.id === editId) : -1;
 function openSheet(i) {
   const r = activeRoutine();
   editing = i;
   const st = i >= 0 ? r.steps[i] : { emoji: '', title: '', min: 3, star: false };
+  editId = i >= 0 ? st.id : null;
   $('#sheetTitle').textContent = i >= 0 ? 'ステップを編集' : `「${r.name}」に追加`;
   $('#fEmoji').value = st.emoji;
   $('#fTitle').value = st.title;
@@ -988,35 +1000,66 @@ $('#fSave').addEventListener('click', () => {
   const title = $('#fTitle').value.trim();
   if (!title) { toast('なにをするか書いてね'); return; }
   const emoji = $('#fEmoji').value.trim() || guessEmoji(title);
-  if (editing >= 0) Object.assign(r.steps[editing], { title, emoji, min: fMin, star: fStar });
-  else r.steps.push({ id: uid(), title, emoji, min: fMin, star: fStar });
+  const i = editIdx(r);
+  if (i >= 0) Object.assign(r.steps[i], { title, emoji, min: fMin, star: fStar });
+  else r.steps.push({ id: editId || uid(), title, emoji, min: fMin, star: fStar });
   saveR(); hide('#sheet'); render();
 });
 $('#fDel').addEventListener('click', () => {
   const r = activeRoutine();
-  if (editing < 0) return;
-  const [gone] = r.steps.splice(editing, 1);
+  const i = editIdx(r);
+  if (i < 0) { hide('#sheet'); render(); return; }
+  const [gone] = r.steps.splice(i, 1);
   saveR(); hide('#sheet'); render();
   toast(`「${gone.title}」を削除したよ`);
 });
 $('#addBtn').addEventListener('click', () => openSheet(-1));
 // 横に流れるタイムライン（1ステップにつきカード1枚・列ごと左へ流れてループする）
+// 長押しでカードをつかむと、横に動かして順番を入れ替えられる
 const TL_W = 156, TL_SECONDS = 28;   // 画面の右端から左端まで約28秒
+const TL_LONG = 400;                 // 長押しと判断するまで（ミリ秒）
+const TL_EDGE = 48, TL_EDGE_SPEED = 280;   // 端に近づけたときに列を進める範囲と速さ
 let tlSlots = [], tlOffset = 0, tlDrag = null, tlHoldUntil = 0, tlLast = 0;
+let tlPos = [];   // 各カードが列の何番目に見えているか（並べ替え中はなめらかに動く）
 const tlLen = () => Math.max(tlSlots.length * TL_W, $('#tl').clientWidth + TL_W);
+const tlMod = (v, L) => ((v % L) + L) % L;
+const tlReordering = () => !!(tlDrag && tlDrag.re);
 function placeTl() {
   if (!tlSlots.length) return;
-  const L = tlLen();
-  tlOffset = ((tlOffset % L) + L) % L;
+  const L = tlLen(), re = tlDrag && tlDrag.re;
+  tlOffset = tlMod(tlOffset, L);
   tlSlots.forEach((el, i) => {
-    const x = ((TL_W + 16 + i * TL_W - tlOffset) % L + L) % L;
+    if (re && i === re.from) return;
+    const p = tlPos[i] == null ? i : tlPos[i];
+    const x = tlMod(TL_W + 16 + p * TL_W - tlOffset, L);
     el.style.transform = `translateX(${x - TL_W}px)`;
   });
+  if (re) re.el.style.transform = `translateX(${re.px - re.grab}px)`;
+}
+// つかんだカードを、列の何番目に入れるか
+function tlTarget(re) {
+  const n = tlSlots.length, L = tlLen();
+  const v = tlMod(re.px - re.grab + TL_W / 2 - 16 + tlOffset, L);
+  if (v < n * TL_W) return Math.min(n - 1, Math.floor(v / TL_W));
+  return v - n * TL_W < (L - n * TL_W) / 2 ? n - 1 : 0;   // 列の切れ目のすき間
 }
 function tlTick(now) {
   const dt = tlLast ? Math.min(.1, (now - tlLast) / 1000) : 0;
   tlLast = now;
-  if (!tlDrag && !run && Date.now() > tlHoldUntil && !document.hidden && tlSlots.length) {
+  const re = tlDrag && tlDrag.re;
+  if (re) {
+    // 端に近づけたら、その方向へ列を進める
+    const w = $('#tl').clientWidth;
+    if (re.px < TL_EDGE) tlOffset -= TL_EDGE_SPEED * dt;
+    else if (re.px > w - TL_EDGE) tlOffset += TL_EDGE_SPEED * dt;
+    re.target = tlTarget(re);
+    // ほかのカードは、つかんだカードの入る場所をあけるように動く
+    const order = tlSlots.map((_, i) => i).filter(i => i !== re.from);
+    order.splice(re.target, 0, re.from);
+    const k = Math.min(1, dt * 14);
+    order.forEach((i, pos) => { tlPos[i] += (pos - tlPos[i]) * k; });
+    placeTl();
+  } else if (!tlDrag && !run && Date.now() > tlHoldUntil && !document.hidden && tlSlots.length) {
     tlOffset += $('#tl').clientWidth / TL_SECONDS * dt;
     placeTl();
   }
@@ -1024,21 +1067,57 @@ function tlTick(now) {
 }
 requestAnimationFrame(tlTick);
 const tl = $('#tl');
+const tlLocalX = e => e.clientX - tl.getBoundingClientRect().left;
+function tlLift() {
+  const d = tlDrag;
+  if (!d || d.moved || d.re || !d.slot) return;
+  const i = +d.slot.dataset.i;
+  const left = d.slot.getBoundingClientRect().left - tl.getBoundingClientRect().left;
+  const st = activeRoutine().steps[i];
+  if (!st) return;
+  d.re = { from: i, id: st.id, el: d.slot, px: d.lx, grab: d.lx - left, target: i };
+  tlPos = tlSlots.map((_, j) => j);
+  d.slot.classList.add('lift');
+  tl.classList.add('reordering');
+  try { tl.setPointerCapture(d.id); } catch (x) {}
+  buzz(15);
+}
+function tlDrop(re, commit) {
+  tl.classList.remove('reordering');
+  re.el.classList.remove('lift');
+  tlHoldUntil = Date.now() + 2500;
+  const r = activeRoutine();
+  const from = r.steps.findIndex(x => x.id === re.id);
+  if (commit && re.target !== re.from && from >= 0) {
+    const [st] = r.steps.splice(from, 1);
+    r.steps.splice(re.target, 0, st);
+    saveR(); toast(`${st.emoji} 「${st.title}」の順番を変えたよ`);
+  }
+  render();
+}
 tl.addEventListener('pointerdown', e => {
-  tlDrag = { x: e.clientX, y: e.clientY, off: tlOffset, moved: false, id: e.pointerId };
+  if (tlDrag) return;
+  const slot = e.target.closest('.tl-slot');
+  tlDrag = { x: e.clientX, y: e.clientY, lx: tlLocalX(e), off: tlOffset, moved: false, id: e.pointerId, slot };
+  if (slot) tlDrag.timer = setTimeout(tlLift, TL_LONG);
 });
 tl.addEventListener('pointermove', e => {
-  if (!tlDrag) return;
-  const dx = e.clientX - tlDrag.x;
-  if (!tlDrag.moved && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - tlDrag.y)) {
+  if (!tlDrag || e.pointerId !== tlDrag.id) return;
+  if (tlDrag.re) { tlDrag.re.px = tlLocalX(e); return; }
+  tlDrag.lx = tlLocalX(e);
+  const dx = e.clientX - tlDrag.x, dy = e.clientY - tlDrag.y;
+  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) clearTimeout(tlDrag.timer);   // 動かしたら長押しではない
+  if (!tlDrag.moved && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
     tlDrag.moved = true;
     try { tl.setPointerCapture(tlDrag.id); } catch (x) {}
   }
   if (tlDrag.moved) { tlOffset = tlDrag.off - dx; placeTl(); }
 });
 function tlEnd(e, cancel) {
-  if (!tlDrag) return;
+  if (!tlDrag || e.pointerId !== tlDrag.id) return;
   const d = tlDrag; tlDrag = null;
+  clearTimeout(d.timer);
+  if (d.re) { tlDrop(d.re, !cancel); return; }
   tlHoldUntil = Date.now() + 2500;   // さわったあとは少しのあいだ止めておく
   if (cancel || d.moved) return;
   const slot = e.target.closest && e.target.closest('.tl-slot');
@@ -1048,11 +1127,15 @@ function tlEnd(e, cancel) {
 }
 tl.addEventListener('pointerup', e => tlEnd(e, false));
 tl.addEventListener('pointercancel', e => tlEnd(e, true));
+// つかんでいるあいだは、画面が上下にスクロールしないようにする
+tl.addEventListener('touchmove', e => { if (tlReordering()) e.preventDefault(); }, { passive: false });
+tl.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('resize', placeTl);
 function moveStep(dir) {
-  const r = activeRoutine(), j = editing + dir;
-  if (editing < 0 || j < 0 || j >= r.steps.length) { toast(dir < 0 ? 'もう一番前だよ' : 'もう一番後ろだよ'); return; }
-  [r.steps[editing], r.steps[j]] = [r.steps[j], r.steps[editing]];
+  const r = activeRoutine(), i = editIdx(r), j = i + dir;
+  if (i < 0) return;
+  if (j < 0 || j >= r.steps.length) { toast(dir < 0 ? 'もう一番前だよ' : 'もう一番後ろだよ'); return; }
+  [r.steps[i], r.steps[j]] = [r.steps[j], r.steps[i]];
   editing = j; saveR(); render();
   toast(`${j + 1}番目にしたよ`);
 }
@@ -1082,16 +1165,19 @@ $('#editRBtn').addEventListener('click', () => openRSheet(activeRoutine(), false
 $('#rSave').addEventListener('click', () => {
   const name = $('#rName').value.trim();
   if (!name) { toast('名前をつけてね（例：平日、休日、在宅の日）'); return; }
+  // 開いているあいだに同期などで読み直していても、いまのデータの中から探して直す
+  if (!rIsNew) rEdit = routines.find(x => x.id === rEdit.id) || rEdit;
   // ほかのルーティーンと曜日がかぶったら、こっちを優先する
-  routines.forEach(x => { if (x !== rEdit) x.days = x.days.filter(d => !rDays.includes(d)); });
+  routines.forEach(x => { if (x.id !== rEdit.id) x.days = x.days.filter(d => !rDays.includes(d)); });
   Object.assign(rEdit, { name, emoji: $('#rEmoji').value.trim() || '🌸', days: rDays, leave: $('#rLeave').value || null });
-  if (rIsNew) { routines.push(rEdit); setPick({ id: rEdit.id, rush: false }); }
+  if (rIsNew || !routines.includes(rEdit)) routines.push(rEdit);
+  if (rIsNew) { setPick({ id: rEdit.id, rush: false }); }
   saveR(); hide('#rsheet'); render();
   if (rIsNew) toast('「＋ 追加」でステップを入れてね');
 });
 $('#rDel').addEventListener('click', () => {
   if (!confirm(`「${rEdit.name}」を削除する？`)) return;
-  routines = routines.filter(x => x !== rEdit);
+  routines = routines.filter(x => x.id !== rEdit.id);
   saveR(); hide('#rsheet'); render();
 });
 
