@@ -67,7 +67,7 @@ function habitStreak(id, checks) {
 }
 
 // ---------- 育てるキャラ ----------
-// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5
+// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）
 function xpOf(day) {
   const inDay = k => !day || k === day;
   let xp = 0;
@@ -77,6 +77,7 @@ function xpOf(day) {
   const nr = load('night:records', {}); Object.keys(nr).forEach(k => { if (inDay(k) && nr[k].done) xp += 20; });
   const t3 = load('plan:top3done', {}); Object.keys(t3).forEach(k => { if (inDay(k)) xp += 30; });
   const mr = load('morning:records', {}); Object.keys(mr).forEach(k => { if (inDay(k) && mr[k].weight != null) xp += 5; });
+  const fl = load('food:log', {}); Object.keys(fl).forEach(k => { if (inDay(k) && fl[k].length) xp += 5; });
   return xp;
 }
 const LEVEL_XP = L => 40 * L * (L - 1);
@@ -135,7 +136,7 @@ function confetti() {
 function onDataChange(cb) {
   let t = null;
   const later = () => { clearTimeout(t); t = setTimeout(cb, 80); };
-  window.addEventListener('storage', e => { if (!e.key || /^(task-app|morning|plan|habits|night|pet|body):/.test(e.key)) later(); });
+  window.addEventListener('storage', e => { if (!e.key || /^(task-app|morning|plan|habits|night|pet|body|food):/.test(e.key)) later(); });
   window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.type === 'refresh') later(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) later(); });
   setInterval(cb, 60000);

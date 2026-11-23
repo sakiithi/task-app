@@ -17,7 +17,8 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `morning.html` … ☀️朝「Good Morning Routine」。単体で開いても動く
 - `today.html` … 🗓今日（今日の3つ・時間割・習慣チェック・育てるキャラ・気づき）
 - `night.html` … 🌙夜（ふりかえり・終わらなかったタスクを明日へ・気分と日記・明日の準備）
-- `body.html` … 💪からだ（体重・グラフ・目標・BMI・体脂肪などの記録・生理の予想・まとめ・気づき・CSV書き出し）
+- `food-db.js` … ごはんの栄養データ（よく食べるもの約110品、1人前の kcal・たんぱく質・脂質・炭水化物のめやす）。品目を足すときはここに1行足す
+- `body.html` … 💪からだ。上の切り替えで「⚖️ からだ」と「🍽 ごはん」（体重・グラフ・目標・BMI・体脂肪などの記録・生理の予想・まとめ・気づき・CSV書き出し）
 - `shared.js` / `shared.css` … today・night・body で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
 - `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
 - `manifest.webmanifest`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png` … ホーム画面用
@@ -75,6 +76,8 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - 今日のからだ：体脂肪率・ウエスト・歩数・水分（＋ボタン）・生理（最初はオフ）・メモ、ねむりは朝のきろくから表示。項目は設定でオン/オフ
 - 生理：記録から周期を出して次の予定日を予想（記録が1回だけなら28日として予想）
 - まとめ・気づき（先週との差、曜日のくせ、歩数やねむりと次の日の体重、記録の連続）、30日分の一覧（タップで編集）、CSVの書き出し
+- **🍽 ごはん**：朝・昼・夜・間食ごとに食べたものを記録。検索（ひらがな・カタカナどちらでも）か「よく食べる」からタップで追加、量（半分〜3倍）と食事の区分はあとで変えられる。リストにないものは自分で入力して保存（次から検索に出る）。空の食事は「昨日と同じにする」でコピー。1日の kcal・たんぱく質・脂質・炭水化物と目標（kcal＋バランスのプリセット）、1週間の棒グラフ。過去の日も ‹ › で見られる
+- 写真から中身を推測する機能は、Supabase（AIの鍵を隠しておく場所）ができてから足す予定
 
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
@@ -102,6 +105,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
+- `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
 - `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`
 - `morning:checks` … `{ 'YYYY-MM-DD': { ステップid: true|false } }`（朝のカードの手動✓）
 - タスクには任意で `est`（かかる時間・分）がつく
