@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="タスク">
-<title>タスクタイムライン</title>
+<meta name="apple-mobile-web-app-title" content="LIFE">
+<title>LIFE</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1432,17 +1432,31 @@ function checkDue() {
 }
 
 /* ───────── バックアップ ───────── */
+// アプリのデータ（同期と同じ頭の文字のキー）を全部まとめて書き出す。新しい機能のデータも自動で入る
+const BACKUP_RE = /^(task-app|morning|plan|habits|night|pet|body|food|dance):/;
+const BACKUP_SKIP = new Set(['morning:weather', 'body:view', 'body:range', 'task-app:backupNag']);
+const backupKeys = () => {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && BACKUP_RE.test(k) && !BACKUP_SKIP.has(k)) out.push(k);
+  }
+  return out.sort();
+};
 $('exportBtn').onclick = async () => {
-  const data = { app: 'task-app', version: 1, exportedAt: new Date().toISOString(), tasks, log, crossMinutes };
+  save();
+  const all = {};
+  for (const k of backupKeys()) all[k] = localStorage.getItem(k);
+  const data = { app: 'task-app', version: 2, exportedAt: new Date().toISOString(), tasks, log, crossMinutes, all };
   const d = new Date();
-  const name = `task-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  const name = `life-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   try {
     const file = new File([blob], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'タスクのバックアップ' });
+      await navigator.share({ files: [file], title: 'LIFEのバックアップ' });
       markBackedUp();
-      toast('💾 バックアップを保存したよ');
+      toast('💾 バックアップを保存したよ（全部のデータ）');
       return;
     }
   } catch (err) { if (err && err.name === 'AbortError') return; }
@@ -1454,30 +1468,69 @@ $('exportBtn').onclick = async () => {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   markBackedUp();
-  toast('💾 バックアップを保存したよ');
+  toast('💾 バックアップを保存したよ（全部のデータ）');
 };
 $('importBtn').onclick = () => $('importFile').click();
+// 「足す」ときのまぜ方：id つき配列は足りない id だけ、日付などのオブジェクトは足りない項目だけ足す
+function mergeBackupValue(localRaw, fileRaw) {
+  if (localRaw == null) return fileRaw;
+  let a, b;
+  try { a = JSON.parse(localRaw); b = JSON.parse(fileRaw); } catch { return localRaw; }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (!a.every(x => x && typeof x === 'object' && 'id' in x)) return localRaw;
+    const ids = new Set(a.map(x => x.id));
+    return JSON.stringify([...a, ...b.filter(x => x && typeof x === 'object' && x.id != null && !ids.has(x.id))]);
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
+    const out = { ...a };
+    for (const k of Object.keys(b)) if (!(k in out)) out[k] = b[k];
+    return JSON.stringify(out);
+  }
+  return localRaw;
+}
 $('importFile').onchange = async e => {
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  let data;
   try {
-    const data = JSON.parse(await file.text());
+    data = JSON.parse(await file.text());
     if (!data || data.app !== 'task-app' || !Array.isArray(data.tasks)) throw new Error('bad');
-    // 今あるものは残して、ないものだけ足す
-    const ids = new Set(tasks.map(t => t.id));
-    const addT = data.tasks.filter(t => t && t.id && t.title && !ids.has(t.id));
-    const logIds = new Set(log.map(x => x.id));
-    const addL = (Array.isArray(data.log) ? data.log : []).filter(x => x && x.id && !logIds.has(x.id));
-    tasks.push(...addT);
-    log.push(...addL);
-    markBackedUp();
-    closeAll();
-    refresh();
-    toast(`📂 タスク${addT.length}個・記録${addL.length}個を戻したよ`);
   } catch {
     toast('このファイルは読み込めなかったよ');
+    return;
   }
+  // 新しい形（全部入り）のバックアップ
+  if (data.all && typeof data.all === 'object') {
+    const keys = Object.keys(data.all).filter(k => BACKUP_RE.test(k) && !BACKUP_SKIP.has(k) && typeof data.all[k] === 'string');
+    const replace = confirm(
+      `バックアップには ${keys.length} 種類のデータが入っているよ。\n\n` +
+      'OK → 今のデータを、バックアップの中身にまるごと置きかえる（バックアップを取った時と同じになる）\n\n' +
+      'キャンセル → 今のデータは残して、足りないものだけ足す'
+    );
+    save();
+    for (const k of keys) {
+      const v = replace ? data.all[k] : mergeBackupValue(localStorage.getItem(k), data.all[k]);
+      try { localStorage.setItem(k, v); } catch {}
+    }
+    tasks = read(KEY, []);
+    log = read(LOG_KEY, []);
+    markBackedUp();
+    toast(replace ? '📂 バックアップの中身に置きかえたよ' : '📂 足りないデータを足したよ');
+    setTimeout(() => location.reload(), 1200);
+    return;
+  }
+  // 古い形（タスクと記録だけ）のバックアップ：今あるものは残して、ないものだけ足す
+  const ids = new Set(tasks.map(t => t.id));
+  const addT = data.tasks.filter(t => t && t.id && t.title && !ids.has(t.id));
+  const logIds = new Set(log.map(x => x.id));
+  const addL = (Array.isArray(data.log) ? data.log : []).filter(x => x && x.id && !logIds.has(x.id));
+  tasks.push(...addT);
+  log.push(...addL);
+  markBackedUp();
+  closeAll();
+  refresh();
+  toast(`📂 タスク${addT.length}個・記録${addL.length}個を戻したよ`);
 };
 $('settingsBtn').onclick = () => { updateNotifyUI(); updateBackupUI(); updateSyncUI(); open('settingsSheet'); };
 

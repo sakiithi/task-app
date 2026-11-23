@@ -1,6 +1,6 @@
 {
-  "name": "タスクタイムライン",
-  "short_name": "タスク",
+  "name": "LIFE",
+  "short_name": "LIFE",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
