@@ -9,7 +9,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **新しい機能を足す前に、必ず内容を説明して確認をとる**（頼まれた変更そのものはそのまま進めてよい）
 
 ## ファイル構成
-- 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜**。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
+- 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜 / 💪からだ**。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
 - `index.html` … アプリ本体（📋タスク）。HTML・CSS・JavaScript をこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
   - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / due / allDay / est）
   - ほかに受け取るメッセージ：`{type:'tab', tab, action}`（タブ切り替え）、`{type:'running', on}`（朝の実行中は下のタブを隠す）。iframe には `{type:'refresh'}` / `{type:'action', action}` を送る
@@ -17,7 +17,8 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `morning.html` … ☀️朝「Good Morning Routine」。単体で開いても動く
 - `today.html` … 🗓今日（今日の3つ・時間割・習慣チェック・育てるキャラ・気づき）
 - `night.html` … 🌙夜（ふりかえり・終わらなかったタスクを明日へ・気分と日記・明日の準備）
-- `shared.js` / `shared.css` … today と night で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
+- `body.html` … 💪からだ（体重・グラフ・目標・BMI・体脂肪などの記録・生理の予想・まとめ・気づき・CSV書き出し）
+- `shared.js` / `shared.css` … today・night・body で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
 - `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
 - `manifest.webmanifest`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png` … ホーム画面用
 
@@ -65,6 +66,16 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **夜**：今日のまとめ、終わらなかったタスクを「明日へ」（時間つきは明日の同じ時間、なければ明日の終日）、気分・よかったこと3つ・メモ、明日起きる時間（→何時までに寝るか、朝のルーティーンに間に合うか）と明日のルーティーンの出る時間
 - ☀️朝：ステップのカードの○で「完了✓」（手で全部✓すると今日のルーティーン完了として記録）。体重はふだん隠し、タップで20秒だけ見せる。夜に決めた起きる目標と比べる
 
+## 💪 からだの機能
+- 体重は**朝のきろく（`morning:records` の weight）と同じ場所**に保存する（どちらで入れても同じ）
+- 数字は**ふだん隠す**（設定でオフにできる）。隠し中は体重・グラフ・BMI・差を出さない。「👀 タップで見る」で表示、画面を離れると隠し直す
+- 今日の体重の入力（±0.1ボタン）、前回との差、7日平均、BMI（身長を入れたとき）
+- 目標：スタート（目標を決めたときの7日平均）からの進み具合、ここ14日の流れから届く日を予想
+- グラフ：1週・1か月・3か月・1年。毎日の点＋7日平均の線＋目標の点線
+- 今日のからだ：体脂肪率・ウエスト・歩数・水分（＋ボタン）・生理（最初はオフ）・メモ、ねむりは朝のきろくから表示。項目は設定でオン/オフ
+- 生理：記録から周期を出して次の予定日を予想（記録が1回だけなら28日として予想）
+- まとめ・気づき（先週との差、曜日のくせ、歩数やねむりと次の日の体重、記録の連続）、30日分の一覧（タップで編集）、CSVの書き出し
+
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
@@ -91,6 +102,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
+- `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`
 - `morning:checks` … `{ 'YYYY-MM-DD': { ステップid: true|false } }`（朝のカードの手動✓）
 - タスクには任意で `est`（かかる時間・分）がつく
 

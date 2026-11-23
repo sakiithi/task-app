@@ -277,8 +277,8 @@
 
   /* 下のタブ（タスク／朝） */
   .tabbar {
-    position: relative; z-index: 6; display: flex; gap: 8px;
-    padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+    position: relative; z-index: 6; display: flex; gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: var(--surface); border-top: 1.5px solid var(--line);
   }
   .tabbar button {
@@ -411,6 +411,7 @@
     <button type="button" data-tab="morning"><span>☀️</span>朝</button>
     <button type="button" data-tab="today"><span>🗓</span>今日</button>
     <button type="button" data-tab="night"><span>🌙</span>夜</button>
+    <button type="button" data-tab="body"><span>💪</span>からだ</button>
   </nav>
 
   <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" type="button">取り消す</button></div>
@@ -1476,13 +1477,14 @@ function checkBackup() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(checkBackup, 1500); });
 
-/* ───────── 下のタブ（タスク／朝／今日／夜）───────── */
+/* ───────── 下のタブ（タスク／朝／今日／夜／からだ）───────── */
 // タスク以外の画面は、別ファイルを中に表示している（同じサイトなのでデータを共有できる）
 // タスクのデータを書き換えるのはこの画面だけ。ほかの画面からは postMessage で頼まれる。
 const PAGES = {
   morning: { src: 'morning.html', title: 'Good Morning Routine' },
   today: { src: 'today.html', title: '今日のプラン' },
-  night: { src: 'night.html', title: '夜のふりかえり' }
+  night: { src: 'night.html', title: '夜のふりかえり' },
+  body: { src: 'body.html', title: 'からだ' }
 };
 const frames = {};
 let tab = 'tasks';
