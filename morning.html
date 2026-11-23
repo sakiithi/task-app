@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Good Morning Routine</title>
+<meta name="theme-color" content="#f6f1ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Good Morning">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f1ff; --surface:#ffffff; --ink:#3b2d55; --sub:#8a7aa8; --line:#e8defa;
+  --accent:#a98bff; --pink:#ff6fa8; --warn:#ff7a90; --ok:#3bb88a; --star:#ffb020;
+  --grad:linear-gradient(135deg,#b896ff 0%,#ff8cc0 100%);
+  --c0:#ffe3ef; --c1:#ece4ff; --c2:#ffe9dc; --c3:#dff6ec; --c4:#fff4cf;
+  --shadow:0 8px 24px rgba(120,90,200,.14);
+  --blob1:rgba(196,168,255,.55); --blob2:rgba(165,135,250,.40); --blob3:rgba(255,180,220,.38);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1b1528; --surface:#2a2136; --ink:#f1eaff; --sub:#b3a5cf; --line:#3b2f4d; --ok:#6fd6ae;
+    --c0:#4a2a3d; --c1:#382c55; --c2:#4a3328; --c3:#24443a; --c4:#4a4226;
+    --shadow:0 8px 24px rgba(0,0,0,.35);
+    --blob1:rgba(120,90,200,.35); --blob2:rgba(90,70,170,.30); --blob3:rgba(200,90,150,.22);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:'Zen Maru Gothic',system-ui,sans-serif; color:var(--ink); background:var(--bg);
+  background-image:
+    radial-gradient(40vmax 40vmax at 0% 0%,var(--blob1),transparent 70%),
+    radial-gradient(35vmax 35vmax at 100% 30%,var(--blob3),transparent 70%),
+    radial-gradient(45vmax 45vmax at 30% 110%,var(--blob2),transparent 70%);
+  background-attachment:fixed; min-height:100vh;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input{font:inherit;color:var(--ink)}
+[hidden]{display:none!important}
+.wrap{max-width:480px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom))}
+
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.brand{font-weight:900;font-size:13px;letter-spacing:.06em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:2px}
+header small{color:var(--sub);font-weight:700}
+header h1{margin:2px 0 0;font-size:26px;font-weight:900}
+.hbtns{display:flex;gap:8px}
+.chip{background:var(--surface);border-radius:999px;padding:8px 12px;box-shadow:var(--shadow);font-size:18px}
+
+.card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:18px}
+.mini{padding:14px 16px;margin-top:14px}
+.mini h3{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.mini h3 a,.mini h3 button{font-size:13px;color:var(--pink);text-decoration:none;font-weight:700}
+
+/* 天気 */
+.wx{margin-bottom:14px;padding:14px 16px}
+.wx-ask{width:100%;padding:6px;font-weight:700;color:var(--pink)}
+.wx-load{color:var(--sub);font-size:14px;text-align:center}
+.wx-main{display:flex;align-items:center;gap:12px}
+.wx-emo{font-size:40px}
+.wx-main b{font-size:17px}
+.wx-t{font-weight:900;margin-left:4px}
+.wx-main small{display:block;color:var(--sub);font-weight:700;font-size:12px}
+.wx-wear{margin-top:8px;background:var(--c1);border-radius:14px;padding:8px 12px;font-size:14px;font-weight:700}
+
+/* ルーティーンの切り替え */
+.rchips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none}
+.rchips::-webkit-scrollbar{display:none}
+.rchip{flex:none;background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;box-shadow:var(--shadow);color:var(--sub)}
+.rchip.on{background:var(--grad);color:#fff}
+
+.hero{text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:var(--grad);opacity:.12}
+.hero > *{position:relative}
+.sum{font-size:15px;color:var(--sub);font-weight:700}
+.sum b{font-size:40px;color:var(--ink);font-weight:900}
+.eta{margin:4px 0 14px;font-size:14px;color:var(--sub);line-height:1.6}
+.eta b{color:var(--pink);font-size:18px}
+.eta .late{color:var(--warn);font-weight:700}
+.hero-btns{display:flex;gap:10px;align-items:center}
+.rush{flex:none;background:var(--surface);border-radius:999px;padding:14px 14px;font-weight:700;font-size:14px;box-shadow:var(--shadow);color:var(--sub)}
+.rush.on{background:var(--star);color:#fff}
+.big{background:var(--grad);color:#fff;font-weight:900;font-size:19px;border-radius:999px;padding:14px 28px;width:100%;box-shadow:0 8px 20px rgba(255,111,168,.3);transition:transform .12s}
+.big:active{transform:scale(.96)}
+
+/* 見直し提案 */
+.sugg{margin-top:14px;background:var(--c4);border-radius:18px;padding:12px 14px;font-size:14px}
+.sugg b{font-weight:900}
+.sugg .sb{display:flex;gap:8px;margin-top:8px}
+.sugg .sb button{background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px}
+.sugg .sb .yes{background:var(--grad);color:#fff}
+
+/* タスク */
+.tlist{list-style:none;margin:0;padding:0}
+.tlist li{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.tlist li:last-child{border:0}
+.tlist small{color:var(--sub);font-weight:700;margin-left:auto;flex:none}
+.tlist .od{color:var(--warn)}
+
+/* 今日のきろく */
+.recchips{display:flex;flex-wrap:wrap;gap:6px}
+.recchips span{background:var(--c1);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.recempty{color:var(--sub);font-size:14px}
+
+.week{display:flex;justify-content:space-between;margin:16px 0 4px;padding:14px 16px}
+.day{text-align:center;font-size:12px;color:var(--sub);font-weight:700;width:36px}
+.day i{display:grid;place-items:center;width:32px;height:32px;margin:4px auto 0;border-radius:50%;background:var(--line);font-style:normal;font-size:15px}
+.day.on i{background:var(--grad);color:#fff}
+.day.today{color:var(--pink)}
+.streak{text-align:center;font-size:13px;color:var(--sub);margin:6px 0 18px;font-weight:700}
+.streak b{color:var(--pink)}
+
+.row-head{display:flex;justify-content:space-between;align-items:center;margin:8px 4px 10px;gap:8px}
+.row-head h2{font-size:17px;margin:0}
+.row-head small{display:block;color:var(--sub);font-size:12px;font-weight:700}
+.add{background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:700;color:var(--pink);box-shadow:var(--shadow);font-size:14px;flex:none}
+ul{list-style:none;margin:0;padding:0}
+.step{display:flex;align-items:center;gap:12px;border-radius:18px;padding:12px 10px 12px 14px;margin-bottom:10px;background:var(--c1);transition:transform .12s}
+.step:active{transform:scale(.98)}
+.step.c0{background:var(--c0)} .step.c1{background:var(--c1)} .step.c2{background:var(--c2)} .step.c3{background:var(--c3)} .step.c4{background:var(--c4)}
+.step.dim{opacity:.4}
+.step .emo{font-size:26px;width:34px;text-align:center}
+.step .txt{flex:1;min-width:0}
+.step .txt b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step .txt small{color:var(--sub);font-weight:700}
+.step .st{color:var(--star)}
+.mv{display:flex;flex-direction:column;gap:2px}
+.mv button{font-size:11px;color:var(--sub);padding:3px 8px;border-radius:8px}
+.mv button:active{background:rgba(0,0,0,.06)}
+.empty{text-align:center;color:var(--sub);padding:20px}
+
+/* きろく */
+.hist{margin-top:18px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--surface);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
+.tile small{color:var(--sub);font-weight:700;font-size:12px;display:block}
+.tile b{font-size:20px;font-weight:900}
+.tile i{font-style:normal;font-size:12px;color:var(--sub);margin-left:4px}
+.spark{margin-top:10px;padding:12px 14px}
+.spark small{color:var(--sub);font-weight:700;font-size:12px}
+.spark svg{width:100%;height:70px;display:block;margin-top:4px}
+#hist{margin-top:10px}
+#hist li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 4px;border-bottom:1px dashed var(--line);font-size:14px}
+#hist li span{color:var(--sub);font-size:13px;text-align:right}
+
+/* 実行画面 */
+.overlay{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;
+  background-image:radial-gradient(60vmax 60vmax at 50% 20%,var(--blob1),transparent 70%),radial-gradient(50vmax 50vmax at 50% 110%,var(--blob3),transparent 70%);
+  display:flex;flex-direction:column;align-items:center;padding:calc(16px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom))}
+.rtop{display:flex;align-items:center;gap:10px;width:100%;max-width:440px}
+.bar{flex:1;height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--grad);border-radius:999px;transition:width .4s}
+.rtop span{font-weight:700;color:var(--sub);font-size:14px;min-width:38px;text-align:right}
+.ring{position:relative;width:min(60vw,250px);aspect-ratio:1;margin:auto 0 0;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:url(#g);transition:stroke-dashoffset .3s linear}
+.ring .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .remo{font-size:52px;line-height:1}
+.ring .time{font-size:42px;font-weight:900;margin-top:6px;font-variant-numeric:tabular-nums}
+.overlay.over .time{color:var(--warn)}
+.overlay.paused .time{opacity:.4}
+#runTitle{font-size:26px;margin:18px 0 4px;text-align:center}
+#nextUp{color:var(--sub);margin:0;font-size:14px;text-align:center}
+.pace{margin:10px 0 0;font-size:14px;font-weight:700;background:var(--surface);border-radius:999px;padding:6px 14px;box-shadow:var(--shadow)}
+.pace.good{color:var(--ok)} .pace.bad{color:var(--warn)}
+.extra{width:100%;max-width:440px;margin-top:12px}
+.extra .card{padding:12px 14px;margin-bottom:8px;font-size:14px}
+.spacer{margin-top:auto}
+.ctrl{display:flex;gap:12px;align-items:center;width:100%;max-width:440px;margin-top:20px}
+.round{width:58px;height:58px;flex:none;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);font-size:15px;font-weight:700}
+.round.sm{width:40px;height:40px;font-size:16px}
+.round.on{background:var(--grad);color:#fff}
+.ctrl .big{flex:1;padding:18px}
+.sub-ctrl{display:flex;gap:10px;margin-top:14px}
+.pill{background:var(--surface);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:700;color:var(--sub);box-shadow:var(--shadow)}
+.mhint{font-size:12px;color:var(--sub);margin:10px 0 0;text-align:center}
+
+/* 完了画面 */
+.finish{justify-content:center;text-align:center}
+.finish .em{font-size:72px}
+.finish h2{font-size:30px;margin:8px 0}
+.finish p{color:var(--sub);margin:4px 0}
+.finish p b{color:var(--ink)}
+.finish .q{margin-top:22px;font-weight:700;color:var(--ink)}
+.moods{display:flex;gap:10px;justify-content:center;margin:10px 0 14px}
+.moods button{width:62px;padding:8px 0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);font-size:28px;line-height:1.2}
+.moods button small{display:block;font-size:11px;color:var(--sub);font-weight:700}
+.moods button.on{background:var(--grad)} .moods button.on small{color:#fff}
+.finish .big{max-width:320px;margin-top:20px}
+
+/* シート */
+.sheet-wrap{position:fixed;inset:0;z-index:30;background:rgba(40,20,70,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));animation:up .22s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h3{margin:0 0 14px;text-align:center}
+.sheet h4{margin:18px 0 8px;font-size:14px;color:var(--sub)}
+.erow{display:flex;gap:10px}
+.tin{border:2px solid var(--line);border-radius:14px;padding:12px;background:transparent;font-size:16px;outline:none;min-width:0}
+.tin:focus{border-color:var(--accent)}
+.emo-in{width:62px;flex:none;text-align:center;font-size:24px}
+.grow{flex:1}
+.minrow{display:flex;align-items:center;justify-content:center;gap:22px;margin:18px 0 10px}
+.minrow button{width:48px;height:48px;border-radius:50%;background:var(--c1);font-size:24px;font-weight:700}
+.minrow span{font-size:16px;color:var(--sub);font-weight:700;min-width:80px;text-align:center}
+.minrow b{font-size:34px;color:var(--ink)}
+.quick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.quick button{background:var(--c0);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+.starbtn{display:block;width:100%;margin-bottom:14px;padding:11px;border-radius:14px;background:var(--c4);font-weight:700;font-size:14px;color:var(--sub)}
+.starbtn.on{background:var(--star);color:#fff}
+.danger{width:100%;margin-top:10px;padding:12px;color:var(--warn);font-weight:700}
+.days{display:flex;gap:6px;justify-content:space-between}
+.days button{width:40px;height:40px;border-radius:50%;background:var(--line);font-weight:700}
+.days button.on{background:var(--grad);color:#fff}
+.leaverow{display:flex;gap:10px;align-items:center}
+.leaverow .tin{flex:1}
+.hint{font-size:12px;color:var(--sub);margin:6px 2px 0}
+
+.fl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-weight:700;font-size:15px}
+.fl.col{flex-direction:column;align-items:stretch}
+.fl input{border:2px solid var(--line);border-radius:12px;padding:8px 10px;background:transparent;font-size:16px;outline:none}
+.fl input:focus{border-color:var(--accent)}
+.fl input[type=number]{width:90px;text-align:right}
+.fl input[type=text]{width:100%}
+.numw{display:flex;align-items:center;gap:6px;color:var(--sub)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:8px 0;border-radius:14px;background:var(--c1);font-size:22px;line-height:1.2}
+.seg button small{display:block;font-size:11px;color:var(--sub)}
+.seg button.on{background:var(--grad)} .seg button.on small{color:#fff}
+
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);font-weight:700}
+.setrow small{display:block;color:var(--sub);font-size:12px;font-weight:500}
+.tog{width:52px;height:30px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on{background:var(--pink)}
+.tog.on::after{transform:translateX(22px)}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:700;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.conf{position:fixed;top:-20px;width:10px;height:14px;border-radius:3px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="brand">Good Morning Routine</div><small id="date"></small><h1 id="greet">おはよう☀️</h1></div>
+    <div class="hbtns">
+      <button id="voiceBtn" class="chip" aria-label="声の読み上げ">🔊</button>
+      <button id="setBtn" class="chip" aria-label="設定">⚙️</button>
+    </div>
+  </header>
+
+  <section id="wx" class="card wx"></section>
+
+  <div class="rchips" id="rchips"></div>
+
+  <section class="card hero">
+    <div class="sum"><b id="totalMin">0</b> 分 ・ <span id="count">0</span> こ</div>
+    <div class="eta" id="etaLine"></div>
+    <div class="hero-btns">
+      <button id="rushBtn" class="rush">🏃 いそぎ</button>
+      <button id="startBtn" class="big">はじめる ▶︎</button>
+    </div>
+  </section>
+
+  <div id="sugg"></div>
+  <section id="tasks" class="card mini" hidden></section>
+  <section id="recCard" class="card mini"></section>
+
+  <section class="card week" id="week"></section>
+  <div class="streak" id="streak"></div>
+
+  <div class="row-head">
+    <div><h2 id="listTitle">ルーティーン</h2><small id="listSub"></small></div>
+    <div><button id="editRBtn" class="add">⚙︎ 設定</button> <button id="addBtn" class="add">＋ 追加</button></div>
+  </div>
+  <ul id="list"></ul>
+
+  <section class="hist">
+    <div class="row-head"><h2>きろく</h2></div>
+    <div id="tiles" class="tiles"></div>
+    <div id="spark"></div>
+    <ul id="hist"></ul>
+  </section>
+</div>
+
+<!-- 実行画面 -->
+<div id="run" class="overlay" hidden>
+  <div class="rtop">
+    <button id="quitBtn" class="round sm" aria-label="やめる">✕</button>
+    <div class="bar"><i id="bar"></i></div>
+    <span id="stepNo">1/1</span>
+    <button id="micBtn" class="round sm" aria-label="声で操作">🎤</button>
+  </div>
+  <div class="ring">
+    <svg viewBox="0 0 240 240">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b896ff"/><stop offset="1" stop-color="#ff8cc0"/></linearGradient></defs>
+      <circle class="bg" cx="120" cy="120" r="108" fill="none" stroke-width="14"/>
+      <circle class="fg" id="ringFg" cx="120" cy="120" r="108" fill="none" stroke-width="14" stroke-linecap="round"/>
+    </svg>
+    <div class="in"><div class="remo" id="runEmo"></div><div class="time" id="runTime">0:00</div></div>
+  </div>
+  <h2 id="runTitle"></h2>
+  <p id="nextUp"></p>
+  <div id="pace" class="pace"></div>
+  <div id="runExtra" class="extra"></div>
+  <div class="spacer"></div>
+  <div class="ctrl">
+    <button id="pauseBtn" class="round" aria-label="一時停止">⏸</button>
+    <button id="doneBtn" class="big">できた！</button>
+    <button id="skipBtn" class="round">とばす</button>
+  </div>
+  <div class="sub-ctrl">
+    <button id="plusBtn" class="pill">＋1分</button>
+    <button id="backBtn" class="pill">← 1つ前</button>
+  </div>
+  <p id="micHint" class="mhint" hidden>🎤「できた」「とばす」「ストップ」「再開」「もどる」「延長」で操作できるよ</p>
+</div>
+
+<!-- 完了画面 -->
+<div id="finish" class="overlay finish" hidden>
+  <div class="em">🎉</div>
+  <h2 id="finTitle">ぜんぶできた！</h2>
+  <p>かかった時間 <b id="finTime"></b></p>
+  <p><b id="finDone"></b></p>
+  <p id="finStreak"></p>
+  <p class="q">いまの気分は？</p>
+  <div class="moods" id="finMood"></div>
+  <button id="finRec" class="pill">📝 ほかのきろくも書く</button>
+  <button id="finClose" class="big">今日もいい一日に ✨</button>
+</div>
+
+<!-- ステップ編集 -->
+<div id="sheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3 id="sheetTitle">ステップを追加</h3>
+    <div class="erow">
+      <input id="fEmoji" class="tin emo-in" maxlength="8" aria-label="絵文字">
+      <input id="fTitle" class="tin grow" placeholder="例：お水を飲む" enterkeyhint="done">
+    </div>
+    <div class="minrow">
+      <button data-d="-1" aria-label="1分へらす">−</button>
+      <span><b id="fMin">3</b> 分</span>
+      <button data-d="1" aria-label="1分ふやす">＋</button>
+    </div>
+    <div class="quick" id="quick"></div>
+    <button id="fStar" class="starbtn">⭐ いそぎの日もやる</button>
+    <button id="fSave" class="big">保存</button>
+    <button id="fDel" class="danger">このステップを削除</button>
+  </div>
+</div>
+
+<!-- ルーティーン設定 -->
+<div id="rsheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3 id="rTitle">ルーティーンの設定</h3>
+    <div class="erow">
+      <input id="rEmoji" class="tin emo-in" maxlength="8" aria-label="絵文字">
+      <input id="rName" class="tin grow" placeholder="例：平日">
+    </div>
+    <h4>自動で選ばれる曜日</h4>
+    <div class="days" id="rDays"></div>
+    <h4>家を出る時間</h4>
+    <div class="leaverow">
+      <input id="rLeave" class="tin" type="time">
+      <button id="rLeaveClear" class="pill">なし</button>
+    </div>
+    <p class="hint">決めておくと「何時までに始めればいいか」と、やっている最中のペースを教えてくれるよ</p>
+    <button id="rSave" class="big" style="margin-top:18px">保存</button>
+    <button id="rDel" class="danger">このルーティーンを削除</button>
+  </div>
+</div>
+
+<!-- きろく -->
+<div id="recsheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3 id="recTitle">今日のきろく</h3>
+    <div id="recForm"></div>
+    <button id="recSave" class="big" style="margin-top:18px">保存</button>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div id="setsheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3>設定</h3>
+    <div class="setrow"><span>🔊 声で読み上げ</span><button id="tVoice" class="tog" aria-label="声で読み上げ"></button></div>
+    <div class="setrow"><span>🎤 声で操作<small>やっている最中に「できた」などと話すと進む</small></span><button id="tMic" class="tog" aria-label="声で操作"></button></div>
+    <div class="setrow"><span>🌤️ 天気の場所<small id="geoNote"></small></span><button id="geoBtn" class="pill">📍 いまの場所</button></div>
+    <h4>きろくする項目</h4>
+    <div id="fieldToggles"></div>
+    <button id="setClose" class="big" style="margin-top:18px">とじる</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const K = {
+  routines: 'morning:routines', oldSteps: 'morning:steps', log: 'morning:log', rec: 'morning:records',
+  voice: 'morning:voice', mic: 'morning:mic', geo: 'morning:geo', wx: 'morning:weather',
+  fields: 'morning:recFields', pick: 'morning:pick', dismiss: 'morning:dismiss'
+};
+const WD = '日月火水木金土';
+const RING_C = 2 * Math.PI * 108;
+const MIN = 60000;
+
+const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dayKey = d => { d = new Date(d); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const today = () => dayKey(Date.now());
+const hm = d => { d = new Date(d); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const minOf = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+const minToHm = m => { m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
+const atToday = s => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() + minOf(s) * MIN; };
+const durLabel = ms => { const m = Math.max(0, Math.round(ms / MIN)); return m < 60 ? m + '分' : Math.floor(m / 60) + '時間' + (m % 60 ? m % 60 + '分' : ''); };
+const dateLabel = key => { const [y, mo, d] = key.split('-').map(Number); const dt = new Date(y, mo - 1, d); return `${mo}/${d}（${WD[dt.getDay()]}）`; };
+const show = id => { $(id).hidden = false; };
+const hide = id => { $(id).hidden = true; if (document.activeElement) document.activeElement.blur(); };
+
+// ---------- 絵文字 ----------
+const EMOJI = [
+  [/水やり|植物/, '🪴'], [/水|白湯/, '💧'], [/顔|洗顔/, '🫧'], [/歯/, '🪥'],
+  [/ストレッチ|ヨガ|体操|筋トレ/, '🧘‍♀️'], [/瞑想|深呼吸/, '🌿'],
+  [/朝ごはん|朝食|ご飯|ごはん|パン/, '🍳'], [/コーヒー|お茶|紅茶/, '☕'],
+  [/着替/, '👕'], [/メイク|化粧/, '💄'], [/髪|ヘア/, '💇‍♀️'], [/シャワー|お風呂/, '🚿'],
+  [/布団|ベッド/, '🛏️'], [/散歩|ウォーキング|ラン/, '🚶‍♀️'], [/予定|スケジュール|タスク/, '📅'],
+  [/日記|ジャーナル|書く/, '📓'], [/読書|本/, '📖'], [/薬|サプリ/, '💊'], [/ゴミ/, '🗑️'],
+  [/カーテン|日光|光/, '🌤️'], [/掃除|片付/, '🧹'], [/ニュース/, '📰'], [/天気/, '☀️'], [/体重|きろく|記録/, '📝']
+];
+const guessEmoji = t => { for (const [re, e] of EMOJI) if (re.test(t)) return e; return '✨'; };
+
+// ---------- データ ----------
+const mk = list => list.map(([emoji, title, min, star]) => ({ id: uid(), emoji, title, min, star: !!star }));
+const DEFAULT_WEEKDAY = [
+  ['🌤️', 'カーテンを開ける', 1], ['💧', 'お水を飲む', 1, 1], ['🫧', '顔を洗う', 3, 1],
+  ['🧘‍♀️', 'ストレッチ', 5], ['🍳', '朝ごはん', 15], ['🪥', '歯みがき', 3, 1],
+  ['👕', '着替える', 5, 1], ['📅', '今日の予定を見る', 2, 1]
+];
+const DEFAULT_HOLIDAY = [
+  ['🌤️', 'カーテンを開ける', 1], ['💧', 'お水を飲む', 1, 1], ['🧘‍♀️', 'ゆっくりストレッチ', 10],
+  ['☕', 'コーヒータイム', 15], ['🍳', '朝ごはん', 20, 1], ['🪥', '歯みがき', 3, 1], ['📅', '今日の予定を見る', 3]
+];
+
+let routines = load(K.routines, null);
+if (!Array.isArray(routines) || !routines.length) {
+  // 前のバージョン（ステップが1つだけの形）から引き継ぐ
+  const old = load(K.oldSteps, null);
+  const wd = Array.isArray(old) && old.length
+    ? old.map(s => Object.assign({ star: /水|顔|歯|着替/.test(s.title) }, s))
+    : mk(DEFAULT_WEEKDAY);
+  routines = [
+    { id: uid(), name: '平日', emoji: '💼', days: [1, 2, 3, 4, 5], leave: null, steps: wd },
+    { id: uid(), name: '休日', emoji: '🌷', days: [0, 6], leave: null, steps: mk(DEFAULT_HOLIDAY) }
+  ];
+  store(K.routines, routines);
+}
+let log = load(K.log, []);         // { date, start, end, done, total, routineId, routineName, rush, steps:[{id,title,min,ms,done}] }
+let records = load(K.rec, {});     // { 'YYYY-MM-DD': { wake, bed, sleepQ, weight, temp, mood, body, goal, firstOpen } }
+let voiceOn = load(K.voice, true);
+let micOn = load(K.mic, false);
+const saveR = () => store(K.routines, routines);
+const saveRec = () => store(K.rec, records);
+
+// 今日の最初にアプリを開いた時間（起きた時間の目安）
+(() => {
+  const h = new Date().getHours();
+  const r = records[today()] || {};
+  if (h >= 3 && h < 12 && !r.firstOpen) { r.firstOpen = hm(Date.now()); records[today()] = r; saveRec(); }
+})();
+
+// ---------- 今日のルーティーン ----------
+function activeRoutine() {
+  const p = load(K.pick, null);
+  if (p && p.date === today()) { const r = routines.find(x => x.id === p.id); if (r) return r; }
+  const dow = new Date().getDay();
+  return routines.find(r => r.days.includes(dow)) || routines[0];
+}
+function isRush() { const p = load(K.pick, null); return !!(p && p.date === today() && p.rush); }
+function setPick(patch) {
+  const p = load(K.pick, null);
+  const base = p && p.date === today() ? p : { date: today(), id: activeRoutine().id, rush: false };
+  store(K.pick, Object.assign({}, base, patch));
+}
+const planOf = (r, rush) => rush ? r.steps.filter(s => s.star) : r.steps;
+const sumMin = list => list.reduce((a, s) => a + s.min, 0);
+function daysLabel(days) {
+  const s = days.slice().sort().join('');
+  if (s === '12345') return '平日';
+  if (s === '06') return '土日';
+  if (s === '0123456') return '毎日';
+  if (!s) return '曜日なし';
+  return days.slice().sort().map(d => WD[d]).join('・');
+}
+
+// ---------- タスクアプリ（同じサイトの task-app）----------
+function todayTasks() {
+  let t;
+  try { t = JSON.parse(localStorage.getItem('task-app:tasks')); } catch (e) { return null; }
+  if (!Array.isArray(t)) return null;
+  const end = new Date(); end.setHours(23, 59, 59, 999);
+  return t.filter(x => !x.done && (x.star || (x.due && x.due <= end.getTime())))
+    .sort((a, b) => (+!!b.star - +!!a.star) || ((a.due || 9e15) - (b.due || 9e15)))
+    .slice(0, 6);
+}
+function taskListHtml(ts) {
+  if (!ts.length) return '<p class="recempty">今日のタスクはないよ 🎈</p>';
+  const sod = new Date(); sod.setHours(0, 0, 0, 0);
+  return '<ul class="tlist">' + ts.map(t => {
+    let when = '';
+    if (t.due && t.due < sod.getTime()) when = '<small class="od">期限すぎ</small>';
+    else if (t.due && !t.allDay) when = `<small>${hm(t.due)}</small>`;
+    return `<li>${t.star ? '⭐' : '・'} ${esc(t.title)}${when}</li>`;
+  }).join('') + '</ul>';
+}
+
+// ---------- 天気 ----------
+function wxInfo(c) {
+  if (c === 0) return ['☀️', '晴れ'];
+  if (c === 1) return ['🌤️', '晴れ'];
+  if (c === 2) return ['⛅', '晴れ時々くもり'];
+  if (c === 3) return ['☁️', 'くもり'];
+  if (c === 45 || c === 48) return ['🌫️', 'きり'];
+  if (c >= 51 && c <= 57) return ['🌦️', '小雨'];
+  if (c >= 61 && c <= 67) return ['🌧️', c >= 65 ? '大雨' : '雨'];
+  if (c >= 71 && c <= 77) return ['❄️', '雪'];
+  if (c >= 80 && c <= 82) return ['🌦️', 'にわか雨'];
+  if (c === 85 || c === 86) return ['🌨️', '雪'];
+  if (c >= 95) return ['⛈️', '雷雨'];
+  return ['🌈', ''];
+}
+function clothes(w) {
+  const mx = w.max, out = [];
+  out.push(mx >= 28 ? '半袖でOK・暑さ対策を' : mx >= 23 ? '半袖＋うすい羽織り' : mx >= 18 ? '長袖1枚がちょうどいい'
+    : mx >= 13 ? 'カーディガンかうすいジャケット' : mx >= 8 ? 'コートがあると安心' : 'あったかいコートとマフラー');
+  if (w.max - w.min >= 10) out.push('寒暖差が大きいよ');
+  if (w.pop >= 50) out.push('☂️ 傘を持ってね'); else if (w.pop >= 30) out.push('折りたたみ傘があると安心');
+  return out;
+}
+const todayWx = () => { const w = load(K.wx, null); return w && w.date === today() ? w : null; };
+function wxSpeech(w) {
+  return `今日は${wxInfo(w.code)[1]}、最高${Math.round(w.max)}度、最低${Math.round(w.min)}度。` + clothes(w).join('。').replace('☂️ ', '') + '。';
+}
+let wxBusy = false, wxErr = false;
+function fetchWeather(force) {
+  const geo = load(K.geo, null);
+  if (!geo || wxBusy) return;
+  const w = load(K.wx, null);
+  if (!force && w && w.date === today() && Date.now() - w.at < 3 * 3600e3) return;
+  wxBusy = true;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}`
+    + '&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1';
+  fetch(url).then(r => r.json()).then(d => {
+    store(K.wx, {
+      date: today(), at: Date.now(), code: d.daily.weather_code[0],
+      max: d.daily.temperature_2m_max[0], min: d.daily.temperature_2m_min[0],
+      pop: d.daily.precipitation_probability_max[0] == null ? 0 : d.daily.precipitation_probability_max[0],
+      now: d.current.temperature_2m
+    });
+    wxErr = false;
+  }).catch(() => { wxErr = true; }).then(() => { wxBusy = false; renderWeather(); });
+}
+function askGeo() {
+  if (!navigator.geolocation) { toast('位置情報が使えない端末みたい'); return; }
+  toast('場所を調べてるよ…');
+  navigator.geolocation.getCurrentPosition(p => {
+    // 町くらいの細かさに丸める
+    store(K.geo, { lat: Math.round(p.coords.latitude * 100) / 100, lon: Math.round(p.coords.longitude * 100) / 100 });
+    fetchWeather(true); renderSettings();
+  }, () => toast('位置情報が使えなかったよ（設定で許可してね）'), { timeout: 15000, maximumAge: 6 * 3600e3 });
+}
+function renderWeather() {
+  const el = $('#wx');
+  if (!load(K.geo, null)) { el.innerHTML = '<button class="wx-ask" data-act="geo">📍 今日の天気と服装を表示する</button>'; return; }
+  const w = todayWx();
+  if (!w) {
+    if (wxErr) { el.innerHTML = '<button class="wx-ask" data-act="retry">天気を読み込めなかったよ（タップでもう一回）</button>'; return; }
+    el.innerHTML = '<div class="wx-load">天気を読み込み中…</div>'; fetchWeather(); return;
+  }
+  const [e, l] = wxInfo(w.code);
+  el.innerHTML = `<div class="wx-main"><span class="wx-emo">${e}</span><div><b>${l}</b><span class="wx-t">${Math.round(w.max)}° / ${Math.round(w.min)}°</span>`
+    + `<small>いま ${Math.round(w.now)}° ・ 降水確率 ${w.pop}%</small></div></div><div class="wx-wear">👚 ${clothes(w).map(esc).join('<br>')}</div>`;
+  fetchWeather();
+}
+$('#wx').addEventListener('click', e => {
+  const a = e.target.dataset.act;
+  if (a === 'geo') askGeo();
+  if (a === 'retry') { wxErr = false; fetchWeather(true); renderWeather(); }
+});
+
+// ---------- 朝のきろく ----------
+const REC_FIELDS = [
+  { k: 'wake', label: '起きた時間', icon: '⏰', type: 'time' },
+  { k: 'bed', label: '寝た時間（昨日の夜）', icon: '🛌', type: 'time' },
+  { k: 'sleepQ', label: 'ねむりの質', icon: '💤', type: 'pick', opts: ['ぐっすり', 'まあまあ', '浅い', 'ねむい'], emo: ['😴', '🙂', '😵‍💫', '🥱'] },
+  { k: 'weight', label: '体重', icon: '⚖️', type: 'num', unit: 'kg', step: '0.1', ph: '50.0' },
+  { k: 'temp', label: '体温', icon: '🌡️', type: 'num', unit: '℃', step: '0.1', ph: '36.5' },
+  { k: 'mood', label: '気分', icon: '💗', type: 'pick', opts: ['さいこう', 'いい感じ', 'ふつう', 'いまいち'], emo: ['😆', '🙂', '😐', '😪'] },
+  { k: 'body', label: '体調', icon: '🌱', type: 'pick', opts: ['元気', 'ふつう', 'だるい', '不調'], emo: ['💪', '🙂', '😮‍💨', '🤒'] },
+  { k: 'water', label: '朝の水分', icon: '💧', type: 'pick', opts: ['なし', 'コップ1', 'コップ2', '3以上'], emo: ['🫗', '🥛', '🥛🥛', '🌊'] },
+  { k: 'goal', label: '今日のひとこと・目標', icon: '✏️', type: 'text', ph: '例：早めに寝る' }
+];
+const DEFAULT_FIELDS = ['wake', 'bed', 'sleepQ', 'weight', 'mood', 'body', 'goal'];
+const fieldsOn = () => load(K.fields, DEFAULT_FIELDS);
+const fieldDef = k => REC_FIELDS.find(f => f.k === k);
+const sleepHours = r => r && r.bed && r.wake ? ((minOf(r.wake) - minOf(r.bed) + 1440) % 1440) / 60 : null;
+
+function recChips(r) {
+  const out = [];
+  if (!r) return out;
+  if (r.wake) out.push(`⏰ ${r.wake}`);
+  const sh = sleepHours(r); if (sh != null) out.push(`🛌 ${sh.toFixed(1)}h`);
+  if (r.sleepQ != null) out.push(`${fieldDef('sleepQ').emo[r.sleepQ]} ${fieldDef('sleepQ').opts[r.sleepQ]}`);
+  if (r.weight != null) out.push(`⚖️ ${r.weight}kg`);
+  if (r.temp != null) out.push(`🌡️ ${r.temp}℃`);
+  if (r.mood != null) out.push(`${fieldDef('mood').emo[r.mood]} ${fieldDef('mood').opts[r.mood]}`);
+  if (r.body != null) out.push(`${fieldDef('body').emo[r.body]} ${fieldDef('body').opts[r.body]}`);
+  if (r.water != null) out.push(`💧 ${fieldDef('water').opts[r.water]}`);
+  if (r.goal) out.push(`✏️ ${esc(r.goal)}`);
+  return out;
+}
+
+let recDate = null;
+function openRec(date) {
+  recDate = date;
+  const r = records[date] || {}, on = fieldsOn();
+  $('#recTitle').textContent = date === today() ? '今日のきろく' : dateLabel(date) + 'のきろく';
+  $('#recForm').innerHTML = REC_FIELDS.filter(f => on.includes(f.k)).map(f => {
+    let v = r[f.k];
+    if (v == null && f.k === 'wake' && r.firstOpen) v = r.firstOpen;
+    if (v == null) v = '';
+    if (f.type === 'time') return `<label class="fl"><span>${f.icon} ${f.label}</span><input type="time" data-k="${f.k}" value="${esc(v)}"></label>`;
+    if (f.type === 'num') return `<label class="fl"><span>${f.icon} ${f.label}</span><span class="numw"><input type="number" inputmode="decimal" step="${f.step}" data-k="${f.k}" value="${esc(v)}" placeholder="${f.ph}">${f.unit}</span></label>`;
+    if (f.type === 'pick') return `<div class="fl col"><span>${f.icon} ${f.label}</span><div class="seg" data-k="${f.k}">`
+      + f.opts.map((o, i) => `<button type="button" data-v="${i}" class="${v === i ? 'on' : ''}">${f.emo[i]}<small>${o}</small></button>`).join('') + '</div></div>';
+    return `<label class="fl col"><span>${f.icon} ${f.label}</span><input type="text" data-k="${f.k}" value="${esc(v)}" placeholder="${f.ph || ''}"></label>`;
+  }).join('') || '<p class="recempty">⚙️設定で、きろくする項目を選んでね</p>';
+  show('#recsheet');
+}
+$('#recForm').addEventListener('click', e => {
+  const b = e.target.closest('.seg button');
+  if (!b) return;
+  const was = b.classList.contains('on');
+  b.parentNode.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+  if (!was) b.classList.add('on');
+});
+$('#recSave').addEventListener('click', () => {
+  const r = Object.assign({}, records[recDate] || {});
+  $('#recForm').querySelectorAll('input[data-k]').forEach(inp => {
+    const k = inp.dataset.k, v = inp.value.trim();
+    if (!v) { delete r[k]; return; }
+    if (inp.type === 'number') { const n = parseFloat(v); if (isNaN(n)) delete r[k]; else r[k] = n; }
+    else r[k] = v;
+  });
+  $('#recForm').querySelectorAll('.seg').forEach(s => {
+    const on = s.querySelector('.on');
+    if (on) r[s.dataset.k] = +on.dataset.v; else delete r[s.dataset.k];
+  });
+  records[recDate] = r; saveRec();
+  hide('#recsheet'); render(); toast('きろくしたよ 📝');
+});
+
+// ---------- 時間の見直し提案 ----------
+function stepTimes(id) {
+  const xs = [];
+  for (const l of log.slice().sort((a, b) => b.start - a.start)) {
+    if (!l.steps) continue;
+    const s = l.steps.find(x => x.id === id && x.done);
+    if (s) xs.push(s.ms);
+    if (xs.length >= 5) break;
+  }
+  return xs;
+}
+function avgMinOf(id) {
+  const xs = stepTimes(id);
+  if (xs.length < 3) return null;
+  return Math.max(1, Math.round(xs.reduce((a, b) => a + b, 0) / xs.length / MIN));
+}
+function suggestions(r) {
+  const dis = load(K.dismiss, {});
+  return r.steps.map(s => ({ s, avg: avgMinOf(s.id) }))
+    .filter(({ s, avg }) => avg != null && Math.abs(avg - s.min) >= 2 && Math.abs(avg - s.min) / s.min >= .3
+      && !(dis[s.id] && Date.now() - dis[s.id] < 7 * 86400e3))
+    .slice(0, 2);
+}
+$('#sugg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-sid]');
+  if (!b) return;
+  const r = activeRoutine(), s = r.steps.find(x => x.id === b.dataset.sid);
+  if (!s) return;
+  if (b.dataset.min) { s.min = +b.dataset.min; saveR(); toast(`「${s.title}」を${s.min}分にしたよ`); }
+  else { const d = load(K.dismiss, {}); d[s.id] = Date.now(); store(K.dismiss, d); }
+  render();
+});
+
+// ---------- 画面の描画 ----------
+function streak() {
+  const set = new Set(log.map(l => l.date));
+  const d = new Date();
+  if (!set.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (set.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+function render() {
+  const now = new Date(), h = now.getHours();
+  $('#date').textContent = `${now.getMonth() + 1}月${now.getDate()}日（${WD[now.getDay()]}）`;
+  $('#greet').textContent = h < 4 ? 'まだ夜だよ🌙' : h < 11 ? 'おはよう☀️' : h < 17 ? 'こんにちは🌷' : 'こんばんは🌙';
+  $('#voiceBtn').textContent = voiceOn ? '🔊' : '🔇';
+  renderWeather();
+
+  const r = activeRoutine(), rush = isRush(), plan = planOf(r, rush), tm = sumMin(plan);
+
+  $('#rchips').innerHTML = routines.map(x => `<button class="rchip${x.id === r.id ? ' on' : ''}" data-r="${x.id}">${esc(x.emoji)} ${esc(x.name)}</button>`).join('')
+    + '<button class="rchip" data-r="new">＋ 新しく作る</button>';
+
+  // 合計と時間の目安
+  $('#totalMin').textContent = tm;
+  $('#count').textContent = plan.length;
+  $('#rushBtn').classList.toggle('on', rush);
+  $('#rushBtn').textContent = rush ? '🏃 いそぎ中' : '🏃 いそぎ';
+  const doneToday = log.some(l => l.date === today());
+  $('#startBtn').textContent = doneToday ? 'もう一回 ▶︎' : 'はじめる ▶︎';
+  let eta = '', base = Date.now();
+  if (r.leave) {
+    const leaveAt = atToday(r.leave), startBy = leaveAt - tm * MIN;
+    if (Date.now() > leaveAt) eta = `今から始めると <b>${hm(Date.now() + tm * MIN)}</b> に終わるよ`;
+    else if (Date.now() <= startBy) {
+      base = startBy;
+      eta = `${r.leave} に出るなら<br><b>${hm(startBy)}</b> までに始めよう（あと ${durLabel(startBy - Date.now())}）`;
+    } else {
+      const late = Date.now() + tm * MIN - leaveAt;
+      eta = `${r.leave} に出るには <span class="late">${durLabel(late)} おくれそう</span>`;
+      if (!rush && r.steps.some(s => s.star)) eta += `<br>🏃 いそぎなら <b>${hm(Date.now() + sumMin(planOf(r, true)) * MIN)}</b> に終わるよ`;
+    }
+  } else eta = `今から始めると <b>${hm(Date.now() + tm * MIN)}</b> に終わるよ`;
+  if (doneToday) eta = '今日はもうできたよ 🎉<br>' + eta;
+  $('#etaLine').innerHTML = eta;
+
+  // 見直し提案
+  $('#sugg').innerHTML = suggestions(r).map(({ s, avg }) => `<div class="sugg">💡 「<b>${esc(s.title)}</b>」はいつも約 <b>${avg}分</b>かかってるよ（いまは${s.min}分）。直す？`
+    + `<div class="sb"><button class="yes" data-sid="${s.id}" data-min="${avg}">${avg}分にする</button><button data-sid="${s.id}">このままでいい</button></div></div>`).join('');
+
+  // タスク
+  const ts = todayTasks();
+  $('#tasks').hidden = false;
+  $('#tasks').innerHTML = `<h3>📋 今日のタスク <button data-act="tasks">タスクを開く →</button></h3>`
+    + (ts ? taskListHtml(ts) : '<p class="recempty">タスクアプリを開いて確認してね</p>');
+
+  // 今日のきろく
+  const chips = recChips(records[today()]);
+  const rr = records[today()] || {};
+  const hasRec = Object.keys(rr).some(k => k !== 'firstOpen');
+  $('#recCard').innerHTML = `<h3>📝 今日のきろく <button data-act="rec">${hasRec ? '書きなおす' : 'きろくする'}</button></h3>`
+    + (hasRec ? `<div class="recchips">${chips.map(c => `<span>${c}</span>`).join('')}</div>`
+      : `<p class="recempty">起きた時間・体重・気分などを残そう${rr.firstOpen ? `（今日は ${rr.firstOpen} にアプリを開いたよ）` : ''}</p>`);
+
+  // 1週間
+  const set = new Set(log.map(l => l.date));
+  let wk = '';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const on = set.has(dayKey(d));
+    wk += `<div class="day${on ? ' on' : ''}${i === 0 ? ' today' : ''}">${i === 0 ? '今日' : WD[d.getDay()]}<i>${on ? '✓' : d.getDate()}</i></div>`;
+  }
+  $('#week').innerHTML = wk;
+  const sk = streak();
+  $('#streak').innerHTML = sk ? `🔥 <b>${sk}日</b> 連続でできてる！` : 'まずは今日から始めよう 🌱';
+
+  // ステップ一覧
+  $('#listTitle').textContent = `${r.emoji} ${r.name}のルーティーン`;
+  $('#listSub').textContent = `${daysLabel(r.days)}に自動で選ばれる${r.leave ? ` ・ ${r.leave}に出発` : ''}`;
+  let t = base;
+  $('#list').innerHTML = r.steps.length ? r.steps.map((st, i) => {
+    const inPlan = !rush || st.star;
+    if (inPlan) t += st.min * MIN;
+    const avg = avgMinOf(st.id);
+    return `<li class="step c${i % 5}${inPlan ? '' : ' dim'}" data-i="${i}">
+      <span class="emo">${esc(st.emoji)}</span>
+      <div class="txt"><b>${st.star ? '<span class="st">⭐</span>' : ''}${esc(st.title)}</b><small>${st.min}分${inPlan ? ` ・ 〜${hm(t)}` : ''}${avg != null ? ` ・ いつも${avg}分` : ''}</small></div>
+      <div class="mv"><button data-up="${i}" aria-label="上へ">▲</button><button data-down="${i}" aria-label="下へ">▼</button></div>
+    </li>`;
+  }).join('') : '<li class="empty">「＋ 追加」でステップを作ってね</li>';
+
+  renderStats();
+}
+
+function renderStats() {
+  const days = [];
+  for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); days.push(dayKey(d)); }
+  const recs = days.map(k => records[k]).filter(Boolean);
+  const wakes = recs.filter(r => r.wake).map(r => minOf(r.wake));
+  const sleeps = recs.map(sleepHours).filter(x => x != null);
+  const wkeys = Object.keys(records).filter(k => records[k].weight != null).sort();
+  const lastW = wkeys.length ? records[wkeys[wkeys.length - 1]].weight : null;
+  let wdiff = '';
+  if (wkeys.length >= 2) {
+    const ref = wkeys.filter(k => k >= days[6])[0] || wkeys[wkeys.length - 2];
+    const diff = Math.round((lastW - records[ref].weight) * 10) / 10;
+    if (ref !== wkeys[wkeys.length - 1]) wdiff = `<i>${diff > 0 ? '+' : ''}${diff}</i>`;
+  }
+  const doneDays = days.filter(k => log.some(l => l.date === k)).length;
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  $('#tiles').innerHTML = [
+    ['⏰ 平均の起きた時間', wakes.length ? minToHm(avg(wakes)) : '—', ''],
+    ['🛌 平均のねむり', sleeps.length ? avg(sleeps).toFixed(1) + '時間' : '—', ''],
+    ['⚖️ 体重', lastW != null ? lastW + 'kg' : '—', wdiff],
+    ['✅ この7日', doneDays + ' / 7日', '']
+  ].map(([l, v, x]) => `<div class="tile"><small>${l}</small><b>${v}</b>${x}</div>`).join('');
+
+  // 体重のグラフ（最近30回）
+  const pts = wkeys.slice(-30).map(k => records[k].weight);
+  if (pts.length >= 2) {
+    const mn = Math.min(...pts), mx = Math.max(...pts), rg = Math.max(mx - mn, 0.5);
+    const W = 300, H = 60;
+    const xy = pts.map((v, i) => [i / (pts.length - 1) * (W - 10) + 5, H - 5 - (v - mn) / rg * (H - 10)]);
+    const d = xy.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    const last = xy[xy.length - 1];
+    $('#spark').innerHTML = `<div class="card spark"><small>⚖️ 体重のうつりかわり（${mn}〜${mx}kg）</small><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`
+      + `<path d="${d}" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`
+      + `<circle cx="${last[0]}" cy="${last[1]}" r="4" fill="#ff8cc0"/></svg></div>`;
+  } else $('#spark').innerHTML = '';
+
+  // 日ごとの一覧
+  const keys = [...new Set([...log.map(l => l.date), ...Object.keys(records).filter(k => Object.keys(records[k]).some(x => x !== 'firstOpen'))])].sort().reverse().slice(0, 14);
+  $('#hist').innerHTML = keys.length ? keys.map(k => {
+    const l = log.find(x => x.date === k), r = records[k] || {}, bits = [];
+    if (r.mood != null) bits.push(fieldDef('mood').emo[r.mood]);
+    if (r.wake) bits.push('⏰' + r.wake);
+    const sh = sleepHours(r); if (sh != null) bits.push('🛌' + sh.toFixed(1) + 'h');
+    if (r.weight != null) bits.push('⚖️' + r.weight);
+    if (l) bits.push(`✅${durLabel(l.end - l.start)}${l.rush ? '🏃' : ''}`);
+    return `<li data-d="${k}"><b>${dateLabel(k)}</b><span>${bits.join(' ')}</span></li>`;
+  }).join('') : '<li class="empty" style="justify-content:center;border:0">まだ記録はないよ</li>';
+}
+
+// ---------- ホームの操作 ----------
+$('#rchips').addEventListener('click', e => {
+  const b = e.target.closest('[data-r]');
+  if (!b) return;
+  if (b.dataset.r === 'new') {
+    const r = { id: uid(), name: '', emoji: '🌸', days: [], leave: null, steps: [] };
+    openRSheet(r, true); return;
+  }
+  setPick({ id: b.dataset.r }); render();
+});
+$('#rushBtn').addEventListener('click', () => {
+  const r = activeRoutine();
+  if (!isRush() && !r.steps.some(s => s.star)) { toast('ステップをタップして ⭐ をつけると、いそぎの日はそれだけになるよ'); return; }
+  setPick({ rush: !isRush() }); render();
+  toast(isRush() ? '🏃 ⭐のステップだけにしたよ' : 'ふつうにもどしたよ');
+});
+$('#recCard').addEventListener('click', e => { if (e.target.dataset.act === 'rec') openRec(today()); });
+$('#tasks').addEventListener('click', e => { if (e.target.dataset.act === 'tasks') goTasks(); });
+$('#hist').addEventListener('click', e => { const li = e.target.closest('li[data-d]'); if (li) openRec(li.dataset.d); });
+$('#voiceBtn').addEventListener('click', () => {
+  voiceOn = !voiceOn; store(K.voice, voiceOn); render(); renderSettings();
+  if (voiceOn) speak('声でお知らせするね'); else try { speechSynthesis.cancel(); } catch (e) {}
+});
+document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) hide('#' + w.id); }));
+
+// ---------- ステップ編集 ----------
+let editing = -1, emojiTouched = false, fMin = 3, fStar = false;
+function openSheet(i) {
+  const r = activeRoutine();
+  editing = i;
+  const st = i >= 0 ? r.steps[i] : { emoji: '', title: '', min: 3, star: false };
+  $('#sheetTitle').textContent = i >= 0 ? 'ステップを編集' : `「${r.name}」に追加`;
+  $('#fEmoji').value = st.emoji;
+  $('#fTitle').value = st.title;
+  fMin = st.min; $('#fMin').textContent = fMin;
+  fStar = !!st.star; $('#fStar').classList.toggle('on', fStar);
+  emojiTouched = i >= 0;
+  $('#fDel').hidden = i < 0;
+  show('#sheet');
+  if (i < 0) setTimeout(() => $('#fTitle').focus(), 50);
+}
+$('#quick').innerHTML = [1, 3, 5, 10, 15, 30].map(m => `<button data-m="${m}">${m}分</button>`).join('');
+$('#quick').addEventListener('click', e => { const m = e.target.dataset.m; if (m) { fMin = +m; $('#fMin').textContent = fMin; } });
+document.querySelectorAll('.minrow button').forEach(b => b.addEventListener('click', () => {
+  fMin = Math.max(1, Math.min(120, fMin + +b.dataset.d)); $('#fMin').textContent = fMin;
+}));
+$('#fStar').addEventListener('click', () => { fStar = !fStar; $('#fStar').classList.toggle('on', fStar); });
+$('#fEmoji').addEventListener('input', () => { emojiTouched = true; });
+$('#fTitle').addEventListener('input', () => { if (!emojiTouched) $('#fEmoji').value = guessEmoji($('#fTitle').value); });
+$('#fTitle').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('#fSave').click(); });
+$('#fSave').addEventListener('click', () => {
+  const r = activeRoutine();
+  const title = $('#fTitle').value.trim();
+  if (!title) { toast('なにをするか書いてね'); return; }
+  const emoji = $('#fEmoji').value.trim() || guessEmoji(title);
+  if (editing >= 0) Object.assign(r.steps[editing], { title, emoji, min: fMin, star: fStar });
+  else r.steps.push({ id: uid(), title, emoji, min: fMin, star: fStar });
+  saveR(); hide('#sheet'); render();
+});
+$('#fDel').addEventListener('click', () => {
+  const r = activeRoutine();
+  if (editing < 0) return;
+  const [gone] = r.steps.splice(editing, 1);
+  saveR(); hide('#sheet'); render();
+  toast(`「${gone.title}」を削除したよ`);
+});
+$('#addBtn').addEventListener('click', () => openSheet(-1));
+$('#list').addEventListener('click', e => {
+  const r = activeRoutine();
+  const up = e.target.dataset.up, down = e.target.dataset.down;
+  if (up != null || down != null) {
+    const i = +(up != null ? up : down), j = up != null ? i - 1 : i + 1;
+    if (j < 0 || j >= r.steps.length) return;
+    [r.steps[i], r.steps[j]] = [r.steps[j], r.steps[i]];
+    saveR(); render(); return;
+  }
+  const li = e.target.closest('.step');
+  if (li) openSheet(+li.dataset.i);
+});
+
+// ---------- ルーティーン設定 ----------
+let rEdit = null, rIsNew = false, rDays = [];
+function openRSheet(r, isNew) {
+  rEdit = r; rIsNew = isNew; rDays = r.days.slice();
+  $('#rTitle').textContent = isNew ? '新しいルーティーン' : 'ルーティーンの設定';
+  $('#rEmoji').value = r.emoji; $('#rName').value = r.name;
+  $('#rLeave').value = r.leave || '';
+  $('#rDel').hidden = isNew || routines.length < 2;
+  renderDays(); show('#rsheet');
+  if (isNew) setTimeout(() => $('#rName').focus(), 50);
+}
+function renderDays() {
+  $('#rDays').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => `<button data-day="${d}" class="${rDays.includes(d) ? 'on' : ''}">${WD[d]}</button>`).join('');
+}
+$('#rDays').addEventListener('click', e => {
+  const d = e.target.dataset.day; if (d == null) return;
+  const n = +d; rDays = rDays.includes(n) ? rDays.filter(x => x !== n) : rDays.concat(n); renderDays();
+});
+$('#rLeaveClear').addEventListener('click', () => { $('#rLeave').value = ''; });
+$('#editRBtn').addEventListener('click', () => openRSheet(activeRoutine(), false));
+$('#rSave').addEventListener('click', () => {
+  const name = $('#rName').value.trim();
+  if (!name) { toast('名前をつけてね（例：平日、休日、在宅の日）'); return; }
+  // ほかのルーティーンと曜日がかぶったら、こっちを優先する
+  routines.forEach(x => { if (x !== rEdit) x.days = x.days.filter(d => !rDays.includes(d)); });
+  Object.assign(rEdit, { name, emoji: $('#rEmoji').value.trim() || '🌸', days: rDays, leave: $('#rLeave').value || null });
+  if (rIsNew) { routines.push(rEdit); setPick({ id: rEdit.id, rush: false }); }
+  saveR(); hide('#rsheet'); render();
+  if (rIsNew) toast('「＋ 追加」でステップを入れてね');
+});
+$('#rDel').addEventListener('click', () => {
+  if (!confirm(`「${rEdit.name}」を削除する？`)) return;
+  routines = routines.filter(x => x !== rEdit);
+  saveR(); hide('#rsheet'); render();
+});
+
+// ---------- 設定 ----------
+function renderSettings() {
+  $('#tVoice').classList.toggle('on', voiceOn);
+  $('#tMic').classList.toggle('on', micOn);
+  $('#geoNote').textContent = load(K.geo, null) ? '設定ずみ（タップで今いる場所に更新）' : 'まだ設定してないよ';
+  const on = fieldsOn();
+  $('#fieldToggles').innerHTML = REC_FIELDS.map(f => `<div class="setrow"><span>${f.icon} ${f.label}</span><button class="tog${on.includes(f.k) ? ' on' : ''}" data-f="${f.k}"></button></div>`).join('');
+}
+$('#setBtn').addEventListener('click', () => { renderSettings(); show('#setsheet'); });
+$('#setClose').addEventListener('click', () => hide('#setsheet'));
+$('#tVoice').addEventListener('click', () => $('#voiceBtn').click());
+$('#tMic').addEventListener('click', () => { setMic(!micOn); renderSettings(); });
+$('#geoBtn').addEventListener('click', askGeo);
+$('#fieldToggles').addEventListener('click', e => {
+  const k = e.target.dataset.f; if (!k) return;
+  let on = fieldsOn();
+  on = on.includes(k) ? on.filter(x => x !== k) : on.concat(k);
+  store(K.fields, on); renderSettings();
+});
+
+// ---------- 声・音・ふるえ ----------
+function speak(text) {
+  if (!voiceOn || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 1.05; u.pitch = 1.15;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const speaking = () => { try { return speechSynthesis.speaking; } catch (e) { return false; } };
+let actx = null;
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
+function chime() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  [880, 1175, 1568].forEach((f, i) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t + i * .14);
+    g.gain.linearRampToValueAtTime(.18, t + i * .14 + .02);
+    g.gain.exponentialRampToValueAtTime(.001, t + i * .14 + .6);
+    o.connect(g).connect(actx.destination); o.start(t + i * .14); o.stop(t + i * .14 + .65);
+  });
+}
+const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+// ---------- 声で操作 ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, lastCmd = 0;
+function setMic(v) {
+  if (v && !SR) { toast('この画面では声の操作が使えないみたい（Safariで開くと使えることがあるよ）'); v = false; }
+  micOn = v; store(K.mic, micOn);
+  $('#micBtn').classList.toggle('on', micOn);
+  $('#micHint').hidden = !micOn;
+  if (micOn) micStart(); else micStop();
+}
+function micStart() {
+  if (!SR || !micOn || !run || rec) return;
+  rec = new SR();
+  rec.lang = 'ja-JP'; rec.continuous = true; rec.interimResults = true;
+  rec.onresult = e => {
+    if (speaking() || Date.now() - lastCmd < 1500) return;
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (handleCmd(e.results[i][0].transcript)) { lastCmd = Date.now(); try { rec.abort(); } catch (x) {} return; }
+    }
+  };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { setMic(false); toast('マイクが使えなかったよ（許可してね）'); }
+  };
+  rec.onend = () => { rec = null; if (micOn && run) setTimeout(micStart, 300); };
+  try { rec.start(); } catch (e) { rec = null; }
+}
+function micStop() { if (rec) { const r = rec; rec = null; r.onend = null; try { r.abort(); } catch (e) {} } }
+function handleCmd(raw) {
+  if (!run) return false;
+  const t = raw.replace(/\s/g, '');
+  if (/ストップ|止めて|とめて|一時停止|待って|まって/.test(t)) { setPaused(true); return true; }
+  if (/再開|続けて|つづけて|スタート/.test(t)) { setPaused(false); return true; }
+  if (/スキップ|とばす|飛ばす|パス/.test(t)) { nextStep(false); return true; }
+  if (/もどる|戻る|戻って|もどって|1つ前|ひとつ前/.test(t)) { goBack(); return true; }
+  if (/延長|1分|一分|いっぷん|もうちょっと/.test(t)) { addMin(); return true; }
+  if (/できた|出来た|終わった|おわった|完了|次|つぎ|オッケー|OK/i.test(t)) { nextStep(true); return true; }
+  return false;
+}
+
+// 実行中は画面を暗くしない
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function releaseAwake() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (run) { keepAwake(); micStart(); } else render();
+});
+
+// ---------- 実行 ----------
+let run = null, timer = null;
+$('#ringFg').style.strokeDasharray = RING_C;
+
+function startRun() {
+  const r = activeRoutine(), rush = isRush(), plan = planOf(r, rush);
+  if (!plan.length) { toast(rush ? '⭐のステップがないよ' : 'まずステップを追加してね'); return; }
+  unlockAudio();
+  run = {
+    i: 0, start: Date.now(), routine: r, rush, steps: plan.map(s => Object.assign({}, s)),
+    plannedEnd: Date.now() + sumMin(plan) * MIN, leaveAt: r.leave && atToday(r.leave) > Date.now() ? atToday(r.leave) : null,
+    times: [], paused: false
+  };
+  show('#run');
+  tellParent({ type: 'running', on: true });
+  keepAwake();
+  $('#micBtn').classList.toggle('on', micOn);
+  $('#micHint').hidden = !micOn;
+  const w = todayWx();
+  beginStep('おはよう！' + (w ? wxSpeech(w) : '') + 'まずは、');
+  clearInterval(timer);
+  timer = setInterval(tick, 250);
+  micStart();
+}
+function beginStep(prefix) {
+  const st = run.steps[run.i];
+  run.dur = st.min * MIN;
+  run.endAt = Date.now() + run.dur;
+  run.stepStart = Date.now(); run.pausedMs = 0;
+  run.paused = false; run.rang = false;
+  $('#run').classList.remove('over', 'paused');
+  $('#pauseBtn').textContent = '⏸';
+  $('#runEmo').textContent = st.emoji;
+  $('#runTitle').textContent = st.title;
+  const nx = run.steps[run.i + 1];
+  $('#nextUp').textContent = nx ? `つぎ：${nx.emoji} ${nx.title}` : 'これでさいご！';
+  $('#stepNo').textContent = `${run.i + 1}/${run.steps.length}`;
+  $('#bar').style.width = (run.i / run.steps.length * 100) + '%';
+  $('#backBtn').style.visibility = run.i ? 'visible' : 'hidden';
+
+  // ステップに合わせて、タスクや服装を見せる
+  const extra = [], say = [];
+  if (/予定|タスク|スケジュール/.test(st.title)) {
+    const ts = todayTasks();
+    if (ts) {
+      extra.push(`<div class="card">📋 <b>今日のタスク</b>${taskListHtml(ts)}</div>`);
+      say.push(ts.length ? `今日のタスクは${ts.length}つ。` + ts.slice(0, 3).map(x => x.title).join('、') : '今日のタスクはないよ');
+    }
+  }
+  if (/着替|服|天気/.test(st.title)) {
+    const w = todayWx();
+    if (w) {
+      extra.push(`<div class="card">${wxInfo(w.code)[0]} <b>${Math.round(w.max)}° / ${Math.round(w.min)}°</b><br>👚 ${clothes(w).map(esc).join('<br>')}</div>`);
+      say.push(clothes(w).join('。').replace('☂️ ', ''));
+    }
+  }
+  $('#runExtra').innerHTML = extra.join('');
+  speak((prefix || '') + `${st.title}。${st.min}分だよ。` + say.join('。'));
+  tick();
+}
+const remaining = () => run.paused ? run.left : run.endAt - Date.now();
+function tick() {
+  if (!run) return;
+  const r = remaining(), a = Math.abs(r);
+  const sec = r >= 0 ? Math.ceil(a / 1000) : Math.floor(a / 1000);
+  $('#runTime').textContent = (r < 0 ? '+' : '') + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  const frac = Math.max(0, Math.min(1, r / run.dur));
+  $('#ringFg').style.strokeDashoffset = RING_C * (1 - frac);
+  if (r <= 0 && !run.rang) {
+    run.rang = true;
+    $('#run').classList.add('over');
+    chime(); buzz([200, 100, 200]);
+    speak('時間になったよ');
+  }
+  // ペース
+  const rest = run.steps.slice(run.i + 1).reduce((x, s) => x + s.min, 0) * MIN;
+  const projected = Date.now() + Math.max(0, r) + rest;
+  const target = run.leaveAt || run.plannedEnd;
+  const slack = target - projected;
+  const p = $('#pace');
+  let txt = Math.abs(slack) < MIN ? '👍 ちょうどいいペース' : slack > 0 ? `😊 ${durLabel(slack)} よゆう` : `😵 ${durLabel(-slack)} おくれ気味`;
+  if (run.leaveAt) txt = `🚪 ${hm(run.leaveAt)}まで あと${durLabel(run.leaveAt - Date.now())} ・ ` + txt;
+  p.textContent = txt;
+  p.className = 'pace ' + (slack >= 0 ? 'good' : 'bad');
+}
+function stepMs() { return Date.now() - run.stepStart - run.pausedMs - (run.paused ? Date.now() - run.pausedAt : 0); }
+function nextStep(did) {
+  if (!run) return;
+  const st = run.steps[run.i];
+  run.times.push({ id: st.id, title: st.title, min: st.min, ms: stepMs(), done: did });
+  if (did) buzz(30);
+  run.i++;
+  if (run.i >= run.steps.length) finishRun(); else beginStep();
+}
+function goBack() { if (!run || run.i === 0) return; run.times.pop(); run.i--; beginStep(); }
+function setPaused(v) {
+  if (!run || run.paused === v) return;
+  if (v) { run.left = remaining(); run.paused = true; run.pausedAt = Date.now(); $('#pauseBtn').textContent = '▶︎'; }
+  else { run.endAt = Date.now() + run.left; run.paused = false; run.pausedMs += Date.now() - run.pausedAt; $('#pauseBtn').textContent = '⏸'; }
+  $('#run').classList.toggle('paused', run.paused);
+  tick();
+}
+function addMin() {
+  if (!run) return;
+  if (run.paused) run.left += MIN; else run.endAt += MIN;
+  run.dur += MIN;
+  if (remaining() > 0) { run.rang = false; $('#run').classList.remove('over'); }
+  tick(); toast('1分のばしたよ');
+}
+function stopRun() {
+  clearInterval(timer); timer = null; run = null; micStop();
+  hide('#run'); releaseAwake();
+  tellParent({ type: 'running', on: false });
+}
+
+$('#startBtn').addEventListener('click', startRun);
+$('#doneBtn').addEventListener('click', () => nextStep(true));
+$('#skipBtn').addEventListener('click', () => nextStep(false));
+$('#backBtn').addEventListener('click', goBack);
+$('#pauseBtn').addEventListener('click', () => setPaused(!run.paused));
+$('#plusBtn').addEventListener('click', addMin);
+$('#micBtn').addEventListener('click', () => { setMic(!micOn); if (micOn) toast('🎤 話しかけて操作できるよ'); });
+$('#quitBtn').addEventListener('click', () => {
+  if (confirm('ルーティーンをやめる？（記録は残らないよ）')) { stopRun(); try { speechSynthesis.cancel(); } catch (e) {} render(); }
+});
+
+let finDate = null;
+function finishRun() {
+  const end = Date.now(), r = run.routine, start = run.start, times = run.times, rush = run.rush;
+  const total = times.length, done = times.filter(x => x.done).length;
+  const planned = times.reduce((a, x) => a + x.min, 0);
+  stopRun();
+  finDate = dayKey(start);
+  log = log.filter(l => l.date !== finDate);
+  log.push({ date: finDate, start, end, done, total, routineId: r.id, routineName: r.name, rush, steps: times });
+  store(K.log, log);
+  const s = streak();
+  $('#finTitle').textContent = done === total ? 'ぜんぶできた！' : 'おつかれさま！';
+  $('#finTime').textContent = durLabel(end - start) + `（予定 ${planned}分）`;
+  $('#finDone').textContent = `${done} / ${total} こ できたよ`;
+  $('#finStreak').textContent = s > 1 ? `🔥 ${s}日連続！すごい！` : '🌱 明日もこの調子で';
+  renderMoods();
+  show('#finish');
+  confetti(); chime(); buzz([60, 60, 60, 60, 120]);
+  speak((done === total ? 'ぜんぶできたね！' : 'おつかれさま！') + 'いまの気分をタップしてね');
+  render();
+}
+function renderMoods() {
+  const f = fieldDef('mood'), cur = (records[finDate] || {}).mood;
+  $('#finMood').innerHTML = f.opts.map((o, i) => `<button data-v="${i}" class="${cur === i ? 'on' : ''}">${f.emo[i]}<small>${o}</small></button>`).join('');
+}
+$('#finMood').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const r = records[finDate] || {};
+  r.mood = +b.dataset.v; records[finDate] = r; saveRec();
+  renderMoods(); render(); buzz(20);
+});
+$('#finRec').addEventListener('click', () => openRec(finDate));
+$('#finClose').addEventListener('click', () => { hide('#finish'); try { speechSynthesis.cancel(); } catch (e) {} });
+
+function confetti() {
+  const colors = ['#b896ff', '#ff8cc0', '#ffd166', '#8be0c2', '#ffb38a'];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement('div');
+    c.className = 'conf';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+    c.style.animationDelay = Math.random() * .5 + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4200);
+  }
+}
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+
+render();
+setInterval(() => { if (!run) render(); }, 30000);
+// タスクアプリの「朝」タブの中で表示されているときは、タスクアプリとやりとりする
+const EMBED = window.parent !== window;
+function tellParent(msg) { if (EMBED) try { window.parent.postMessage(msg, location.origin); } catch (e) {} }
+function goTasks() { if (EMBED) tellParent({ type: 'tab', tab: 'tasks' }); else location.href = './'; }
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data) return;
+  if (e.data.type === 'refresh' && !run) render();
+});
+</script>
+</body>
+</html>

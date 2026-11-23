@@ -9,8 +9,10 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **新しい機能を足す前に、必ず内容を説明して確認をとる**（頼まれた変更そのものはそのまま進めてよい）
 
 ## ファイル構成
-- `index.html` … アプリ本体。HTML・CSS・JavaScript をすべてこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
-- `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）
+- `index.html` … アプリ本体（📋タスクのタブ）。HTML・CSS・JavaScript をすべてこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
+- `morning.html` … ☀️朝のタブ「Good Morning Routine」。`index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）。単体で開いても動く
+  - 朝→タスクへの切り替えや、実行中に下のタブを隠すのは `postMessage`（`{type:'tab'}` / `{type:'running'}` / `{type:'refresh'}`）でやりとりしている
+- `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す
 - `manifest.webmanifest`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png` … ホーム画面用
 
 ## デザインのルール（オーナーが決めたこと）
@@ -32,6 +34,20 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - 通知：アプリを開いているときだけ（サーバーなし）
 - バックアップ：JSON の書き出し・読み込み（設定 ⚙️）。最後の保存から7日たつと「保存しとく？」のお知らせが出る（1日1回まで、タスクがあるときだけ）
 
+## ☀️ 朝のタブ（morning.html）の機能
+もとは別のアプリ（sakiithi/morning-routine）だったものを、ひとつにまとめた。旧URLはこのアプリの `#morning` に自動で移る。
+- **ルーティーンを複数**（最初は「平日」「休日」）。曜日で自動で切り替わり、上のボタンで今日だけ手動で選べる
+- ステップ（絵文字・名前・分・⭐）を追加・編集・削除・並べ替え（▲▼）。名前から絵文字を自動で選ぶ
+- **家を出る時間から逆算**：「何時までに始めればいいか」、各ステップを何時に終えるか、やっている最中の「◯分よゆう／おくれ気味」
+- **いそぎモード**：⭐のステップだけで回す（その日だけ）
+- 実行画面：円のタイマー、できた／とばす／一時停止／＋1分／1つ前、声の読み上げ、時間になったら音とふるえ、画面が暗くならない
+- **声で操作**：「できた」「とばす」「ストップ」「再開」「もどる」「延長」（ブラウザが音声認識に対応しているときだけ）
+- **天気と服装**：位置情報（小数2けたに丸めて保存）で Open-Meteo（無料・キー不要）から取得。「着替え」のステップで服装を表示・読み上げ
+- **タスクアプリと連動**：同じサイト（sakiithi.github.io）の `task-app:tasks` を読むだけ（書きこまない）。「予定」のステップで今日のタスクを表示・読み上げ。（同じアプリの中なので、ホーム画面から開いても共有される）
+- **朝のきろく**：起きた時間・寝た時間（→睡眠時間）・ねむりの質・体重・体温・気分・体調・水分・ひとこと。⚙️で項目をオン/オフ。完了画面で気分をワンタップ
+- **時間の見直し提案**：実際にかかった時間（最近5回のうち3回以上）が設定と2分以上・3割以上ずれていたら提案
+- きろく：平均の起きた時間・平均睡眠・体重と変化・7日の達成数、体重グラフ、日ごとの一覧（タップで編集）
+
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
@@ -41,6 +57,17 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `task-app:crossMinutes` … 流れる速さ（分）
 - `task-app:lastBackup` … 最後にバックアップを保存（または読み込み）した時刻（ミリ秒）
 - `task-app:backupNag` … 最後に「保存しとく？」を出した時刻（ミリ秒）
+
+### 朝のタブのデータ
+- `morning:routines` … `[{ id, name, emoji, days:[0-6], leave:'HH:MM'|null, steps:[{ id, emoji, title, min, star }] }]`
+- `morning:steps` … 最初のバージョンの形。`morning:routines` がないときだけ読み込んで「平日」に引き継ぐ（消さずに残している）
+- `morning:log` … `[{ date:'YYYY-MM-DD', start, end, done, total, routineId, routineName, rush, steps:[{ id, title, min, ms, done }] }]`（1日1件・上書き。古い記録には routineId 以降がない）
+- `morning:records` … `{ 'YYYY-MM-DD': { wake, bed, sleepQ(0-3), weight, temp, mood(0-3), body(0-3), water(0-3), goal, firstOpen } }`
+- `morning:pick` … 今日だけの選択 `{ date, id, rush }`
+- `morning:voice` / `morning:mic` … 読み上げ・声で操作の ON/OFF
+- `morning:geo` / `morning:weather` … 天気用の場所（丸めたもの）と今日の天気
+- `morning:recFields` … きろくする項目
+- `morning:dismiss` … 「このままでいい」を押した見直し提案（7日間かくす）
 
 ## 変更の進め方
 - クラウド（携帯の Claude）から作業するときは、**ブランチで作業してプルリクエストを作る**。`main` にマージされると GitHub Pages に1〜2分で反映される
