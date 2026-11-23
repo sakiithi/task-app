@@ -132,6 +132,78 @@ function confetti() {
   }
 }
 
+// ---------- 長押しでつかんで並べかえ（まっすぐ並んだリスト用）----------
+// （morning.html にも同じものがある）box の中の sel の要素を、長押し（0.4秒）でつかんで動かせるようにする。離すと onDrop(もとの番号, 新しい番号)
+let sorting = false;
+function sortable(box, sel, axis, onDrop) {
+  const H = axis === 'x', TR = H ? 'translateX' : 'translateY';
+  const pos = e => H ? e.clientX : e.clientY;
+  const scr = () => H ? box.scrollLeft : window.scrollY;
+  let d = null;
+  box.style.webkitTouchCallout = 'none';
+  function lift() {
+    const list = [...box.querySelectorAll(sel)];
+    d.list = list; d.from = d.to = list.indexOf(d.el);
+    if (d.from < 0) { d = null; return; }
+    const rs = list.map(x => x.getBoundingClientRect());
+    d.mids = rs.map(r => (H ? r.left + r.width / 2 : r.top + r.height / 2) + scr());
+    const r0 = rs[d.from], size = H ? r0.width : r0.height;
+    const gap = rs.length > 1 ? Math.max(0, H ? rs[1].left - rs[0].right : rs[1].top - rs[0].bottom) : 0;
+    d.step = size + gap; d.scr0 = scr(); d.lifted = true; sorting = true;
+    list.forEach(x => { x.style.transition = 'transform .18s'; });
+    d.el.style.transition = 'box-shadow .15s'; d.el.style.position = 'relative'; d.el.style.zIndex = 5;
+    d.el.classList.add('lifting'); box.classList.add('sorting');
+    try { box.setPointerCapture(d.id); } catch (x) {}
+    try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+    requestAnimationFrame(frame);
+  }
+  function frame() {
+    if (!d || !d.lifted) return;
+    // 端に近づけたら、その方向へ進める
+    if (H) { const r = box.getBoundingClientRect(); if (d.cur < r.left + 40) box.scrollLeft -= 6; else if (d.cur > r.right - 40) box.scrollLeft += 6; }
+    else { if (d.cur < 60) window.scrollBy(0, -6); else if (d.cur > innerHeight - 60) window.scrollBy(0, 6); }
+    const delta = d.cur - d.start + (scr() - d.scr0), c = d.mids[d.from] + delta;
+    d.to = d.mids.filter((m, i) => i !== d.from && m < c).length;
+    d.el.style.transform = `${TR}(${delta}px) scale(1.06)`;
+    d.list.forEach((x, i) => {
+      if (i === d.from) return;
+      const sh = d.from < d.to && i > d.from && i <= d.to ? -d.step : d.from > d.to && i >= d.to && i < d.from ? d.step : 0;
+      x.style.transform = sh ? `${TR}(${sh}px)` : '';
+    });
+    requestAnimationFrame(frame);
+  }
+  function end(commit) {
+    const x = d; d = null;
+    clearTimeout(x.timer);
+    if (!x.lifted) return;
+    sorting = false;
+    box.classList.remove('sorting'); x.el.classList.remove('lifting');
+    x.list.forEach(el => { el.style.transition = 'none'; el.style.transform = ''; el.style.position = ''; el.style.zIndex = ''; });
+    // 指を離したときの「タップ」は無視する
+    const stop = e => { e.stopPropagation(); e.preventDefault(); };
+    box.addEventListener('click', stop, true); setTimeout(() => box.removeEventListener('click', stop, true), 400);
+    if (commit && x.to !== x.from) onDrop(x.from, x.to);
+  }
+  box.addEventListener('pointerdown', e => {
+    if (d) return;
+    const el = e.target.closest(sel);
+    if (!el || !box.contains(el)) return;
+    d = { el, id: e.pointerId, start: pos(e), cur: pos(e), x0: e.clientX, y0: e.clientY };
+    d.timer = setTimeout(lift, 400);
+  });
+  box.addEventListener('pointermove', e => {
+    if (!d || e.pointerId !== d.id) return;
+    d.cur = pos(e);
+    if (!d.lifted && (Math.abs(e.clientX - d.x0) > 8 || Math.abs(e.clientY - d.y0) > 8)) { clearTimeout(d.timer); d = null; }   // 動かしたら長押しではない
+  });
+  box.addEventListener('pointerup', e => { if (d && e.pointerId === d.id) end(true); });
+  box.addEventListener('pointercancel', e => { if (d && e.pointerId === d.id) end(false); });
+  // つかんでいるあいだは、画面がスクロールしないようにする
+  box.addEventListener('touchmove', e => { if (d && d.lifted) e.preventDefault(); }, { passive: false });
+  box.addEventListener('contextmenu', e => { if (d) e.preventDefault(); });
+}
+const moveItem = (arr, from, to) => { const [x] = arr.splice(from, 1); arr.splice(to, 0, x); return x; };
+
 // ---------- ほかの画面でデータが変わったら描き直す ----------
 function onDataChange(cb) {
   let t = null;
