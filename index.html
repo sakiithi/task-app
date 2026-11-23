@@ -288,13 +288,13 @@
   }
   .tabbar button span { font-size: 22px; line-height: 1.1; }
   .tabbar button.on { color: var(--accent); background: var(--accent-soft); }
-  .morning-view {
+  .page-view {
     position: fixed; left: 0; right: 0; top: env(safe-area-inset-top); bottom: 70px;
     z-index: 5; background: var(--bg);
   }
-  .morning-view iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .page-view iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
   body.running .tabbar { display: none; }
-  body.running .morning-view { bottom: env(safe-area-inset-bottom); }
+  body.running .page-view { bottom: env(safe-area-inset-bottom); }
 
   /* シート */
   .sheet-bg {
@@ -405,10 +405,12 @@
     </form>
   </div>
 
-  <div class="morning-view" id="morningView" hidden></div>
+  <div class="page-view" id="pageView" hidden></div>
   <nav class="tabbar" id="tabbar">
     <button type="button" class="on" data-tab="tasks"><span>📋</span>タスク</button>
     <button type="button" data-tab="morning"><span>☀️</span>朝</button>
+    <button type="button" data-tab="today"><span>🗓</span>今日</button>
+    <button type="button" data-tab="night"><span>🌙</span>夜</button>
   </nav>
 
   <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" type="button">取り消す</button></div>
@@ -1474,41 +1476,81 @@ function checkBackup() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(checkBackup, 1500); });
 
-/* ───────── 下のタブ（タスク／朝のルーティーン）───────── */
-// 朝のルーティーンは morning.html を中に表示している（同じサイトなのでデータを共有できる）
+/* ───────── 下のタブ（タスク／朝／今日／夜）───────── */
+// タスク以外の画面は、別ファイルを中に表示している（同じサイトなのでデータを共有できる）
+// タスクのデータを書き換えるのはこの画面だけ。ほかの画面からは postMessage で頼まれる。
+const PAGES = {
+  morning: { src: 'morning.html', title: 'Good Morning Routine' },
+  today: { src: 'today.html', title: '今日のプラン' },
+  night: { src: 'night.html', title: '夜のふりかえり' }
+};
+const frames = {};
 let tab = 'tasks';
-function fitMorning() { $('morningView').style.bottom = $('tabbar').offsetHeight + 'px'; }
-function setTab(t) {
+function fitPages() { $('pageView').style.bottom = $('tabbar').offsetHeight + 'px'; }
+function setTab(t, action) {
+  if (t !== 'tasks' && !PAGES[t]) t = 'tasks';
   tab = t;
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  const mv = $('morningView');
-  if (t === 'morning') {
-    if (!mv.firstChild) {
-      const f = document.createElement('iframe');
-      f.src = 'morning.html';
-      f.title = 'Good Morning Routine';
-      f.allow = 'screen-wake-lock; microphone; geolocation; autoplay';
-      mv.appendChild(f);
-    } else {
-      mv.firstChild.contentWindow.postMessage({ type: 'refresh' }, location.origin);
-    }
-    mv.hidden = false;
-    fitMorning();
-  } else {
-    mv.hidden = true;
+  const pv = $('pageView');
+  Object.keys(frames).forEach(k => { frames[k].hidden = k !== t; });
+  if (t === 'tasks') {
+    pv.hidden = true;
     document.body.classList.remove('running');
     render();
+  } else {
+    let f = frames[t];
+    if (!f) {
+      f = document.createElement('iframe');
+      f.src = PAGES[t].src + (action ? '#' + action : '');
+      f.title = PAGES[t].title;
+      f.allow = 'screen-wake-lock; microphone; geolocation; autoplay';
+      pv.appendChild(f);
+      frames[t] = f;
+    } else {
+      f.contentWindow.postMessage({ type: 'refresh' }, location.origin);
+      if (action) f.contentWindow.postMessage({ type: 'action', action }, location.origin);
+    }
+    pv.hidden = false;
+    if (t !== 'morning') document.body.classList.remove('running');
+    fitPages();
   }
-  history.replaceState(null, '', t === 'morning' ? '#morning' : location.pathname + location.search);
+  history.replaceState(null, '', t === 'tasks' ? location.pathname : '#' + t);
 }
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
+
+// ほかの画面からのタスク変更
+function taskOp(d) {
+  const t = tasks.find(x => x.id === d.id);
+  if (d.op === 'add' && d.text) { addTask(d.text); return; }
+  if (!t) return;
+  if (d.op === 'complete' && !t.done) complete(t);
+  else if (d.op === 'update' && d.patch) {
+    ['star', 'due', 'allDay', 'est'].forEach(k => { if (k in d.patch) t[k] = d.patch[k]; });
+    if ('due' in d.patch) t.notified = false;
+    refresh();
+  }
+}
 window.addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return;
-  if (e.data.type === 'tab') setTab(e.data.tab);
+  if (e.data.type === 'tab') setTab(e.data.tab, e.data.action);
   if (e.data.type === 'running') document.body.classList.toggle('running', !!e.data.on);
+  if (e.data.type === 'task') taskOp(e.data);
 });
-window.addEventListener('resize', fitMorning);
-if (location.hash === '#morning') setTab('morning');
+// 別のタブ・画面でタスクが変わったら読み直す
+window.addEventListener('storage', e => {
+  if (e.key === KEY) { tasks = read(KEY, []); render(); }
+  if (e.key === LOG_KEY) log = read(LOG_KEY, []);
+});
+window.addEventListener('resize', fitPages);
+
+// Siri（ショートカット）から：?add=明日15時に歯医者 のように開くと追加する
+(() => {
+  const q = new URLSearchParams(location.search).get('add');
+  if (!q) return;
+  history.replaceState(null, '', location.pathname + location.hash);
+  setTimeout(() => addTask(q), 300);
+})();
+if (PAGES[location.hash.slice(1)]) setTab(location.hash.slice(1));
 
 /* ───────── 起動 ───────── */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

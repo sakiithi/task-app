@@ -9,10 +9,16 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **新しい機能を足す前に、必ず内容を説明して確認をとる**（頼まれた変更そのものはそのまま進めてよい）
 
 ## ファイル構成
-- `index.html` … アプリ本体（📋タスクのタブ）。HTML・CSS・JavaScript をすべてこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
-- `morning.html` … ☀️朝のタブ「Good Morning Routine」。`index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）。単体で開いても動く
-  - 朝→タスクへの切り替えや、実行中に下のタブを隠すのは `postMessage`（`{type:'tab'}` / `{type:'running'}` / `{type:'refresh'}`）でやりとりしている
-- `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す
+- 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜**。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
+- `index.html` … アプリ本体（📋タスク）。HTML・CSS・JavaScript をこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
+  - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / due / allDay / est）
+  - ほかに受け取るメッセージ：`{type:'tab', tab, action}`（タブ切り替え）、`{type:'running', on}`（朝の実行中は下のタブを隠す）。iframe には `{type:'refresh'}` / `{type:'action', action}` を送る
+  - `?add=テキスト` で開くとタスクを追加する（Siri のショートカット用）
+- `morning.html` … ☀️朝「Good Morning Routine」。単体で開いても動く
+- `today.html` … 🗓今日（今日の3つ・時間割・習慣チェック・育てるキャラ・気づき）
+- `night.html` … 🌙夜（ふりかえり・終わらなかったタスクを明日へ・気分と日記・明日の準備）
+- `shared.js` / `shared.css` … today と night で共通の道具と見た目（morning.html は自分の中に同じものを持っている）
+- `sw.js` … オフライン対応と通知タップ用の Service Worker（ネット優先、つながらなければキャッシュ）。同じサイトの別アプリのキャッシュを消さないよう、`task-app-` で始まるものだけ消す。ファイルを増やしたら `CORE` に足して `CACHE` の番号を上げる
 - `manifest.webmanifest`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png` … ホーム画面用
 
 ## デザインのルール（オーナーが決めたこと）
@@ -50,6 +56,15 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - **時間の見直し提案**：実際にかかった時間（最近5回のうち3回以上）が設定と2分以上・3割以上ずれていたら提案
 - きろく：平均の起きた時間・平均睡眠・体重と変化・7日の達成数、体重グラフ、日ごとの一覧（タップで編集）
 
+## 🗓 今日・🌙 夜の機能
+- **今日の3つ**：タスクから3つまで選ぶ → ⭐がつく。全部終わると +30pt。朝の完了画面の「📌 今日の3つを決める」からも開ける
+- **時間割**：今から「おわり」の時間（初期 21:00）までに、時間指定のタスクを固定し、空きに 今日の3つ → 期限切れ・今日 → ⭐ の順で入れる。かかる時間はタスクの `est`（分・初期30）をタップで変える。90分ごとに10分のひと休み。入りきらないものは下に出す
+- **習慣チェック**：毎日の習慣に✓。続いた日数と7日分の点
+- **育てるキャラ**（名前はタップで変更）：タスク完了10pt・朝のルーティーン30pt（全部できたら+20）・習慣5pt・夜のふりかえり20pt・今日の3つ達成30pt。レベル L になるのに必要な合計は 40×L×(L−1)。🌱→🌿→🪴→🌷→🌸→🌳→🌈
+- **気づき**：朝のきろく・習慣・タスク記録から、ねむりと気分、曜日ごとの起きる時間、朝のルーティーンとタスク数、習慣と気分、寝る時間の変化などを見つけて出す
+- **夜**：今日のまとめ、終わらなかったタスクを「明日へ」（時間つきは明日の同じ時間、なければ明日の終日）、気分・よかったこと3つ・メモ、明日起きる時間（→何時までに寝るか、朝のルーティーンに間に合うか）と明日のルーティーンの出る時間
+- ☀️朝：ステップのカードの○で「完了✓」（手で全部✓すると今日のルーティーン完了として記録）。体重はふだん隠し、タップで20秒だけ見せる。夜に決めた起きる目標と比べる
+
 ## データ（端末の localStorage に保存）
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
@@ -70,6 +85,14 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `morning:geo` / `morning:weather` … 天気用の場所（丸めたもの）と今日の天気
 - `morning:recFields` … きろくする項目
 - `morning:dismiss` … 「このままでいい」を押した見直し提案（7日間かくす）
+
+### 今日・夜のデータ
+- `plan:top3` … `{ date, ids:[タスクid] }` ／ `plan:top3done` … `{ 'YYYY-MM-DD': true }` ／ `plan:dayEnd` … `'HH:MM'`
+- `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
+- `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
+- `pet:name` ／ `pet:seenLevel`
+- `morning:checks` … `{ 'YYYY-MM-DD': { ステップid: true|false } }`（朝のカードの手動✓）
+- タスクには任意で `est`（かかる時間・分）がつく
 
 ## 変更の進め方
 - クラウド（携帯の Claude）から作業するときは、**ブランチで作業してプルリクエストを作る**。`main` にマージされると GitHub Pages に1〜2分で反映される

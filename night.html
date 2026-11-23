@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夜のふりかえり</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.donelist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.donelist span{background:var(--c3);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.left .acts{display:flex;gap:6px}
+.good{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.good input{width:100%}
+.fl{font-weight:700;font-size:14px;margin:14px 0 6px;display:block}
+.fl:first-of-type{margin-top:0}
+.trow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.trow span{flex:1;font-weight:700;font-size:14px}
+.trow input{width:120px}
+.bed{background:var(--c1);border-radius:16px;padding:12px 14px;font-weight:700;font-size:14px;line-height:1.6}
+.bed b{color:var(--pink);font-size:18px}
+.saved{color:var(--ok);font-weight:900;text-align:center;margin-top:8px}
+</style>
+</head>
+<body class="night">
+<div class="wrap">
+  <header>
+    <div><div class="brand">Good Night</div><small id="date"></small><h1 id="greet">おつかれさま🌙</h1></div>
+  </header>
+
+  <section class="card pet" id="pet"></section>
+
+  <section class="card mini">
+    <h3>✨ 今日のふりかえり</h3>
+    <div class="tiles" id="tiles"></div>
+    <div class="donelist" id="donelist"></div>
+  </section>
+
+  <section class="card mini left" id="left"></section>
+
+  <section class="card mini">
+    <h3>💗 今日の気分と日記</h3>
+    <span class="fl">今日の気分は？</span>
+    <div class="seg" id="mood"></div>
+    <span class="fl">今日よかったこと（3つまで）</span>
+    <div class="good">
+      <input class="tin" id="g0" placeholder="例：ランチがおいしかった">
+      <input class="tin" id="g1" placeholder="例：タスクを3つ終わらせた">
+      <input class="tin" id="g2" placeholder="例：早めにお風呂に入れた">
+    </div>
+    <span class="fl">ひとことメモ</span>
+    <input class="tin" id="memo" style="width:100%" placeholder="明日の自分へ、など">
+  </section>
+
+  <section class="card mini">
+    <h3>🌅 明日の準備 <small id="tmrLabel" class="muted" style="font-size:12px"></small></h3>
+    <div class="trow"><span>⏰ 明日起きる時間</span><input type="time" class="tin" id="wake"></div>
+    <div class="trow"><span id="leaveLabel">🚪 家を出る時間</span><input type="time" class="tin" id="leave"></div>
+    <div class="bed" id="bed"></div>
+    <div id="tmrTasks" style="margin-top:12px"></div>
+  </section>
+
+  <button id="save" class="big" style="margin-top:18px">今日をしめくくる 🌙</button>
+  <div class="saved" id="saved" hidden>きろくしたよ。おやすみなさい💤</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+const MOODS = [['😆', 'さいこう'], ['🙂', 'いい感じ'], ['😐', 'ふつう'], ['😪', 'いまいち']];
+let mood = null;
+
+// 明日のルーティーン（曜日で決まる）
+function tomorrowRoutine() {
+  const rs = load('morning:routines', []);
+  if (!rs.length) return null;
+  const dow = new Date(sod(1)).getDay();
+  return rs.find(r => (r.days || []).includes(dow)) || rs[0];
+}
+const nightRec = () => load('night:records', {})[today()] || {};
+
+function leftTasks() {
+  const eod = sod(1), top = getTop3();
+  return getTasks().filter(t => !t.done && !doneToday(t.id) && ((t.due && t.due < eod) || top.includes(t.id)));
+}
+// 明日の同じ時間（時間がないものは明日の終日）
+function toTomorrow(t) {
+  if (t.due && !t.allDay) { const d = new Date(t.due), n = new Date(sod(1)); n.setHours(d.getHours(), d.getMinutes()); return { due: n.getTime(), allDay: false }; }
+  return { due: sod(1), allDay: true };
+}
+
+function render() {
+  const d = new Date(), h = d.getHours();
+  $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  $('#greet').textContent = h < 15 ? '夜の準備をしよう🌙' : 'おつかれさま🌙';
+  $('#pet').innerHTML = petHtml();
+
+  // ふりかえり
+  const tl = getTaskLog().filter(e => dayKey(e.at) === today());
+  const mlog = load('morning:log', []).find(l => l.date === today());
+  const hs = getHabits(), hc = (getChecks()[today()] || []).filter(id => hs.some(x => x.id === id)).length;
+  const top = getTop3(), topDone = top.filter(doneToday).length;
+  $('#tiles').innerHTML = [
+    ['✅ 完了したタスク', tl.length + 'こ'],
+    ['☀️ 朝のルーティーン', mlog ? `${mlog.done}/${mlog.total}` : '—'],
+    ['🔁 習慣', `${hc}/${hs.length}`],
+    ['📌 今日の3つ', top.length ? `${topDone}/${top.length}` : '—']
+  ].map(([l, v]) => `<div class="tile"><small>${l}</small><b>${v}</b></div>`).join('');
+  $('#donelist').innerHTML = tl.slice(-12).map(e => `<span>🎉 ${esc(e.title)}</span>`).join('');
+
+  // 終わらなかったタスク
+  const left = leftTasks();
+  $('#left').innerHTML = `<h3>🌀 終わらなかったタスク ${left.length > 1 ? '<button class="link" data-act="allmove">ぜんぶ明日へ</button>' : ''}</h3>`
+    + (left.length ? left.map(t => `<div class="row"><div class="t">${esc(t.title)}<small>${t.due ? dueText(t) : '今日の3つ'}</small></div>
+      <div class="acts"><button class="pill" data-move="${t.id}">明日へ</button><button class="chk" data-done="${t.id}" aria-label="完了"></button></div></div>`).join('')
+      : '<p class="muted">今日の分はぜんぶ片づいたよ。すごい！🎉</p>');
+
+  // 気分と日記
+  const nr = nightRec();
+  if (mood == null && nr.mood != null) mood = nr.mood;
+  $('#mood').innerHTML = MOODS.map(([e, l], i) => `<button data-mood="${i}" class="${mood === i ? 'on' : ''}">${e}<small>${l}</small></button>`).join('');
+  if (!render.filled) {
+    (nr.good || []).forEach((g, i) => { if ($('#g' + i)) $('#g' + i).value = g; });
+    $('#memo').value = nr.memo || '';
+    const tm = load('night:tomorrow', null);
+    $('#wake').value = padT(tm && tm.wake || '');
+    const r = tomorrowRoutine();
+    $('#leave').value = padT(r && r.leave || '');
+    render.filled = true;
+  }
+  renderTomorrow();
+  $('#saved').hidden = !nr.done;
+}
+function renderTomorrow() {
+  const td = new Date(sod(1)), r = tomorrowRoutine();
+  $('#tmrLabel').textContent = `${td.getMonth() + 1}/${td.getDate()}（${WD[td.getDay()]}）${r ? '・' + r.name : ''}`;
+  $('#leaveLabel').textContent = r ? `🚪 家を出る時間（${r.name}）` : '🚪 家を出る時間';
+  const w = $('#wake').value;
+  if (w) {
+    const bedAt = atDay(w, 1) - 7.5 * 60 * MIN, left = bedAt - Date.now();
+    let txt = `🛌 <b>${hm(bedAt)}</b> までに寝ると、7時間半ねむれるよ`;
+    if (left > 0) txt += `<br>あと ${durLabel(left)}`;
+    else txt += '<br>もう寝る時間をすぎてるよ。早めに休もう💤';
+    if (r && $('#leave').value) {
+      const total = (r.steps || []).reduce((a, s) => a + s.min, 0), room = minOf($('#leave').value) - minOf(w);
+      txt += `<br>☀️ 朝のルーティーンは${total}分。${room >= total ? `起きてから出るまで${room}分あるから、よゆう${room - total}分` : `<span style="color:var(--warn)">起きてから出るまで${room}分しかないよ（${total - room}分たりない）</span>`}`;
+    }
+    $('#bed').innerHTML = txt;
+  } else $('#bed').innerHTML = '⏰ 起きる時間を入れると、何時までに寝ればいいか教えるよ';
+  const tt = getTasks().filter(t => !t.done && t.due && t.due >= sod(1) && t.due < sod(2)).sort((a, b) => a.due - b.due);
+  $('#tmrTasks').innerHTML = tt.length ? `<span class="fl">📋 明日の予定</span>` + tt.map(t => `<div class="row"><div class="t">${taskEmoji(t)} ${esc(t.title)}<small>${t.allDay ? '終日' : hm(t.due)}</small></div></div>`).join('') : '';
+}
+
+document.body.addEventListener('click', e => {
+  const m = e.target.closest('[data-mood]');
+  if (m) { mood = +m.dataset.mood; render(); }
+  const mv = e.target.closest('[data-move]');
+  if (mv) { const t = getTasks().find(x => x.id === mv.dataset.move); if (t && taskOp('update', t.id, toTomorrow(t))) toast(`「${t.title}」を明日にしたよ`); }
+  const dn = e.target.closest('[data-done]');
+  if (dn) taskOp('complete', dn.dataset.done);
+  if (e.target.closest('[data-act="allmove"]')) {
+    const left = leftTasks(); let n = 0;
+    left.forEach(t => { if (taskOp('update', t.id, toTomorrow(t))) n++; });
+    if (n) toast(`${n}こ明日に回したよ。明日の自分、がんばれ！`);
+  }
+});
+['wake', 'leave'].forEach(id => $('#' + id).addEventListener('input', renderTomorrow));
+$('#save').addEventListener('click', () => {
+  const all = load('night:records', {});
+  const wasDone = all[today()] && all[today()].done;
+  all[today()] = { mood, good: [0, 1, 2].map(i => $('#g' + i).value.trim()).filter(Boolean), memo: $('#memo').value.trim(), done: true, at: Date.now() };
+  store('night:records', all);
+  if ($('#wake').value) store('night:tomorrow', { date: keyOf(1), wake: $('#wake').value });
+  const r = tomorrowRoutine();
+  if (r) {
+    const rs = load('morning:routines', []), x = rs.find(y => y.id === r.id);
+    if (x) { x.leave = $('#leave').value || null; store('morning:routines', rs); }
+  }
+  if (!wasDone) { confetti(); toast('+20pt 🌙 今日もおつかれさま'); } else toast('更新したよ');
+  render(); checkLevelUp();
+});
+bindPet($('#pet'), render);
+onDataChange(render);
+render();
+</script>
+</body>
+</html>

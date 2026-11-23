@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日のプラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* 時間割 */
+.sch{list-style:none;margin:0;padding:0;position:relative}
+.sch li{display:flex;gap:10px;align-items:stretch;margin-bottom:8px}
+.sch .tm{width:46px;flex:none;text-align:right;font-weight:900;font-size:14px;padding-top:11px;font-variant-numeric:tabular-nums}
+.sch .blk{flex:1;min-width:0;border-radius:16px;padding:9px 10px 9px 12px;background:var(--c1);display:flex;align-items:center;gap:8px}
+.sch .blk.fixed{background:var(--c2)}
+.sch .blk.top{background:var(--c0)}
+.sch .blk.brk{background:transparent;border:2px dashed var(--line);color:var(--sub);font-weight:700;font-size:13px;padding:6px 12px}
+.sch .blk.now{box-shadow:0 0 0 2.5px var(--pink)}
+.sch .blk .e{font-size:20px}
+.sch .blk .t{flex:1;min-width:0;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sch .blk .t small{display:block;color:var(--sub);font-size:11px}
+.est{background:var(--surface);border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;flex:none}
+.ok{width:30px;height:30px;flex:none;border-radius:50%;background:var(--surface);font-weight:900;color:var(--ok)}
+.endset{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);font-weight:700}
+.endset input{border:2px solid var(--line);border-radius:10px;padding:3px 6px;background:transparent;font-size:14px;width:92px}
+.over{margin-top:8px;background:var(--c4);border-radius:14px;padding:9px 12px;font-size:13px}
+.sumline{font-size:13px;color:var(--sub);font-weight:700;margin:-4px 0 10px}
+
+/* 習慣 */
+.hab{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.hab:last-child{border:0}
+.hab .hb{width:46px;height:46px;flex:none;border-radius:50%;background:var(--line);font-size:22px;display:grid;place-items:center;transition:transform .12s}
+.hab.on .hb{background:var(--grad)}
+.hab .hb:active{transform:scale(.9)}
+.hab .t{flex:1;min-width:0;font-weight:700}
+.hab .t small{display:block;color:var(--sub);font-size:12px}
+.dots{display:flex;gap:3px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--pink)}
+
+/* 気づき */
+.ins{background:var(--c1);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:700;margin-bottom:8px;line-height:1.5}
+.ins:last-child{margin-bottom:0}
+
+/* 3つ選ぶシート */
+.pick{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:14px;background:var(--c1);margin-bottom:8px}
+.pick.on{background:var(--grad);color:#fff}
+.pick .t{flex:1;min-width:0;font-weight:700}
+.pick .t small{display:block;font-size:12px;opacity:.75}
+.pick .n{width:26px;height:26px;border-radius:50%;background:var(--surface);color:var(--pink);font-weight:900;display:grid;place-items:center;flex:none}
+.habedit{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.habedit span{flex:1;font-weight:700}
+.habedit button{color:var(--warn);font-weight:700;padding:6px}
+.addrow{display:flex;gap:8px;margin-top:12px}
+.addrow .e{width:56px;text-align:center}
+.addrow .n{flex:1}
+.win{text-align:center;font-weight:900;font-size:16px;margin-top:8px;color:var(--pink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="brand">Today's Plan</div><small id="date"></small><h1>今日のプラン</h1></div>
+  </header>
+
+  <section class="card pet" id="pet"></section>
+  <section class="card mini" id="top3"></section>
+  <section class="card mini">
+    <h3>🗓 今日の時間割 <span class="endset">おわり <input type="time" id="dayEnd"></span></h3>
+    <div id="sched"></div>
+  </section>
+  <section class="card mini" id="habits"></section>
+  <section class="card mini" id="insight"></section>
+</div>
+
+<div id="pickSheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3>📌 今日の3つ</h3>
+    <p class="muted">「今日これだけはやる」を3つまで選んでね。選ぶと⭐がついて、タスクの先頭に来るよ</p>
+    <div id="pickList"></div>
+    <button id="pickSave" class="big" style="margin-top:10px">これでいく！</button>
+  </div>
+</div>
+
+<div id="habSheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3>✅ 習慣の編集</h3>
+    <div id="habList"></div>
+    <div class="addrow">
+      <input id="habEmoji" class="tin e" maxlength="8" placeholder="✨">
+      <input id="habName" class="tin n" placeholder="例：日記を書く" enterkeyhint="done">
+      <button id="habAdd" class="pill go">追加</button>
+    </div>
+    <button id="habClose" class="big" style="margin-top:16px">とじる</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+const RANK = ['🥇', '🥈', '🥉'];
+
+// ---------- 今日の3つ ----------
+function renderTop3() {
+  const ids = getTop3(), tasks = getTasks();
+  const items = ids.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+  if (!items.length) {
+    $('#top3').innerHTML = `<h3>📌 今日の3つ</h3><p class="muted">今日これだけはやる、を3つ決めよう。決めると時間割にも先に入るよ</p>
+      <button class="big" data-act="pick" style="margin-top:12px">3つを決める</button>`;
+    return;
+  }
+  const done = items.filter(t => doneToday(t.id)).length;
+  $('#top3').innerHTML = `<h3>📌 今日の3つ <button class="link" data-act="pick">選びなおす</button></h3>`
+    + items.map((t, i) => `<div class="row${doneToday(t.id) ? ' done' : ''}"><span class="rank">${RANK[i]}</span>
+      <div class="t">${esc(t.title)}${t.due ? `<small>${dueText(t)}</small>` : ''}</div>
+      <button class="chk" data-done="${t.id}" aria-label="完了">${doneToday(t.id) ? '✓' : ''}</button></div>`).join('')
+    + (done === items.length ? '<div class="win">🎉 今日の3つ、ぜんぶできた！ +30pt</div>' : '');
+  if (done === items.length) {
+    const d = load('plan:top3done', {});
+    if (!d[today()]) { d[today()] = true; store('plan:top3done', d); confetti(); }
+  }
+}
+let picking = [];
+function openPick() {
+  picking = getTop3().filter(id => getTasks().some(t => t.id === id && !t.done));
+  renderPick(); $('#pickSheet').hidden = false;
+}
+function pickCandidates() {
+  const eod = sod(1);
+  const score = t => (t.due && t.due < eod ? 0 : t.star ? 1 : t.due ? 2 : 3);
+  return getTasks().filter(t => !t.done).sort((a, b) => score(a) - score(b) || (a.due || 9e15) - (b.due || 9e15));
+}
+function renderPick() {
+  const c = pickCandidates();
+  $('#pickList').innerHTML = c.length ? c.map(t => {
+    const n = picking.indexOf(t.id);
+    return `<button class="pick${n >= 0 ? ' on' : ''}" data-id="${t.id}"><span>${taskEmoji(t)}</span>
+      <div class="t">${esc(t.title)}${t.due ? `<small>${dueText(t)}</small>` : ''}</div>${n >= 0 ? `<span class="n">${n + 1}</span>` : ''}</button>`;
+  }).join('') : '<p class="muted">まだタスクがないよ。📋タスクで追加してね</p>';
+}
+$('#pickList').addEventListener('click', e => {
+  const b = e.target.closest('.pick'); if (!b) return;
+  const id = b.dataset.id, i = picking.indexOf(id);
+  if (i >= 0) picking.splice(i, 1);
+  else if (picking.length >= 3) { toast('3つまでだよ'); return; }
+  else picking.push(id);
+  renderPick();
+});
+$('#pickSave').addEventListener('click', () => {
+  setTop3(picking);
+  picking.forEach(id => { const t = getTasks().find(x => x.id === id); if (t && !t.star) taskOp('update', id, { star: true }); });
+  $('#pickSheet').hidden = true;
+  if (picking.length) toast('今日の3つ、決まり！がんばろ💪');
+  renderAll();
+});
+
+// ---------- 時間割 ----------
+const EST_CHOICES = [15, 30, 45, 60, 90, 120];
+const dayEnd = () => load('plan:dayEnd', '21:00');
+function buildSchedule() {
+  const now = Date.now(), eod = sod(1);
+  const start = Math.ceil(now / (5 * MIN)) * 5 * MIN;
+  let end = atDay(dayEnd());
+  const top = getTop3();
+  const open = getTasks().filter(t => !t.done && !doneToday(t.id));
+  const busy = [], items = [];
+  // 時間が決まっている今日のタスク（これからのもの）
+  open.filter(t => t.due && !t.allDay && t.due >= start && t.due < eod).forEach(t => {
+    const len = (t.est || 30) * MIN;
+    busy.push({ s: t.due, e: t.due + len });
+    items.push({ kind: 'fixed', t, s: t.due, e: t.due + len });
+  });
+  // 空いている時間に入れるもの：今日の3つ → 期限切れ・今日 → ⭐
+  const rank = t => { const i = top.indexOf(t.id); return i >= 0 ? i : t.due && t.due < eod ? 10 : t.star ? 20 : 99; };
+  const flex = open.filter(t => !(t.due && !t.allDay && t.due >= start && t.due < eod) && rank(t) < 99)
+    .sort((a, b) => rank(a) - rank(b) || (a.due || 9e15) - (b.due || 9e15));
+  const over = [];
+  let work = 0;
+  const clash = (s, e) => busy.find(b => s < b.e && e > b.s);
+  for (const t of flex) {
+    const len = (t.est || 30) * MIN;
+    let s = start, c;
+    while ((c = clash(s, s + len))) s = c.e;
+    if (s + len > end) { over.push(t); continue; }
+    busy.push({ s, e: s + len });
+    items.push({ kind: top.includes(t.id) ? 'top' : 'flex', t, s, e: s + len });
+    work += len;
+    if (work >= 90 * MIN) {   // 90分ごとにひと休み
+      const bs = s + len;
+      if (!clash(bs, bs + 10 * MIN) && bs + 10 * MIN <= end) { busy.push({ s: bs, e: bs + 10 * MIN }); items.push({ kind: 'break', s: bs, e: bs + 10 * MIN }); }
+      work = 0;
+    }
+  }
+  items.sort((a, b) => a.s - b.s);
+  // 最後のひと休みは不要
+  while (items.length && items[items.length - 1].kind === 'break') items.pop();
+  return { items, over, start, end };
+}
+function renderSchedule() {
+  $('#dayEnd').value = dayEnd();
+  const { items, over, start, end } = buildSchedule();
+  if (end <= start) { $('#sched').innerHTML = '<p class="muted">今日はもう「おわり」の時間をすぎたよ。ゆっくりしてね🌙</p>'; return; }
+  if (!items.length && !over.length) {
+    $('#sched').innerHTML = '<p class="muted">今日やるタスクがないよ。タスクに今日の日付か⭐をつけるか、「今日の3つ」を決めると、ここに並ぶよ</p>';
+    return;
+  }
+  const workMs = items.filter(i => i.kind !== 'break').reduce((a, i) => a + i.e - i.s, 0);
+  const now = Date.now(), top = getTop3();
+  $('#sched').innerHTML = `<p class="sumline">${hm(start)}〜${hm(end)} の ${durLabel(end - start)}に ${durLabel(workMs)} ぶん入れたよ</p><ul class="sch">`
+    + items.map(it => {
+      if (it.kind === 'break') return `<li><div class="tm">${hm(it.s)}</div><div class="blk brk">☕ ひと休み 10分</div></li>`;
+      const t = it.t, i = top.indexOf(t.id);
+      const isNow = now >= it.s && now < it.e;
+      return `<li><div class="tm">${hm(it.s)}</div><div class="blk ${it.kind}${isNow ? ' now' : ''}">
+        <span class="e">${i >= 0 ? RANK[i] : it.kind === 'fixed' ? '⏰' : taskEmoji(t)}</span>
+        <div class="t">${esc(t.title)}<small>〜${hm(it.e)}${it.kind === 'fixed' ? ' ・ 時間指定' : ''}${isNow ? ' ・ いまここ' : ''}</small></div>
+        <button class="est" data-est="${t.id}">${t.est || 30}分</button>
+        <button class="ok" data-done="${t.id}" aria-label="完了">✓</button></div></li>`;
+    }).join('') + '</ul>'
+    + (over.length ? `<div class="over">⏳ 入りきらなかった：${over.map(t => esc(t.title)).join('、')}<br><small>時間を短くするか、🌙夜の画面で明日に回そう</small></div>` : '')
+    + '<p class="muted" style="font-size:12px;margin-top:8px">「30分」をタップすると、かかる時間を変えられるよ</p>';
+}
+$('#dayEnd').addEventListener('change', e => { if (e.target.value) { store('plan:dayEnd', e.target.value); renderSchedule(); } });
+
+// ---------- 習慣 ----------
+function renderHabits() {
+  const hs = getHabits(), ch = getChecks(), todays = ch[today()] || [];
+  $('#habits').innerHTML = `<h3>✅ 習慣チェック <button class="link" data-act="habedit">編集</button></h3>`
+    + (hs.length ? hs.map(h => {
+      const on = todays.includes(h.id), st = habitStreak(h.id, ch);
+      let dots = '';
+      for (let i = 6; i >= 0; i--) dots += `<i class="${(ch[keyOf(-i)] || []).includes(h.id) ? 'on' : ''}"></i>`;
+      return `<div class="hab${on ? ' on' : ''}"><button class="hb" data-hab="${h.id}">${on ? '✓' : esc(h.emoji)}</button>
+        <div class="t">${esc(h.name)}<small>${st ? `🔥 ${st}日つづいてる` : 'きょうから始めよう'}</small></div><div class="dots">${dots}</div></div>`;
+    }).join('') : '<p class="muted">「編集」から習慣を追加してね</p>');
+}
+function toggleHabit(id) {
+  const ch = getChecks(), list = ch[today()] || [];
+  const on = list.includes(id);
+  ch[today()] = on ? list.filter(x => x !== id) : list.concat(id);
+  store('habits:checks', ch);
+  if (!on) { try { navigator.vibrate && navigator.vibrate(20); } catch (e) {} toast('+5pt ✨'); }
+  renderAll();
+}
+function renderHabEdit() {
+  $('#habList').innerHTML = getHabits().map(h => `<div class="habedit"><span>${esc(h.emoji)} ${esc(h.name)}</span><button data-del="${h.id}">削除</button></div>`).join('')
+    || '<p class="muted">まだないよ</p>';
+}
+$('#habList').addEventListener('click', e => {
+  const id = e.target.dataset.del; if (!id) return;
+  store('habits:list', getHabits().filter(h => h.id !== id)); renderHabEdit(); renderAll();
+});
+$('#habAdd').addEventListener('click', () => {
+  const name = $('#habName').value.trim(); if (!name) { toast('習慣の名前を書いてね'); return; }
+  const hs = getHabits(); hs.push({ id: uid(), emoji: $('#habEmoji').value.trim() || '✨', name }); store('habits:list', hs);
+  $('#habName').value = ''; $('#habEmoji').value = ''; renderHabEdit(); renderAll();
+});
+$('#habName').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('#habAdd').click(); });
+$('#habClose').addEventListener('click', () => { $('#habSheet').hidden = true; });
+
+// ---------- 気づき ----------
+function insights() {
+  const recs = load('morning:records', {}), out = [];
+  const keys = Object.keys(recs).sort();
+  const moodOf = k => { const r = recs[k]; if (r && r.mood != null) return r.mood; const n = load('night:records', {})[k]; return n && n.mood != null ? n.mood : null; };
+  // 1) ねむりと気分（気分は 0=さいこう 〜 3=いまいち）
+  const pairs = keys.map(k => ({ s: sleepH(recs[k]), m: moodOf(k) })).filter(p => p.s != null && p.m != null);
+  const hi = pairs.filter(p => p.s >= 7), lo = pairs.filter(p => p.s < 7);
+  if (hi.length >= 2 && lo.length >= 2) {
+    const d = avg(lo.map(p => p.m)) - avg(hi.map(p => p.m));
+    if (d >= .5) out.push('😴 7時間以上ねむれた日は、気分がいい日が多いよ。ねむりが元気のもとみたい');
+    else if (d <= -.5) out.push('😴 ねむりが短い日のほうが気分がいいみたい。めずらしいタイプかも？');
+  }
+  // 2) 曜日ごとの起きる時間
+  const byDow = {}, all = [];
+  keys.forEach(k => { const r = recs[k]; if (!r.wake) return; const [y, m, d] = k.split('-').map(Number); const w = new Date(y, m - 1, d).getDay(); (byDow[w] = byDow[w] || []).push(minOf(r.wake)); all.push(minOf(r.wake)); });
+  if (all.length >= 5) {
+    const base = avg(all); let best = null;
+    Object.keys(byDow).forEach(w => { if (byDow[w].length >= 2) { const d = avg(byDow[w]) - base; if (!best || Math.abs(d) > Math.abs(best.d)) best = { w, d }; } });
+    if (best && Math.abs(best.d) >= 20) out.push(`⏰ ${WD[best.w]}曜日は、起きるのがいつもより平均${Math.round(Math.abs(best.d))}分${best.d > 0 ? 'おそい' : '早い'}よ`);
+  }
+  // 3) 朝のルーティーンとタスク
+  const mdays = new Set(load('morning:log', []).map(l => l.date));
+  const perDay = {}; getTaskLog().forEach(e => { const k = dayKey(e.at); perDay[k] = (perDay[k] || 0) + 1; });
+  const withR = [], without = [];
+  for (let i = 1; i <= 30; i++) { const k = keyOf(-i); if (!perDay[k] && !mdays.has(k)) continue; (mdays.has(k) ? withR : without).push(perDay[k] || 0); }
+  if (withR.length >= 2 && without.length >= 2) {
+    const d = avg(withR) - avg(without);
+    if (d >= .8) out.push(`☀️ 朝のルーティーンをやった日は、タスクを平均${d.toFixed(1)}こ多くこなしてるよ！`);
+  }
+  // 4) 習慣と気分
+  const ch = getChecks();
+  getHabits().forEach(h => {
+    const a = [], b = [];
+    keys.forEach(k => { const m = moodOf(k); if (m == null) return; ((ch[k] || []).includes(h.id) ? a : b).push(m); });
+    if (a.length >= 3 && b.length >= 3 && avg(b) - avg(a) >= .6) out.push(`${h.emoji} 「${h.name}」をした日は、気分がいいみたい`);
+  });
+  // 5) 寝る時間のうつりかわり
+  const bedOf = k => { const r = recs[k]; if (!r || !r.bed) return null; const m = minOf(r.bed); return m < 12 * 60 ? m + 1440 : m; };
+  const recent = [], before = [];
+  for (let i = 0; i < 7; i++) { const x = bedOf(keyOf(-i)); if (x != null) recent.push(x); const y = bedOf(keyOf(-i - 7)); if (y != null) before.push(y); }
+  if (recent.length >= 3 && before.length >= 3) {
+    const d = avg(recent) - avg(before);
+    if (d >= 20) out.push(`🛌 最近、寝る時間が${Math.round(d)}分おそくなってるよ。今夜は少し早めに？`);
+    else if (d <= -20) out.push(`🛌 最近、寝る時間が${Math.round(-d)}分早くなってるよ。いいね！`);
+  }
+  // 6) ねむりが短め
+  const ss = keys.slice(-7).map(k => sleepH(recs[k])).filter(x => x != null);
+  if (ss.length >= 3 && avg(ss) < 6.5) out.push(`💤 この1週間のねむりは平均${avg(ss).toFixed(1)}時間。もう少し寝られるといいね`);
+  return { list: out.slice(0, 4), days: keys.length };
+}
+function renderInsight() {
+  const { list, days } = insights();
+  $('#insight').innerHTML = '<h3>💡 気づき</h3>' + (list.length ? list.map(x => `<div class="ins">${x}</div>`).join('')
+    : `<p class="muted">☀️朝の「きろく」や習慣がたまると、あなたのパターンを見つけて教えるよ（いま${days}日分）</p>`);
+}
+
+// ---------- 全体 ----------
+function renderAll() {
+  const d = new Date();
+  $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  $('#pet').innerHTML = petHtml();
+  renderTop3(); renderSchedule(); renderHabits(); renderInsight();
+  checkLevelUp();
+}
+document.body.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
+  if (act === 'pick') openPick();
+  if (act === 'habedit') { renderHabEdit(); $('#habSheet').hidden = false; }
+  const done = e.target.closest('[data-done]');
+  if (done) { if (!doneToday(done.dataset.done)) taskOp('complete', done.dataset.done); }
+  const est = e.target.closest('[data-est]');
+  if (est) {
+    const t = getTasks().find(x => x.id === est.dataset.est); if (!t) return;
+    const cur = EST_CHOICES.indexOf(t.est || 30), nx = EST_CHOICES[(cur + 1) % EST_CHOICES.length];
+    if (taskOp('update', t.id, { est: nx })) est.textContent = nx + '分';
+  }
+  const hb = e.target.closest('[data-hab]');
+  if (hb) toggleHabit(hb.dataset.hab);
+});
+document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) w.hidden = true; }));
+bindPet($('#pet'), renderAll);
+window.addEventListener('message', e => {
+  if (e.origin === location.origin && e.data && e.data.type === 'action' && e.data.action === 'pick3') openPick();
+});
+onDataChange(renderAll);
+renderAll();
+if (location.hash === '#pick3') openPick();
+</script>
+</body>
+</html>

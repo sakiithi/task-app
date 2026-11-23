@@ -135,6 +135,13 @@ ul{list-style:none;margin:0;padding:0}
 .tcard b{font-size:15px;line-height:1.3;text-align:center;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
 .tcard .meta{margin-top:auto;text-align:center;font-size:12px;font-weight:700;color:var(--sub)}
 .tcard .meta em{font-style:normal;color:var(--pink)}
+.tcard .ck{position:absolute;top:8px;right:9px;width:30px;height:30px;border-radius:50%;border:2.5px solid var(--accent);background:var(--surface);display:grid;place-items:center;font-weight:900;color:#fff;font-size:15px}
+.tl-slot.fin .tcard{background:var(--surface)!important}
+.tl-slot.fin .tcard b{text-decoration:line-through;color:var(--sub)}
+.tl-slot.fin .tcard .emo{opacity:.55}
+.tl-slot.fin .ck{background:var(--ok);border-color:var(--ok)}
+.tcard .no.fin{background:var(--ok);color:#fff}
+.goal{margin:0 0 8px;font-size:14px;font-weight:700}
 .tl-empty{display:grid;place-items:center;height:100%;color:var(--sub);font-weight:700;font-size:14px}
 .tl-tip{text-align:center;font-size:12px;color:var(--sub);margin:2px 0 6px;font-weight:700}
 .reorder{display:flex;gap:10px;margin-bottom:14px}
@@ -354,7 +361,10 @@ ul{list-style:none;margin:0;padding:0}
   <p id="finStreak"></p>
   <p class="q">いまの気分は？</p>
   <div class="moods" id="finMood"></div>
-  <button id="finRec" class="pill">📝 ほかのきろくも書く</button>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <button id="finRec" class="pill">📝 ほかのきろくも書く</button>
+    <button id="finTop3" class="pill">📌 今日の3つを決める</button>
+  </div>
   <button id="finClose" class="big">今日もいい一日に ✨</button>
 </div>
 
@@ -429,7 +439,7 @@ const $ = s => document.querySelector(s);
 const K = {
   routines: 'morning:routines', oldSteps: 'morning:steps', log: 'morning:log', rec: 'morning:records',
   voice: 'morning:voice', mic: 'morning:mic', geo: 'morning:geo', wx: 'morning:weather',
-  fields: 'morning:recFields', pick: 'morning:pick', dismiss: 'morning:dismiss'
+  fields: 'morning:recFields', pick: 'morning:pick', dismiss: 'morning:dismiss', checks: 'morning:checks'
 };
 const WD = '日月火水木金土';
 const RING_C = 2 * Math.PI * 108;
@@ -442,6 +452,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const dayKey = d => { d = new Date(d); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const today = () => dayKey(Date.now());
 const hm = d => { d = new Date(d); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const padT = s => s ? String(s).split(':').map(x => x.padStart(2, '0')).join(':') : '';
 const minOf = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 const minToHm = m => { m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
 const atToday = s => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() + minOf(s) * MIN; };
@@ -643,7 +654,7 @@ function recChips(r) {
   if (r.wake) out.push(`⏰ ${r.wake}`);
   const sh = sleepHours(r); if (sh != null) out.push(`🛌 ${sh.toFixed(1)}h`);
   if (r.sleepQ != null) out.push(`${fieldDef('sleepQ').emo[r.sleepQ]} ${fieldDef('sleepQ').opts[r.sleepQ]}`);
-  if (r.weight != null) out.push(`⚖️ ${r.weight}kg`);
+  if (r.weight != null) out.push(`<i data-act="wt" style="font-style:normal">⚖️ ${showW ? r.weight + 'kg' : 'タップで表示'}</i>`);
   if (r.temp != null) out.push(`🌡️ ${r.temp}℃`);
   if (r.mood != null) out.push(`${fieldDef('mood').emo[r.mood]} ${fieldDef('mood').opts[r.mood]}`);
   if (r.body != null) out.push(`${fieldDef('body').emo[r.body]} ${fieldDef('body').opts[r.body]}`);
@@ -661,7 +672,7 @@ function openRec(date) {
     let v = r[f.k];
     if (v == null && f.k === 'wake' && r.firstOpen) v = r.firstOpen;
     if (v == null) v = '';
-    if (f.type === 'time') return `<label class="fl"><span>${f.icon} ${f.label}</span><input type="time" data-k="${f.k}" value="${esc(v)}"></label>`;
+    if (f.type === 'time') return `<label class="fl"><span>${f.icon} ${f.label}</span><input type="time" data-k="${f.k}" value="${esc(padT(v))}"></label>`;
     if (f.type === 'num') return `<label class="fl"><span>${f.icon} ${f.label}</span><span class="numw"><input type="number" inputmode="decimal" step="${f.step}" data-k="${f.k}" value="${esc(v)}" placeholder="${f.ph}">${f.unit}</span></label>`;
     if (f.type === 'pick') return `<div class="fl col"><span>${f.icon} ${f.label}</span><div class="seg" data-k="${f.k}">`
       + f.opts.map((o, i) => `<button type="button" data-v="${i}" class="${v === i ? 'on' : ''}">${f.emo[i]}<small>${o}</small></button>`).join('') + '</div></div>';
@@ -725,6 +736,47 @@ $('#sugg').addEventListener('click', e => {
   render();
 });
 
+// ---------- 今日できたステップ（ルーティーンの記録＋手でつけた✓）----------
+function doneStepIds() {
+  const set = new Set();
+  const l = log.find(x => x.date === today());
+  if (l && l.steps) l.steps.forEach(x => { if (x.done) set.add(x.id); });
+  const m = load(K.checks, {})[today()] || {};
+  Object.keys(m).forEach(id => { if (m[id]) set.add(id); else set.delete(id); });
+  return set;
+}
+function toggleStep(st) {
+  if (!st) return;
+  const all = load(K.checks, {}), m = all[today()] || {};
+  const on = !doneStepIds().has(st.id);
+  m[st.id] = on; all[today()] = m; store(K.checks, all);
+  if (on) { buzz(25); toast(`${st.emoji} できた！`); }
+  // 手でぜんぶ✓したら、今日のルーティーン完了として記録する
+  const r = activeRoutine(), plan = planOf(r, isRush()), fin = doneStepIds();
+  if (on && plan.length && plan.every(x => fin.has(x.id)) && !log.some(l => l.date === today())) {
+    log.push({ date: today(), start: Date.now(), end: Date.now(), done: plan.length, total: plan.length, routineId: r.id, routineName: r.name, rush: isRush(), steps: [], manual: true });
+    store(K.log, log);
+    confetti(); unlockAudio(); chime(); toast('☀️ ルーティーン ぜんぶ完了！🎉');
+  }
+  render();
+}
+
+// ---------- 体重はふだん隠す（タップで20秒だけ表示）----------
+let showW = false, showWT = null;
+function toggleWeight() {
+  showW = !showW; clearTimeout(showWT);
+  if (showW) showWT = setTimeout(() => { showW = false; render(); }, 20000);
+  render();
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-act="wt"]')) toggleWeight(); });
+
+// ---------- ほかの画面でデータが変わったら読み直す ----------
+window.addEventListener('storage', e => {
+  if (e.key && !/^(morning|night|task-app):/.test(e.key)) return;
+  routines = load(K.routines, routines); log = load(K.log, log); records = load(K.rec, records);
+  if (!run) render();
+});
+
 // ---------- 画面の描画 ----------
 function streak() {
   const set = new Set(log.map(l => l.date));
@@ -784,7 +836,14 @@ function render() {
   const chips = recChips(records[today()]);
   const rr = records[today()] || {};
   const hasRec = Object.keys(rr).some(k => k !== 'firstOpen');
-  $('#recCard').innerHTML = `<h3>📝 今日のきろく <button data-act="rec">${hasRec ? '書きなおす' : 'きろくする'}</button></h3>`
+  const tgt = load('night:tomorrow', null), goal = tgt && tgt.date === today() ? tgt.wake : null;
+  let goalHtml = '';
+  if (goal) {
+    goalHtml = `🎯 今日の目標：${goal} に起きる`;
+    if (rr.wake) { const d = minOf(goal) - minOf(rr.wake); goalHtml += d >= 0 ? ` → <b style="color:var(--ok)">達成！${d ? d + '分早起き' : ''}</b>` : ` → ${-d}分おそかった`; }
+    goalHtml = `<p class="goal">${goalHtml}</p>`;
+  }
+  $('#recCard').innerHTML = `<h3>📝 今日のきろく <button data-act="rec">${hasRec ? '書きなおす' : 'きろくする'}</button></h3>` + goalHtml
     + (hasRec ? `<div class="recchips">${chips.map(c => `<span>${c}</span>`).join('')}</div>`
       : `<p class="recempty">起きた時間・体重・気分などを残そう${rr.firstOpen ? `（今日は ${rr.firstOpen} にアプリを開いたよ）` : ''}</p>`);
 
@@ -804,14 +863,17 @@ function render() {
   $('#listTitle').textContent = `${r.emoji} ${r.name}のルーティーン`;
   $('#listSub').textContent = `${daysLabel(r.days)}に自動で選ばれる${r.leave ? ` ・ ${r.leave}に出発` : ''}`;
   let t = base, no = 0;
+  const fin = doneStepIds(), planIds = planOf(r, rush).map(x => x.id), finN = planIds.filter(id => fin.has(id)).length;
+  if (finN) $('#listSub').textContent += ` ・ 今日 ${finN}/${planIds.length} 完了`;
   tlSlots = [];
   $('#tl').innerHTML = r.steps.length ? r.steps.map((st, i) => {
     const inPlan = !rush || st.star;
     if (inPlan) { t += st.min * MIN; no++; }
     const avg = avgMinOf(st.id);
-    return `<div class="tl-slot c${i % 5}${inPlan ? '' : ' dim'}" data-i="${i}"><div class="tcard">
-      <span class="no${inPlan && no === 1 ? ' first' : ''}">${inPlan ? (no === 1 ? '1 スタート' : no) : '–'}</span>${st.star ? '<span class="stc">⭐</span>' : ''}
-      <div class="emo">${esc(st.emoji)}</div><b>${esc(st.title)}</b>
+    const isFin = fin.has(st.id);
+    return `<div class="tl-slot c${i % 5}${inPlan ? '' : ' dim'}${isFin ? ' fin' : ''}" data-i="${i}"><div class="tcard"><button class="ck" data-ck="1" aria-label="できた">${isFin ? '✓' : ''}</button>
+      <span class="no${isFin ? ' fin' : inPlan && no === 1 ? ' first' : ''}">${isFin ? '✓ 完了' : inPlan ? (no === 1 ? '1 スタート' : no) : '–'}</span>
+      <div class="emo">${esc(st.emoji)}</div><b>${st.star ? '⭐' : ''}${esc(st.title)}</b>
       <div class="meta">${st.min}分${inPlan ? ` ・ <em>〜${hm(t)}</em>` : ''}${avg != null ? `<br>いつも${avg}分` : ''}</div>
     </div></div>`;
   }).join('') : '<div class="tl-empty">「＋ 追加」でステップを作ってね</div>';
@@ -840,13 +902,13 @@ function renderStats() {
   $('#tiles').innerHTML = [
     ['⏰ 平均の起きた時間', wakes.length ? minToHm(avg(wakes)) : '—', ''],
     ['🛌 平均のねむり', sleeps.length ? avg(sleeps).toFixed(1) + '時間' : '—', ''],
-    ['⚖️ 体重', lastW != null ? lastW + 'kg' : '—', wdiff],
+    ['⚖️ 体重', !showW ? '👀 タップ' : lastW != null ? lastW + 'kg' : '—', showW ? wdiff : '', 'wt'],
     ['✅ この7日', doneDays + ' / 7日', '']
-  ].map(([l, v, x]) => `<div class="tile"><small>${l}</small><b>${v}</b>${x}</div>`).join('');
+  ].map(([l, v, x, a]) => `<div class="tile"${a ? ` data-act="${a}"` : ''}><small>${l}</small><b>${v}</b>${x}</div>`).join('');
 
   // 体重のグラフ（最近30回）
   const pts = wkeys.slice(-30).map(k => records[k].weight);
-  if (pts.length >= 2) {
+  if (pts.length >= 2 && showW) {
     const mn = Math.min(...pts), mx = Math.max(...pts), rg = Math.max(mx - mn, 0.5);
     const W = 300, H = 60;
     const xy = pts.map((v, i) => [i / (pts.length - 1) * (W - 10) + 5, H - 5 - (v - mn) / rg * (H - 10)]);
@@ -864,8 +926,8 @@ function renderStats() {
     if (r.mood != null) bits.push(fieldDef('mood').emo[r.mood]);
     if (r.wake) bits.push('⏰' + r.wake);
     const sh = sleepHours(r); if (sh != null) bits.push('🛌' + sh.toFixed(1) + 'h');
-    if (r.weight != null) bits.push('⚖️' + r.weight);
-    if (l) bits.push(`✅${durLabel(l.end - l.start)}${l.rush ? '🏃' : ''}`);
+    if (r.weight != null && showW) bits.push('⚖️' + r.weight);
+    if (l) bits.push(l.manual ? '✅チェック' : `✅${durLabel(l.end - l.start)}${l.rush ? '🏃' : ''}`);
     return `<li data-d="${k}"><b>${dateLabel(k)}</b><span>${bits.join(' ')}</span></li>`;
   }).join('') : '<li class="empty" style="justify-content:center;border:0">まだ記録はないよ</li>';
 }
@@ -980,7 +1042,9 @@ function tlEnd(e, cancel) {
   tlHoldUntil = Date.now() + 2500;   // さわったあとは少しのあいだ止めておく
   if (cancel || d.moved) return;
   const slot = e.target.closest && e.target.closest('.tl-slot');
-  if (slot) openSheet(+slot.dataset.i);
+  if (!slot) return;
+  if (e.target.closest('[data-ck]')) toggleStep(activeRoutine().steps[+slot.dataset.i]);
+  else openSheet(+slot.dataset.i);
 }
 tl.addEventListener('pointerup', e => tlEnd(e, false));
 tl.addEventListener('pointercancel', e => tlEnd(e, true));
@@ -1296,6 +1360,10 @@ $('#finMood').addEventListener('click', e => {
   renderMoods(); render(); buzz(20);
 });
 $('#finRec').addEventListener('click', () => openRec(finDate));
+$('#finTop3').addEventListener('click', () => {
+  hide('#finish');
+  if (EMBED) tellParent({ type: 'tab', tab: 'today', action: 'pick3' }); else location.href = 'today.html#pick3';
+});
 $('#finClose').addEventListener('click', () => { hide('#finish'); try { speechSynthesis.cancel(); } catch (e) {} });
 
 function confetti() {

@@ -1,0 +1,103 @@
+/* today.html と night.html で共通の見た目（morning.html と同じ色・形） */
+:root{
+  --bg:#f6f1ff; --surface:#ffffff; --ink:#3b2d55; --sub:#8a7aa8; --line:#e8defa;
+  --accent:#a98bff; --pink:#ff6fa8; --warn:#ff7a90; --ok:#3bb88a; --star:#ffb020;
+  --grad:linear-gradient(135deg,#b896ff 0%,#ff8cc0 100%);
+  --c0:#ffe3ef; --c1:#ece4ff; --c2:#ffe9dc; --c3:#dff6ec; --c4:#fff4cf;
+  --shadow:0 8px 24px rgba(120,90,200,.14);
+  --blob1:rgba(196,168,255,.55); --blob2:rgba(165,135,250,.40); --blob3:rgba(255,180,220,.38);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1b1528; --surface:#2a2136; --ink:#f1eaff; --sub:#b3a5cf; --line:#3b2f4d; --ok:#6fd6ae;
+    --c0:#4a2a3d; --c1:#382c55; --c2:#4a3328; --c3:#24443a; --c4:#4a4226;
+    --shadow:0 8px 24px rgba(0,0,0,.35);
+    --blob1:rgba(120,90,200,.35); --blob2:rgba(90,70,170,.30); --blob3:rgba(200,90,150,.22);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:'Zen Maru Gothic',system-ui,sans-serif; color:var(--ink); background:var(--bg);
+  background-image:
+    radial-gradient(40vmax 40vmax at 0% 0%,var(--blob1),transparent 70%),
+    radial-gradient(35vmax 35vmax at 100% 30%,var(--blob3),transparent 70%),
+    radial-gradient(45vmax 45vmax at 30% 110%,var(--blob2),transparent 70%);
+  background-attachment:fixed; min-height:100vh;
+}
+body.night{
+  --bg:#efe9ff;
+  background-image:
+    radial-gradient(40vmax 40vmax at 100% 0%,rgba(150,130,255,.45),transparent 70%),
+    radial-gradient(45vmax 45vmax at 0% 100%,rgba(255,170,210,.35),transparent 70%);
+}
+@media (prefers-color-scheme:dark){ body.night{--bg:#171226} }
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font:inherit;color:var(--ink)}
+[hidden]{display:none!important}
+.wrap{max-width:480px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom))}
+
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.brand{font-weight:900;font-size:13px;letter-spacing:.06em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:2px}
+header small{color:var(--sub);font-weight:700}
+header h1{margin:2px 0 0;font-size:26px;font-weight:900}
+
+.card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:16px}
+.mini{margin-top:14px}
+.mini h3{margin:0 0 10px;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.link{font-size:13px;color:var(--pink);font-weight:700;flex:none}
+.muted{color:var(--sub);font-size:14px;margin:0}
+.big{background:var(--grad);color:#fff;font-weight:900;font-size:17px;border-radius:999px;padding:13px 24px;width:100%;box-shadow:0 8px 20px rgba(255,111,168,.3);transition:transform .12s}
+.big:active{transform:scale(.96)}
+.pill{background:var(--c1);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;flex:none}
+.pill.go{background:var(--grad);color:#fff}
+.tin{border:2px solid var(--line);border-radius:14px;padding:10px 12px;background:transparent;font-size:16px;outline:none;min-width:0}
+.tin:focus{border-color:var(--accent)}
+
+/* キャラ */
+.pet{display:flex;gap:14px;align-items:center;position:relative;overflow:hidden}
+.pet::before{content:"";position:absolute;inset:0;background:var(--grad);opacity:.12}
+.pet > *{position:relative}
+.pet-face{width:84px;height:84px;flex:none;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:48px;box-shadow:var(--shadow)}
+.pet-body{flex:1;min-width:0}
+.pet-name{font-weight:900;font-size:16px}
+.pet-name small{color:var(--sub);font-weight:700;font-size:12px;margin-left:4px}
+.pet-bar{height:9px;background:var(--line);border-radius:999px;overflow:hidden;margin:6px 0 4px}
+.pet-bar i{display:block;height:100%;background:var(--grad);border-radius:999px}
+.pet-xp{font-size:12px;color:var(--sub);font-weight:700}
+.bubble{margin-top:8px;background:var(--surface);border-radius:14px;padding:7px 11px;font-size:13px;font-weight:700;position:relative}
+.bubble::before{content:"";position:absolute;left:-6px;top:10px;border:6px solid transparent;border-right-color:var(--surface);border-left:0}
+
+/* 行 */
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row .t{flex:1;min-width:0;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis}
+.row .t small{display:block;color:var(--sub);font-size:12px;font-weight:700}
+.row.done .t{text-decoration:line-through;color:var(--sub)}
+.chk{width:34px;height:34px;flex:none;border-radius:50%;border:2.5px solid var(--accent);display:grid;place-items:center;font-weight:900;color:#fff}
+.row.done .chk{background:var(--ok);border-color:var(--ok)}
+.rank{font-size:22px;flex:none}
+
+/* タイル */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--c1);border-radius:18px;padding:11px 13px}
+.tile small{color:var(--sub);font-weight:700;font-size:12px;display:block}
+.tile b{font-size:20px;font-weight:900}
+
+/* 4段階えらび */
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:8px 0;border-radius:14px;background:var(--c1);font-size:22px;line-height:1.2}
+.seg button small{display:block;font-size:11px;color:var(--sub)}
+.seg button.on{background:var(--grad)} .seg button.on small{color:#fff}
+
+/* シート */
+.sheet-wrap{position:fixed;inset:0;z-index:30;background:rgba(40,20,70,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-radius:26px 26px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));animation:up .22s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h3{margin:0 0 6px;text-align:center}
+.sheet .muted{text-align:center;margin-bottom:12px}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:700;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.conf{position:fixed;top:-20px;width:10px;height:14px;border-radius:3px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
