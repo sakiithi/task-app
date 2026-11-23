@@ -1,6 +1,6 @@
 // オフラインでも開けるようにするための仕組み（Service Worker）
 // アプリ本体は「まずネットから最新版、つながらなければ保存しておいた版」を使う
-const CACHE = 'task-app-v7';
+const CACHE = 'task-app-v8';
 const CORE = ['./', './index.html', './morning.html', './today.html', './night.html', './body.html', './dance.html', './food-db.js', './sync.js', './shared.js', './shared.css', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
