@@ -127,6 +127,7 @@
 .fopt .n{flex:1;min-width:0;font-weight:700;font-size:14px}
 .fopt .n small{display:block;font-size:11px;color:var(--sub)}
 .fopt .k{font-weight:900;font-size:13px;flex:none}
+.fopt .fav{font-size:18px;color:var(--star);padding:0 2px;flex:none}
 .qty{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0}
 .qty button{background:var(--c1);border-radius:999px;padding:8px 14px;font-weight:700}
 .qty button.on{background:var(--grad);color:#fff}
@@ -626,11 +627,20 @@ function updateItem(k, id, patch) {
   if (x) { Object.assign(x, patch); store(F_LOG, all); }
 }
 function removeItem(k, id) { const all = foodLog(); all[k] = (all[k] || []).filter(i => i.id !== id); store(F_LOG, all); }
-// よく食べるもの（回数の多い順）
+// よく食べるもの：☆で固定したもの（最初はカフェラテ）→ 回数の多い順
+const F_FAV = 'food:fav';
+const favs = () => load(F_FAV, ['カフェラテ']);
+function toggleFav(name) {
+  const f = favs(), on = f.includes(name);
+  store(F_FAV, on ? f.filter(n => n !== name) : f.concat(name));
+  toast(on ? `「${name}」をよく食べるから外したよ` : `⭐「${name}」をよく食べるに入れたよ`);
+}
 function frequent() {
   const cnt = {}, last = {};
   Object.values(foodLog()).forEach(list => list.forEach(x => { cnt[x.name] = (cnt[x.name] || 0) + 1; if (!last[x.name] || x.at > last[x.name].at) last[x.name] = x; }));
-  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).slice(0, 8).map(n => last[n]);
+  const pinned = favs().map(n => last[n] || allFoods().find(x => x.name === n)).filter(Boolean);
+  const names = new Set(pinned.map(x => x.name));
+  return pinned.concat(Object.keys(cnt).filter(n => !names.has(n)).sort((a, b) => cnt[b] - cnt[a]).slice(0, 8).map(n => last[n]));
 }
 function allFoods() { return load(F_CUSTOM, []).concat(FOOD_DB); }
 function searchFoods(q) {
@@ -681,7 +691,7 @@ function openAdd(m) {
   renderAdd(); $('#addSheet').hidden = false;
 }
 function optHtml(x, i) {
-  return `<button class="fopt${addedFlash[x.name] ? ' added' : ''}" data-pick="${i}"><span class="e">${esc(x.emoji || '🍽')}</span><span class="n">${esc(x.name)}<small>${esc(x.unit || '')}${x.p != null ? ` ・ P${r1(x.p)} F${r1(x.f)} C${r1(x.c)}` : ''}</small></span><span class="k">${addedFlash[x.name] ? '✓ 追加' : r0(x.kcal) + ' kcal'}</span></button>`;
+  return `<button class="fopt${addedFlash[x.name] ? ' added' : ''}" data-pick="${i}"><span class="e">${esc(x.emoji || '🍽')}</span><span class="n">${esc(x.name)}<small>${esc(x.unit || '')}${x.p != null ? ` ・ P${r1(x.p)} F${r1(x.f)} C${r1(x.c)}` : ''}</small></span><span class="k">${addedFlash[x.name] ? '✓ 追加' : r0(x.kcal) + ' kcal'}</span><span class="fav" data-fav="${esc(x.name)}" aria-label="よく食べるに固定">${favs().includes(x.name) ? '★' : '☆'}</span></button>`;
 }
 let shown = [];
 function renderAdd() {
@@ -700,6 +710,8 @@ function renderAdd() {
 $('#fq').addEventListener('input', renderAdd);
 $('#addMeals').addEventListener('click', e => { const b = e.target.closest('[data-am]'); if (b) { addMeal = b.dataset.am; renderAdd(); } });
 $('#fres').addEventListener('click', e => {
+  const fv = e.target.closest('[data-fav]');
+  if (fv) { toggleFav(fv.dataset.fav); renderAdd(); return; }
   const b = e.target.closest('[data-pick]'); if (!b) return;
   const x = shown[+b.dataset.pick]; if (!x) return;
   addFood(fDayKey(), addMeal, x, 1);

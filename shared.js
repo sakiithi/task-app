@@ -66,8 +66,29 @@ function habitStreak(id, checks) {
   return n;
 }
 
+// ---------- 💃 ダンスのレッスン（dance.html が書く。ほかの画面は読むだけ）----------
+const danceClasses = () => load('dance:classes', []);
+const danceNotes = () => load('dance:notes', {});
+const keyDow = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d).getDay(); };
+function lessonsOn(k, withCanceled) {
+  const dow = keyDow(k), ns = danceNotes();
+  return danceClasses().filter(c => c.dow === dow).sort((a, b) => minOf(a.start) - minOf(b.start))
+    .map(c => ({ c, date: k, key: c.id + '_' + k, note: ns[c.id + '_' + k] || {} }))
+    .filter(l => withCanceled || !l.note.canceled);
+}
+function lessonChecks(c, n) {
+  return [{ id: 'music', text: '🎵 曲を用意した' }, { id: 'choreo', text: '💃 振りを確認した' }, { id: 'flow', text: '⏱ 流れを決めた' }]
+    .concat((c.items || []).map((t, i) => ({ id: 'item' + i, text: '🎒 ' + t })))
+    .concat(n.extra || []);
+}
+function lessonPrep(c, n) {
+  const l = lessonChecks(c, n), done = l.filter(x => (n.checks || {})[x.id]).length;
+  return { done, total: l.length, ok: done === l.length };
+}
+function openDance(action) { if (EMBED) tellParent({ type: 'tab', tab: 'dance', action }); else location.href = 'dance.html' + (action ? '#' + action : ''); }
+
 // ---------- 育てるキャラ ----------
-// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）
+// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）・レッスンの準備OK10・フィードバック20
 function xpOf(day) {
   const inDay = k => !day || k === day;
   let xp = 0;
@@ -78,6 +99,13 @@ function xpOf(day) {
   const t3 = load('plan:top3done', {}); Object.keys(t3).forEach(k => { if (inDay(k)) xp += 30; });
   const mr = load('morning:records', {}); Object.keys(mr).forEach(k => { if (inDay(k) && mr[k].weight != null) xp += 5; });
   const fl = load('food:log', {}); Object.keys(fl).forEach(k => { if (inDay(k) && fl[k].length) xp += 5; });
+  const dn = load('dance:notes', {}), dc = load('dance:classes', []);
+  Object.keys(dn).forEach(key => {
+    const k = key.slice(key.indexOf('_') + 1), n = dn[key], c = dc.find(x => key.startsWith(x.id + '_'));
+    if (!inDay(k) || !c) return;
+    if (n.fb && n.fb.done) xp += 20;
+    if (lessonPrep(c, n).ok) xp += 10;
+  });
   return xp;
 }
 const LEVEL_XP = L => 40 * L * (L - 1);
@@ -208,7 +236,7 @@ const moveItem = (arr, from, to) => { const [x] = arr.splice(from, 1); arr.splic
 function onDataChange(cb) {
   let t = null;
   const later = () => { clearTimeout(t); t = setTimeout(cb, 80); };
-  window.addEventListener('storage', e => { if (!e.key || /^(task-app|morning|plan|habits|night|pet|body|food):/.test(e.key)) later(); });
+  window.addEventListener('storage', e => { if (!e.key || /^(task-app|morning|plan|habits|night|pet|body|food|dance):/.test(e.key)) later(); });
   window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.type === 'refresh') later(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) later(); });
   setInterval(cb, 60000);

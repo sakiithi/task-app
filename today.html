@@ -16,6 +16,14 @@
 .sch .blk{flex:1;min-width:0;border-radius:16px;padding:9px 10px 9px 12px;background:var(--c1);display:flex;align-items:center;gap:8px}
 .sch .blk.fixed{background:var(--c2)}
 .sch .blk.top{background:var(--c0)}
+.sch .blk.lesson{background:var(--c3)}
+.lessonrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.lessonrow:last-child{border:0}
+.lessonrow .tt{width:50px;flex:none;font-weight:900;font-size:14px}
+.lessonrow .t{flex:1;min-width:0;font-weight:700}
+.lessonrow .t small{display:block;color:var(--sub);font-size:12px}
+.lessonrow .st{flex:none;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:900;background:var(--c1)}
+.lessonrow .st.ok{background:var(--c3);color:var(--ok)}
 .sch .blk.brk{background:transparent;border:2px dashed var(--line);color:var(--sub);font-weight:700;font-size:13px;padding:6px 12px}
 .sch .blk.now{box-shadow:0 0 0 2.5px var(--pink)}
 .sch .blk .e{font-size:20px}
@@ -66,6 +74,7 @@
   </header>
 
   <section class="card pet" id="pet"></section>
+  <section class="card mini" id="lessons" hidden></section>
   <section class="card mini" id="top3"></section>
   <section class="card mini">
     <h3>🗓 今日の時間割 <span class="endset">おわり <input type="time" id="dayEnd"></span></h3>
@@ -173,6 +182,13 @@ function buildSchedule() {
     busy.push({ s: t.due, e: t.due + len });
     items.push({ kind: 'fixed', t, s: t.due, e: t.due + len });
   });
+  // 💃 今日のレッスン（と、その前の移動）
+  lessonsOn(today()).forEach(l => {
+    const s = atDay(l.c.start), e = atDay(l.c.end);
+    if (e <= start) return;
+    busy.push({ s, e }); items.push({ kind: 'lesson', l, s, e });
+    if (l.c.travel) { const ms = s - l.c.travel * MIN; busy.push({ s: ms, e: s }); if (s > start) items.push({ kind: 'move', l, s: ms, e: s }); }
+  });
   // 空いている時間に入れるもの：今日の3つ → 期限切れ・今日 → ⭐
   const rank = t => { const i = top.indexOf(t.id); return i >= 0 ? i : t.due && t.due < eod ? 10 : t.star ? 20 : 99; };
   const flex = open.filter(t => !(t.due && !t.allDay && t.due >= start && t.due < eod) && rank(t) < 99)
@@ -212,6 +228,13 @@ function renderSchedule() {
   $('#sched').innerHTML = `<p class="sumline">${hm(start)}〜${hm(end)} の ${durLabel(end - start)}に ${durLabel(workMs)} ぶん入れたよ</p><ul class="sch">`
     + items.map(it => {
       if (it.kind === 'break') return `<li><div class="tm">${hm(it.s)}</div><div class="blk brk">☕ ひと休み 10分</div></li>`;
+      if (it.kind === 'move') return `<li><div class="tm">${hm(it.s)}</div><div class="blk brk">🚃 移動 ${it.l.c.travel}分${it.l.c.place ? '（' + esc(it.l.c.place) + 'へ）' : ''}</div></li>`;
+      if (it.kind === 'lesson') {
+        const pr = lessonPrep(it.l.c, it.l.note), isNowL = now >= it.s && now < it.e;
+        return `<li><div class="tm">${hm(it.s)}</div><div class="blk lesson${isNowL ? ' now' : ''}"><span class="e">💃</span>
+          <div class="t">${esc(it.l.c.name)}<small>〜${hm(it.e)} ・ ${pr.ok ? '準備OK' : `準備 ${pr.done}/${pr.total}`}</small></div>
+          <button class="est" data-lesson="${it.l.key}">ノート</button></div></li>`;
+      }
       const t = it.t, i = top.indexOf(t.id);
       const isNow = now >= it.s && now < it.e;
       return `<li><div class="tm">${hm(it.s)}</div><div class="blk ${it.kind}${isNow ? ' now' : ''}">
@@ -319,15 +342,29 @@ function renderInsight() {
 }
 
 // ---------- 全体 ----------
+// ---------- 💃 今日のレッスン ----------
+function renderLessons() {
+  const ls = lessonsOn(today());
+  $('#lessons').hidden = !ls.length;
+  if (!ls.length) return;
+  $('#lessons').innerHTML = '<h3>💃 今日のレッスン</h3>' + ls.map(l => {
+    const pr = lessonPrep(l.c, l.note);
+    return `<div class="lessonrow" data-lesson="${l.key}"><span class="tt">${l.c.start}</span>
+      <div class="t">${esc(l.c.name)}<small>📍 ${esc(l.c.place || '')}${l.c.travel ? ` ・ 🚃 ${hm(atDay(l.c.start) - l.c.travel * MIN)}に出発` : ''}</small></div>
+      <span class="st${pr.ok ? ' ok' : ''}">${pr.ok ? '準備OK' : `準備 ${pr.done}/${pr.total}`}</span></div>`;
+  }).join('');
+}
 function renderAll() {
   if (sorting) return;   // 長押しで並べかえている最中は描き直さない
   const d = new Date();
   $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
   $('#pet').innerHTML = petHtml();
-  renderTop3(); renderSchedule(); renderHabits(); renderInsight();
+  renderLessons(); renderTop3(); renderSchedule(); renderHabits(); renderInsight();
   checkLevelUp();
 }
 document.body.addEventListener('click', e => {
+  const ls = e.target.closest('[data-lesson]');
+  if (ls) { openDance('note=' + ls.dataset.lesson); return; }
   const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
   if (act === 'pick') openPick();
   if (act === 'habedit') { renderHabEdit(); $('#habSheet').hidden = false; }
