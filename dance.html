@@ -109,6 +109,55 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 .stat{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .stat span{background:var(--c1);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700}
 .soon{text-align:center;color:var(--sub);font-weight:700;padding:30px 10px}
+
+/* ふりかえりの記録 */
+.frow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.frow:last-child{border:0}
+.frow .fm{font-size:22px;flex:none}
+.frow .t{flex:1;min-width:0;font-weight:700;font-size:14px}
+.frow .t small{display:block;color:var(--sub);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.hsum div{background:var(--c1);border-radius:16px;padding:10px 4px}
+.hsum b{display:block;font-size:22px;font-weight:900;line-height:1.2}
+.hsum small{font-size:11px;color:var(--sub);font-weight:700}
+.hmoods{margin-top:8px;text-align:center;font-size:13px;font-weight:700;color:var(--sub)}
+.hchips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin-top:12px;scrollbar-width:none}
+.hchips::-webkit-scrollbar{display:none}
+.hchips button{flex:none;background:var(--surface);border-radius:999px;padding:7px 13px;font-weight:700;font-size:13px;box-shadow:var(--shadow);color:var(--sub);display:flex;align-items:center;gap:6px}
+.hchips button i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.hchips button.on{background:var(--grad);color:#fff}
+.hsearch{width:100%;margin-top:12px}
+.hmode{display:flex;gap:6px;background:var(--surface);border-radius:999px;padding:4px;box-shadow:var(--shadow);margin:12px 0 4px}
+.hmode button{flex:1;padding:8px 0;border-radius:999px;font-weight:900;font-size:13px;color:var(--sub)}
+.hmode button.on{background:var(--grad);color:#fff}
+.hgrp{margin:18px 4px 8px;font-size:15px;font-weight:900;display:flex;align-items:baseline;gap:8px}
+.hgrp small{font-size:12px;color:var(--sub);font-weight:700}
+.hgrp.song{display:block;background:var(--c1);border-radius:18px;padding:12px 14px;margin:18px 0 10px}
+.hgrp.song small{display:block;margin-top:2px}
+.hcard{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:14px 14px 12px;margin-bottom:10px;border-left:6px solid var(--accent);cursor:pointer}
+.hhead{display:flex;align-items:center;gap:10px}
+.hdate{width:46px;flex:none;text-align:center;font-weight:900;font-size:17px;line-height:1.15}
+.hdate small{display:block;font-size:11px;color:var(--sub)}
+.hmeta{flex:1;min-width:0}
+.hmeta b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmeta small{display:block;font-size:12px;color:var(--sub);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hface{font-size:28px;flex:none}
+.hinfo{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
+.hinfo span{background:var(--c1);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.hline{margin-top:8px;font-size:14px;line-height:1.6;display:flex;gap:8px}
+.hline em{flex:none;font-style:normal;font-size:11px;font-weight:900;border-radius:8px;padding:2px 7px;height:fit-content;margin-top:2px}
+.hline.good em{background:var(--c3);color:var(--ok)}
+.hline.hard em{background:var(--c2)}
+.hline.nx em{background:var(--c4)}
+.hline.teach em{background:var(--c1)}
+.hline span{flex:1;min-width:0;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hcard.open .hline span{display:block;-webkit-line-clamp:unset}
+.hcard .hteach{display:none}
+.hcard.open .hteach{display:flex}
+.hfoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.hfoot small{font-size:12px;color:var(--sub);font-weight:700}
+.hcard mark{background:var(--c4);color:inherit;border-radius:4px;padding:0 2px}
+.hempty{text-align:center;color:var(--sub);font-weight:700;padding:30px 10px;line-height:1.8}
 </style>
 </head>
 <body>
@@ -125,12 +174,23 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
   <div id="vLesson">
     <section class="card next" id="next"></section>
     <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px">2週間</small></h3><div id="upcoming"></div></section>
+    <section class="card mini"><h3>📖 ふりかえりの記録 <button class="link" data-act="history">ぜんぶ見る →</button></h3><div id="fbRecent"></div></section>
     <section class="card mini"><h3>🎵 いまの振り付け</h3><div id="pieces"></div></section>
     <section class="card mini"><h3>👯 レギュラークラス <button class="link" data-act="addclass">＋ 追加</button></h3><div id="classes"></div></section>
     <section class="card mini"><h3>📚 使った曲</h3><div id="songs"></div></section>
   </div>
   <div id="vSoon" hidden><div class="card soon" id="soonMsg"></div></div>
 </div>
+
+<!-- ふりかえりの記録（全画面） -->
+<div class="note" id="hist" hidden><div class="wrap">
+  <div class="ntop"><button class="back" data-act="hclose" aria-label="もどる">‹</button><h2>📖 ふりかえりの記録<small>これまでのレッスンをふりかえろう</small></h2></div>
+  <div id="hTop"></div>
+  <input class="tin hsearch" id="hQuery" type="search" placeholder="🔍 ことばで探す（例：ターン、サビ）" enterkeyhint="search">
+  <div class="hmode" id="hMode"><button data-hmode="month" class="on">📅 月ごと</button><button data-hmode="song">🎵 曲ごと</button></div>
+  <div id="hList"></div>
+  <div style="height:24px"></div>
+</div></div>
 
 <!-- レッスンノート -->
 <div class="note" id="note" hidden><div class="wrap" id="noteBody"></div></div>
@@ -297,10 +357,125 @@ function renderSongs() {
 function render() {
   const d = new Date();
   $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
-  renderNext(); renderUpcoming(); renderPieces(); renderClasses(); renderSongs();
+  renderNext(); renderUpcoming(); renderFbRecent(); renderPieces(); renderClasses(); renderSongs();
+  if (!$('#hist').hidden) renderHist();
   if (!$('#note').hidden && curKey) renderNote(true);
   checkLevelUp();
 }
+
+// ---------- ふりかえりの記録 ----------
+// 保存ずみのふりかえり（休講はのぞく）を、新しい順に
+function fbEntries() {
+  const ns = notes(), cs = classes();
+  return Object.keys(ns).filter(key => ns[key].fb && ns[key].fb.done && !ns[key].canceled && key.indexOf('_') > 0).map(key => {
+    const i = key.indexOf('_'), cid = key.slice(0, i), k = key.slice(i + 1);
+    const n = ns[key], real = cs.find(x => x.id === cid);
+    const c = real || { id: cid, name: '（削除したクラス）', dow: parseKey(k).getDay() };
+    const p = activePiece(c, k);
+    return { key, k, c, real: !!real, n, fb: n.fb, p, w: p ? weekOf(p, c, k) : null };
+  }).sort((a, b) => a.k < b.k ? 1 : a.k > b.k ? -1 : 0);
+}
+const moodFace = fb => fb.mood != null && MOODS[fb.mood] ? MOODS[fb.mood][0] : '📝';
+const firstLine = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean)[0] || '';
+function renderFbRecent() {
+  const es = fbEntries().slice(0, 3);
+  $('#fbRecent').innerHTML = es.length ? es.map(e => {
+    const d = parseKey(e.k), txt = firstLine(e.fb.good) || firstLine(e.fb.next) || firstLine(e.fb.hard);
+    return `<div class="frow" data-note="${e.key}"><span class="fm">${moodFace(e.fb)}</span>
+      <div class="t">${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${esc(e.c.name)}<small>${txt ? esc(txt) : (e.p ? '🎵 ' + esc(e.p.title) : 'メモなし')}</small></div></div>`;
+  }).join('') : '<p class="muted">レッスンのあとに 💬 ふりかえりを保存すると、ここにたまっていくよ</p>';
+}
+
+let hClass = 'all', hMode = 'month', hOpen = new Set();
+function openHist() { hOpen = new Set(); $('#hQuery').value = ''; renderHist(); $('#hist').hidden = false; $('#hist').scrollTop = 0; }
+// 探していることばに、しるしをつける
+function hl(text, q) {
+  text = String(text || '');
+  if (!q) return esc(text);
+  return text.split(q).map(esc).join(`<mark>${esc(q)}</mark>`);
+}
+function hCard(e, q) {
+  const d = parseKey(e.k), fb = e.fb, col = e.real ? colorOf(e.c) : 'var(--line)';
+  const lines = [['good', 'よかった', fb.good], ['hard', 'むずかしかった', fb.hard], ['nx', '次回やること', fb.next]].filter(x => x[2] && String(x[2]).trim());
+  const teach = e.n.teach && String(e.n.teach).trim();
+  const open = hOpen.has(e.key) || !!(q && [fb.good, fb.hard, fb.next, e.n.teach].some(x => x && String(x).includes(q)));
+  const more = !!teach || lines.some(x => String(x[2]).trim().length > 32 || String(x[2]).trim().includes('\n'));
+  const info = [];
+  if (fb.count != null) info.push(`👥 ${fb.count}人くらい`);
+  if (fb.mood != null && MOODS[fb.mood]) info.push(`${MOODS[fb.mood][0]} ${MOODS[fb.mood][1]}`);
+  return `<div class="hcard${open ? ' open' : ''}" data-hk="${e.key}" style="border-left-color:${col}">
+    <div class="hhead"><div class="hdate">${d.getMonth() + 1}/${d.getDate()}<small>${WD[d.getDay()]}曜</small></div>
+      <div class="hmeta"><b>${hl(e.c.name, q)}</b><small>${e.p ? `🎵 ${hl(e.p.title, q)} ・ ${e.w}週目／${e.p.weeks}週` : '🎵 曲の記録なし'}</small></div>
+      <span class="hface">${moodFace(fb)}</span></div>
+    ${info.length ? `<div class="hinfo">${info.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+    ${lines.map(([cls, lab, tx]) => `<div class="hline ${cls}"><em>${lab}</em><span>${hl(String(tx).trim(), q)}</span></div>`).join('')}
+    ${teach ? `<div class="hline teach hteach"><em>教え方</em><span>${hl(teach, q)}</span></div>` : ''}
+    ${!lines.length && !teach ? '<p class="muted" style="margin:8px 0 0;font-size:13px">メモは書いてないよ</p>' : ''}
+    <div class="hfoot"><small>${more ? (open ? '▲ とじる' : '▼ タップでぜんぶ見る') : ''}</small><button class="link" data-note="${e.key}">ノートを開く →</button></div>
+  </div>`;
+}
+function renderHist() {
+  const all = fbEntries(), q = $('#hQuery').value.trim();
+  // クラスでしぼる
+  const used = [...new Set(all.map(e => e.c.id))];
+  if (hClass !== 'all' && !used.includes(hClass)) hClass = 'all';
+  const chips = [['all', 'ぜんぶ', null]].concat(used.map(id => { const e = all.find(x => x.c.id === id); return [id, e.c.name, e.real ? colorOf(e.c) : 'var(--line)']; }));
+  const inClass = all.filter(e => hClass === 'all' || e.c.id === hClass);
+  // まとめ
+  const month = today().slice(0, 7), cnt = inClass.filter(e => e.fb.count != null).map(e => e.fb.count);
+  const moods = MOODS.map(([f], i) => [f, inClass.filter(e => e.fb.mood === i).length]).filter(x => x[1]);
+  $('#hTop').innerHTML = `<div class="card"><div class="hsum">
+      <div><b>${inClass.length}</b><small>ふりかえり</small></div>
+      <div><b>${inClass.filter(e => e.k.startsWith(month)).length}</b><small>今月</small></div>
+      <div><b>${cnt.length ? Math.round(avg(cnt) * 10) / 10 : '—'}</b><small>平均の人数</small></div></div>
+      ${moods.length ? `<div class="hmoods">雰囲気 ${moods.map(([f, n]) => `${f}${n}`).join('　')}</div>` : ''}</div>
+    ${chips.length > 2 ? `<div class="hchips">${chips.map(([id, name, col]) => `<button data-hclass="${id}" class="${hClass === id ? 'on' : ''}">${col ? `<i style="background:${col}"></i>` : ''}${esc(name)}</button>`).join('')}</div>` : ''}`;
+  document.querySelectorAll('#hMode button').forEach(b => b.classList.toggle('on', b.dataset.hmode === hMode));
+  if (!all.length) { $('#hList').innerHTML = '<div class="hempty">まだふりかえりがないよ<br>レッスンのあとにノートの 💬 ふりかえりを保存すると、<br>ここに日付ごとにたまっていくよ</div>'; return; }
+  // ことばで探す（クラス名・曲名・よかった・むずかしかった・次回・教え方）
+  const es = q ? inClass.filter(e => [e.c.name, e.p && e.p.title, e.p && e.p.artist, e.fb.good, e.fb.hard, e.fb.next, e.n.teach].some(x => x && String(x).includes(q))) : inClass;
+  if (!es.length) { $('#hList').innerHTML = `<div class="hempty">「${esc(q)}」が入ったふりかえりは見つからなかったよ</div>`; return; }
+  let html = q ? `<div class="hgrp">🔍 「${esc(q)}」 <small>${es.length}件</small></div>` : '';
+  if (hMode === 'month') {
+    let cur = null;
+    es.forEach(e => {
+      const m = e.k.slice(0, 7);
+      if (m !== cur) { cur = m; const [y, mo] = m.split('-').map(Number); html += `<div class="hgrp">${y}年${mo}月 <small>${es.filter(x => x.k.startsWith(m)).length}回</small></div>`; }
+      html += hCard(e, q);
+    });
+  } else {
+    // 曲ごと：新しく始めた曲から。中は 1週目 → の順
+    const groups = new Map();
+    es.forEach(e => { const id = e.p ? e.p.id : 'none_' + e.c.id; if (!groups.has(id)) groups.set(id, []); groups.get(id).push(e); });
+    const ids = [...groups.keys()].sort((a, b) => {
+      const pa = groups.get(a)[0].p, pb = groups.get(b)[0].p;
+      if (!pa || !pb) return pa ? -1 : pb ? 1 : 0;
+      return pa.start < pb.start ? 1 : -1;
+    });
+    ids.forEach(id => {
+      const list = groups.get(id).slice().reverse(), p = list[0].p, c = list[0].c;
+      html += p
+        ? `<div class="hgrp song">🎵 ${hl(p.title, q)}${p.artist ? ' / ' + esc(p.artist) : ''}<small>${esc(c.name)} ・ ${shortDate(p.start)}〜${p.doneAt ? shortDate(p.doneAt) + ' ✅ 完成' : 'いま練習中'} ・ ふりかえり${list.length}回</small></div>`
+        : `<div class="hgrp song">🎵 曲の記録なし<small>${esc(c.name)} ・ ふりかえり${list.length}回</small></div>`;
+      list.forEach(e => { html += hCard(e, q); });
+    });
+  }
+  $('#hList').innerHTML = html;
+}
+$('#hist').addEventListener('click', e => {
+  if (e.target.closest('[data-act="hclose"]')) { $('#hist').hidden = true; render(); return; }
+  const ch = e.target.closest('[data-hclass]'); if (ch) { hClass = ch.dataset.hclass; renderHist(); return; }
+  const md = e.target.closest('[data-hmode]'); if (md) { hMode = md.dataset.hmode; renderHist(); return; }
+  if (e.target.closest('[data-note]')) return;   // 「ノートを開く」は下の全体の操作で開く
+  const card = e.target.closest('[data-hk]');
+  if (!card) return;
+  const k = card.dataset.hk, on = !card.classList.contains('open');
+  if (on) hOpen.add(k); else hOpen.delete(k);
+  card.classList.toggle('open', on);
+  const sm = card.querySelector('.hfoot small');
+  if (sm && sm.textContent) sm.textContent = on ? '▲ とじる' : '▼ タップでぜんぶ見る';
+});
+$('#hQuery').addEventListener('input', renderHist);
 
 // ---------- レッスンノート ----------
 let curKey = null;
@@ -474,6 +649,7 @@ document.body.addEventListener('click', e => {
   if (e.target.closest('#noteBody')) { const np = e.target.closest('[data-newpiece]'); if (np) openPiece(np.dataset.newpiece, np.dataset.from); return; }
   const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
   if (act === 'addclass') openClass(null);
+  if (act === 'history') openHist();
   const nt = e.target.closest('[data-note]'); if (nt) openNote(nt.dataset.note);
   const cl = e.target.closest('[data-class]'); if (cl) openClass(cl.dataset.class);
   const np = e.target.closest('[data-newpiece]'); if (np) openPiece(np.dataset.newpiece, np.dataset.from);
