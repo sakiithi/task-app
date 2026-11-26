@@ -83,8 +83,10 @@ function lessonsOn(k, withCanceled) {
     .map(c => ({ c, date: k, key: c.id + '_' + k, note: ns[c.id + '_' + k] || {} }))
     .filter(l => withCanceled || !l.note.canceled);
 }
+// 自主開催（プライベート）は、スタジオ予約・告知・参加者の確認も最初から入る
+const PRIV_CHECKS = [{ id: 'studio', text: '🏢 スタジオを予約した' }, { id: 'announce', text: '📣 告知した' }, { id: 'members', text: '👥 参加者を確認した' }];
 function lessonChecks(c, n) {
-  return [{ id: 'music', text: '🎵 曲を用意した' }, { id: 'choreo', text: '💃 振りを確認した' }, { id: 'flow', text: '⏱ 流れを決めた' }]
+  return (c.kind === 'private' ? PRIV_CHECKS : []).concat([{ id: 'music', text: '🎵 曲を用意した' }, { id: 'choreo', text: '💃 振りを確認した' }, { id: 'flow', text: '⏱ 流れを決めた' }])
     .concat((c.items || []).map((t, i) => ({ id: 'item' + i, text: '🎒 ' + t })))
     .concat(n.extra || []);
 }
