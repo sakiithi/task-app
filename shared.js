@@ -70,9 +70,16 @@ function habitStreak(id, checks) {
 const danceClasses = () => load('dance:classes', []);
 const danceNotes = () => load('dance:notes', {});
 const keyDow = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d).getDay(); };
+// その日にあるレッスンか：プライベート（kind:'private'）は date の日だけ。
+// レギュラーは曜日が合っていて、nth（第何週、例 [2,4]）があればその週だけ
+const nthOf = k => Math.ceil(Number(k.split('-')[2]) / 7);
+function classOn(c, k) {
+  if (c.kind === 'private') return c.date === k;
+  return c.dow === keyDow(k) && (!c.nth || !c.nth.length || c.nth.includes(nthOf(k)));
+}
 function lessonsOn(k, withCanceled) {
-  const dow = keyDow(k), ns = danceNotes();
-  return danceClasses().filter(c => c.dow === dow).sort((a, b) => minOf(a.start) - minOf(b.start))
+  const ns = danceNotes();
+  return danceClasses().filter(c => classOn(c, k)).sort((a, b) => minOf(a.start) - minOf(b.start))
     .map(c => ({ c, date: k, key: c.id + '_' + k, note: ns[c.id + '_' + k] || {} }))
     .filter(l => withCanceled || !l.note.canceled);
 }

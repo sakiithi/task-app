@@ -838,8 +838,10 @@ function render() {
     + `<div class="sb"><button class="yes" data-sid="${s.id}" data-min="${avg}">${avg}分にする</button><button data-sid="${s.id}">このままでいい</button></div></div>`).join('');
 
   // 💃 今日のレッスン（ダンスタブのデータを読むだけ）
-  const dcs = load('dance:classes', []), dns = load('dance:notes', {}), dow = new Date().getDay();
-  const dls = dcs.filter(c => c.dow === dow && !(dns[c.id + '_' + today()] || {}).canceled).sort((a, b) => minOf(a.start) - minOf(b.start));
+  const dcs = load('dance:classes', []), dns = load('dance:notes', {}), dow = new Date().getDay(), nth = Math.ceil(new Date().getDate() / 7);
+  // プライベートはその日だけ、レギュラーは曜日（＋第何週）が合う日
+  const onToday = c => c.kind === 'private' ? c.date === today() : c.dow === dow && (!c.nth || !c.nth.length || c.nth.includes(nth));
+  const dls = dcs.filter(c => onToday(c) && !(dns[c.id + '_' + today()] || {}).canceled).sort((a, b) => minOf(a.start) - minOf(b.start));
   $('#dlesson').hidden = !dls.length;
   $('#dlesson').innerHTML = '<h3>💃 今日のレッスン</h3>' + dls.map(c => {
     const n = dns[c.id + '_' + today()] || {}, ids = ['music', 'choreo', 'flow'].concat((c.items || []).map((x, i) => 'item' + i)).concat((n.extra || []).map(x => x.id));
