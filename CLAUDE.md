@@ -12,7 +12,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 ## ファイル構成
 - 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜 / 💪からだ / 💃ダンス**（増えたら横にスクロール）。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
 - `index.html` … アプリ本体（📋タスク）。HTML・CSS・JavaScript をこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
-  - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / due / allDay / est）
+  - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / low / due / allDay / est）
   - ほかに受け取るメッセージ：`{type:'tab', tab, action}`（タブ切り替え）、`{type:'running', on}`（朝の実行中は下のタブを隠す）。iframe には `{type:'refresh'}` / `{type:'action', action}` を送る
   - `?add=テキスト` で開くとタスクを追加する（Siri のショートカット用）
 - `morning.html` … ☀️朝「Good Morning Routine」。単体で開いても動く
@@ -43,7 +43,9 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 ## 機能の一覧
 - 話して／打って追加：日本語の日時を読み取る `parseJa()`（明日15時、金曜まで、30分後、毎朝7時、毎週月水、毎月25日、平日 など）。最後に「！」で⭐大事
 - 流れる速さ：1つのカードが画面を横切る時間（分）で設定
-- タップでメニュー（完了・タイトル変更・日時変更・⭐大事・延期・削除）、長押しで完了
+- **優先度**：🔥高（＝⭐大事）・🌷中（ふつう）・☁️低の3段階。締切まで3日を切った（過ぎた）ものは自動で1つ上げる（繰り返しタスクはのぞく）。タイムラインは優先度→期限の順。高はピンクに光って少し大きく、低は少し小さく薄く
+- **一覧**：タイムラインの上に、残りのタスクを優先度ごと（高・中・低の行）にチップで表示。見出しをタップでたたむ。チップをタップするとタイムラインがそのカードまで動いて4秒止まる
+- タップでメニュー（完了・名前変更・日時変更・優先度・延期・削除）、長押しで完了、**カードを上下にスワイプで優先度を上げる／下げる**
 - 今やる1つ：優先度の一番高いタスクを1枚表示。右スワイプで完了、左で延期。集中タイマー（15/25/50分）
 - 繰り返しタスク：完了すると次の回の期限に進む
 - できたこと：完了の記録を日付ごとに表示。連続日数・合計。完了したカードは翌日タイムラインから外れるが、記録は残る
@@ -106,11 +108,13 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
   - `{ id, title, due(ミリ秒|null), allDay, repeat, star, created, done, doneAt, notified }`
+  - 任意で `low: true`（☁️低）。🔥高は `star: true` をそのまま使う
   - `repeat` は `null` か `{type:'daily'}` / `{type:'weekdays'}` / `{type:'weekly', days:[0-6]}` / `{type:'monthly', day:1-31}`
 - `task-app:log` … 完了の記録 `{ id, taskId, title, at, repeat }`
 - `task-app:crossMinutes` … 流れる速さ（分）
 - `task-app:lastBackup` … 最後にバックアップを保存（または読み込み）した時刻（ミリ秒）
 - `task-app:backupNag` … 最後に「保存しとく？」を出した時刻（ミリ秒）
+- `task-app:ovOpen` … 一覧を開いているか（true/false）
 
 ### 朝のタブのデータ
 - `morning:routines` … `[{ id, name, emoji, days:[0-6], leave:'HH:MM'|null, steps:[{ id, emoji, title, min, star }] }]`

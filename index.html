@@ -121,7 +121,7 @@
   /* タイムライン */
   .stage {
     flex: 1; overflow: hidden;
-    touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
             mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   }
@@ -162,6 +162,13 @@
   .tag { border-radius: 999px; padding: 2px 8px; background: var(--surface); color: var(--ink, var(--accent)); font-weight: 700; }
   .tag.today { background: var(--ink, var(--accent)); color: var(--surface); }
   .tag.overdue { background: var(--warn); color: #fff; }
+  .slot.hi:not(.star) .card {
+    transform: scale(1.05); border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 10px 28px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .slot.low .card { transform: scale(.93); opacity: .72; }
+  .card.flash { animation: flash 1.6s ease-out; }
+  @keyframes flash { 0%, 40% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 55%, transparent), var(--shadow); } }
   .slot.done .card { opacity: .55; }
   .slot.done .title { text-decoration: line-through; text-decoration-thickness: 2px; }
 
@@ -175,6 +182,47 @@
     position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
     font-size: 11px; color: var(--muted); pointer-events: none;
   }
+
+  /* 一覧（優先度ごと） */
+  .overview {
+    position: relative; z-index: 1; margin: 8px 12px 0; padding: 4px 6px 6px;
+    background: color-mix(in srgb, var(--surface) 72%, transparent); border: 1.5px solid var(--line);
+    border-radius: 20px; box-shadow: var(--shadow);
+  }
+  .ov-head {
+    width: 100%; display: flex; align-items: center; gap: 8px; border: 0; background: none;
+    color: var(--text); font-size: 13px; padding: 6px 8px;
+  }
+  .ov-sum { flex: 1; text-align: right; color: var(--muted); font-size: 12px; font-weight: 500; }
+  .ov-arrow { color: var(--muted); transition: transform .2s; }
+  .overview.closed .ov-arrow { transform: rotate(-90deg); }
+  .overview.closed .ov-body { display: none; }
+  .ov-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+  .ov-lab {
+    flex: none; width: 52px; text-align: center; font-size: 11px; font-weight: 700;
+    border-radius: 999px; padding: 4px 0;
+  }
+  .ov-lab.l3 { background: var(--accent-soft); color: var(--accent); }
+  .ov-lab.l2 { background: var(--c1-bg); color: var(--c1-ink); }
+  .ov-lab.l1 { background: var(--bg); color: var(--muted); }
+  .ov-chips { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .ov-chips::-webkit-scrollbar { display: none; }
+  .ov-chip {
+    flex: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--text);
+    border-radius: 999px; padding: 5px 10px; font-size: 12px; transition: transform .15s;
+  }
+  .ov-chip:active { transform: scale(.94); }
+  .ov-row.r3 .ov-chip { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .ov-row.r1 .ov-chip { color: var(--muted); }
+  .ov-chip.overdue { border-color: var(--warn); }
+  .prio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .prio button {
+    padding: 12px 0; font-size: 15px; border-radius: 16px;
+    border: 1.5px solid var(--line); background: var(--bg); color: var(--text);
+  }
+  .prio button.on { border-color: transparent; color: #fff; background: var(--grad); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 8px; }
 
   /* 今やる1つ */
   .focus {
@@ -384,6 +432,13 @@
     <button class="chip" id="settingsBtn" aria-label="設定">⚙️</button>
   </div>
 
+  <section class="overview" id="overview" hidden>
+    <button class="ov-head" id="ovHead" type="button" aria-expanded="true">
+      <span>📋 一覧</span><span class="ov-sum" id="ovSum"></span><span class="ov-arrow">▾</span>
+    </button>
+    <div class="ov-body" id="ovBody"></div>
+  </section>
+
   <div class="stage" id="stage">
     <div class="axis"></div>
     <div class="track" id="track"></div>
@@ -391,7 +446,7 @@
       <div><div class="big">🌷</div>マイクを押して話すだけで追加できるよ<br>
       <b>「明日15時に歯医者」</b><br><b>「毎朝7時に薬」</b><br><b>「金曜までにレポート！」</b>（！で⭐大事）</div>
     </div>
-    <div class="tip" id="tip">タップでメニュー ・ 長押しで完了 💖</div>
+    <div class="tip" id="tip">タップでメニュー ・ 長押しで完了 ・ 上下スワイプで優先度 💖</div>
     <div class="focus" id="focus" hidden>
       <div class="focus-label">✨ 今やること</div>
       <div id="focusBody"></div>
@@ -436,10 +491,15 @@
         <div class="sub-preview" id="editPreview"></div>
       </div>
       <button class="row center go" id="toggleDone">完了にする</button>
-      <div class="grid2">
-        <button class="row center" id="editTitleBtn">✏️ タイトル</button>
+      <div class="prio" id="prioRow">
+        <button type="button" data-lv="3">🔥 高</button>
+        <button type="button" data-lv="2">🌷 中</button>
+        <button type="button" data-lv="1">☁️ 低</button>
+      </div>
+      <div class="sub-preview" id="prioNote"></div>
+      <div class="grid3">
+        <button class="row center" id="editTitleBtn">✏️ 名前</button>
         <button class="row center" id="editDueBtn">📅 日時</button>
-        <button class="row center" id="starBtn">⭐ 大事にする</button>
         <button class="row center" id="sheetSnooze">⏰ 延期</button>
       </div>
       <button class="row center danger" id="remove">削除</button>
@@ -734,8 +794,29 @@ function isOverdue(t) {
 const isToday = t => t.due && !t.done && sameDay(t.due, Date.now());
 // 終日は「その日の終わり」として比べる
 const dueKey = t => !t.due ? Infinity : t.allDay ? t.due + DAY - 1 : t.due;
-// 並び順：未完了 → ⭐大事 → 期限が近い → 古い順
-const byPriority = (a, b) => (!!a.done - !!b.done) || (!!b.star - !!a.star) || dueKey(a) - dueKey(b) || a.created - b.created;
+// 優先度：3=🔥高（⭐大事と同じ）・2=🌷中（ふつう）・1=☁️低（low: true）
+// 締切まで3日を切った（または過ぎた）ものは、自動で1つ上げる（繰り返しタスクはのぞく）
+const LV = { 3: '🔥 高', 2: '🌷 中', 1: '☁️ 低' };
+const baseLv = t => t.star ? 3 : t.low ? 1 : 2;
+const autoUp = t => !t.done && !t.repeat && t.due && baseLv(t) < 3 && dueKey(t) - Date.now() < 3 * DAY;
+const lv = t => baseLv(t) + (autoUp(t) ? 1 : 0);
+// 並び順：未完了 → 優先度が高い → 期限が近い → 古い順
+const byPriority = (a, b) => (!!a.done - !!b.done) || lv(b) - lv(a) || dueKey(a) - dueKey(b) || a.created - b.created;
+function setLevel(t, n) {
+  n = Math.max(1, Math.min(3, n));
+  if (n === baseLv(t)) return toast(n === 3 ? 'もう一番上だよ 🔥' : n === 1 ? 'もう一番下だよ ☁️' : `${LV[n]} のままだよ`);
+  const before = { star: t.star, low: t.low };
+  t.star = n === 3;
+  if (n === 1) t.low = true; else delete t.low;
+  refresh();
+  if (selectedId === t.id && $('taskSheet').classList.contains('open')) fillTaskSheet(t);
+  if (n === 3) confetti(innerWidth / 2, innerHeight * .6);
+  toast(`${LV[lv(t)]} にしたよ${autoUp(t) ? '（締切が近いので1つ上）' : ''}`, () => {
+    t.star = before.star;
+    if (before.low) t.low = true; else delete t.low;
+    refresh();
+  });
+}
 
 function metaHtml(t) {
   const parts = [];
@@ -784,6 +865,7 @@ function render() {
   $('empty').style.display = view.length || focusMode ? 'none' : 'grid';
   $('tip').hidden = !view.length || focusMode;
 
+  renderOverview();
   track.innerHTML = '';
   slots = [];
   if (!view.length) return;
@@ -791,10 +873,11 @@ function render() {
   const frag = document.createDocumentFragment();
   view.forEach((t, i) => {
     const slot = document.createElement('div');
-    const state = (t.done ? ' done' : isOverdue(t) ? ' overdue' : '') + (t.star && !t.done ? ' star' : '');
+    const state = (t.done ? ' done' : isOverdue(t) ? ' overdue' : '') + (t.star && !t.done ? ' star' : '')
+      + (t.done ? '' : lv(t) === 3 ? ' hi' : lv(t) === 1 ? ' low' : '');
     slot.className = `slot ${colorFor(t)}${state}`;
     slot.innerHTML = `<div class="bob">
-      <div class="card" data-id="${t.id}">${t.star && !t.done ? '<span class="badge">⭐</span>' : ''}<div class="card-top"><span class="emo">${t.done ? '✅' : emojiFor(t)}</span><div class="title"></div></div>${metaHtml(t)}</div></div>`;
+      <div class="card" data-id="${t.id}">${t.star && !t.done ? '<span class="badge">⭐</span>' : autoUp(t) && lv(t) === 3 ? '<span class="badge">🔥</span>' : ''}<div class="card-top"><span class="emo">${t.done ? '✅' : emojiFor(t)}</span><div class="title"></div></div>${metaHtml(t)}</div></div>`;
     slot.querySelector('.title').textContent = t.title;
     slots.push(slot);
     frag.appendChild(slot);
@@ -802,6 +885,55 @@ function render() {
   track.appendChild(frag);
   placeSlots();
 }
+/* ───────── 一覧（優先度ごと） ───────── */
+const OV_KEY = 'task-app:ovOpen';
+function renderOverview() {
+  const ov = $('overview');
+  const open = tasks.filter(t => !t.done).sort(byPriority);
+  ov.hidden = !open.length || focusMode;
+  if (ov.hidden) return;
+  const isOpen = read(OV_KEY, true);
+  ov.classList.toggle('closed', !isOpen);
+  $('ovHead').setAttribute('aria-expanded', isOpen);
+  const groups = { 3: [], 2: [], 1: [] };
+  open.forEach(t => groups[lv(t)].push(t));
+  $('ovSum').textContent = [3, 2, 1].filter(n => groups[n].length).map(n => `${LV[n].split(' ')[1]}${groups[n].length}`).join('・');
+  const body = $('ovBody');
+  body.innerHTML = '';
+  [3, 2, 1].forEach(n => {
+    if (!groups[n].length) return;
+    const row = document.createElement('div');
+    row.className = `ov-row r${n}`;
+    row.innerHTML = `<span class="ov-lab l${n}">${LV[n]} ${groups[n].length}</span><div class="ov-chips"></div>`;
+    const chips = row.querySelector('.ov-chips');
+    groups[n].forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ov-chip' + (isOverdue(t) ? ' overdue' : '');
+      b.textContent = `${emojiFor(t)} ${t.title}`;
+      b.onclick = () => jump(t.id);
+      chips.appendChild(b);
+    });
+    body.appendChild(row);
+  });
+}
+$('ovHead').onclick = () => { write(OV_KEY, !read(OV_KEY, true)); renderOverview(); };
+
+// 一覧のタスクをタップ → タイムラインをそのカードまで動かして、少し止める
+let jumping = null, holdUntil = 0;
+function jump(id) {
+  const i = view.findIndex(t => t.id === id);
+  if (i < 0) return;
+  const w = stage.clientWidth, L = loopLen();
+  const target = w * .3 + i * STEP - (w / 2 + SLOT_W / 2);
+  let d = ((target - offset) % L + L) % L;
+  if (d > L / 2) d -= L;
+  jumping = { from: offset, d, t0: performance.now() };
+  holdUntil = performance.now() + 4000;
+  const card = track.querySelector(`.card[data-id="${id}"]`);
+  if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); }
+}
+
 function placeSlots() {
   const L = loopLen();
   offset = ((offset % L) + L) % L;
@@ -818,7 +950,11 @@ function tick(now) {
   prev = now;
   if (slots.length) {
     // 画面の幅を crossMinutes 分で横切る速さ
-    if (!paused && !dragging && !focusMode) offset += stage.clientWidth / (crossMinutes * 60) * dt;
+    if (jumping) {
+      const p = Math.min(1, (now - jumping.t0) / 600), e = 1 - Math.pow(1 - p, 3);
+      offset = jumping.from + jumping.d * e;
+      if (p >= 1) jumping = null;
+    } else if (!paused && !dragging && !focusMode && now > holdUntil) offset += stage.clientWidth / (crossMinutes * 60) * dt;
     placeSlots();
   }
   requestAnimationFrame(tick);
@@ -832,9 +968,12 @@ function cancelPress() {
   if (pressCard) pressCard.classList.remove('pressing');
 }
 stage.addEventListener('contextmenu', e => e.preventDefault());
+// 上下スワイプで優先度を変える
+let startX = 0, startY = 0, axis = null, swipeY = 0;
 stage.addEventListener('pointerdown', e => {
   if (focusMode) return;
   dragging = true; lastX = e.clientX; moved = 0; pressFired = false;
+  startX = e.clientX; startY = e.clientY; axis = null; swipeY = 0; jumping = null; holdUntil = 0;
   pressCard = e.target.closest && e.target.closest('.card');
   const t = pressCard && tasks.find(t => t.id === pressCard.dataset.id);
   if (t && !t.done) {
@@ -850,7 +989,20 @@ stage.addEventListener('pointerdown', e => {
 window.addEventListener('pointermove', e => {
   if (!dragging) return;
   const dx = e.clientX - lastX;
-  lastX = e.clientX; moved += Math.abs(dx);
+  lastX = e.clientX;
+  const tx = e.clientX - startX, ty = e.clientY - startY;
+  if (!axis && Math.hypot(tx, ty) > 10) {
+    const t = pressCard && tasks.find(t => t.id === pressCard.dataset.id);
+    axis = Math.abs(ty) > Math.abs(tx) && t && !t.done ? 'y' : 'x';
+    if (axis === 'y') cancelPress();
+  }
+  if (axis === 'y') {
+    swipeY = ty;
+    const k = Math.max(-46, Math.min(46, ty));
+    pressCard.style.translate = `0 ${k}px`;
+    return;
+  }
+  moved += Math.abs(dx);
   offset -= dx;
   if (moved > 8) cancelPress();
 });
@@ -859,10 +1011,18 @@ window.addEventListener('pointerup', () => {
   dragging = false;
   const card = pressCard;
   cancelPress();
-  if (!pressFired && moved < 8 && card) openTask(card.dataset.id);
-  pressCard = null;
+  if (axis === 'y' && card) {
+    card.style.translate = '';
+    const t = tasks.find(t => t.id === card.dataset.id);
+    if (t && Math.abs(swipeY) > 36) setLevel(t, baseLv(t) + (swipeY < 0 ? 1 : -1));
+  } else if (!pressFired && moved < 8 && axis !== 'y' && card) openTask(card.dataset.id);
+  pressCard = null; axis = null;
 });
-window.addEventListener('pointercancel', () => { dragging = false; cancelPress(); pressCard = null; });
+window.addEventListener('pointercancel', () => {
+  dragging = false; cancelPress();
+  if (pressCard) pressCard.style.translate = '';
+  pressCard = null; axis = null;
+});
 
 /* ───────── お知らせ（取り消し付き） ───────── */
 let toastTimer, undoFn = null;
@@ -1208,9 +1368,10 @@ let editMode = null; // 'title' | 'due'
 const selected = () => tasks.find(t => t.id === selectedId);
 function fillTaskSheet(t) {
   $('sheetTitle').textContent = `${t.star ? '⭐ ' : ''}${emojiFor(t)} ${t.title}`;
+  $('prioRow').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.lv === baseLv(t)));
+  $('prioNote').textContent = autoUp(t) ? `⏰ 締切が近いので、いまは ${LV[lv(t)]} として並んでるよ` : '';
   $('sheetDue').textContent = [t.due ? `🕒 ${dueLabel(t)}` : '期限なし', t.repeat && `🔁 ${repeatLabel(t.repeat)}`].filter(Boolean).join('　');
   $('toggleDone').textContent = t.done ? '↩︎ 未完了に戻す' : t.repeat ? '完了して次の回へ 🔁' : '完了にする 💖';
-  $('starBtn').textContent = t.star ? '☆ 大事を外す' : '⭐ 大事にする';
 }
 function openTask(id) {
   const t = tasks.find(t => t.id === id);
@@ -1274,14 +1435,10 @@ $('editForm').addEventListener('submit', e => {
     toast(`📅 ${t.due ? dueLabel(t) : '期限なし'} にしたよ`, restore);
   }
 });
-$('starBtn').onclick = () => {
+$('prioRow').querySelectorAll('button').forEach(b => b.onclick = () => {
   const t = selected();
-  if (!t) return;
-  t.star = !t.star;
-  fillTaskSheet(t);
-  refresh();
-  if (t.star) confetti(innerWidth / 2, innerHeight * .6);
-};
+  if (t) setLevel(t, +b.dataset.lv);
+});
 $('toggleDone').onclick = () => {
   const t = selected();
   closeAll();
@@ -1663,7 +1820,7 @@ function taskOp(d) {
   if (!t) return;
   if (d.op === 'complete' && !t.done) complete(t);
   else if (d.op === 'update' && d.patch) {
-    ['star', 'due', 'allDay', 'est'].forEach(k => { if (k in d.patch) t[k] = d.patch[k]; });
+    ['star', 'low', 'due', 'allDay', 'est'].forEach(k => { if (k in d.patch) t[k] = d.patch[k]; });
     if ('due' in d.patch) t.notified = false;
     refresh();
   }
