@@ -383,7 +383,7 @@ function renderPrivs() {
       <div class="t">${esc(c.name)}<small>${c.start}〜${c.end}${c.place ? ' ・ ' + esc(c.place) : ''}${c.memo ? ' ・ ' + esc(c.memo) : ''}</small></div>${st}<button class="edit" data-priv="${c.id}">✏️</button></div>`;
   };
   const shownPast = privAll ? past : past.slice(0, 3);
-  $('#privs').innerHTML = !ps.length ? '<p class="muted">「＋ 追加」から、グループや個人のレッスンを、日にちを決めて1回ずつ登録してね。レッスンノートやふりかえりも使えるよ</p>'
+  $('#privs').innerHTML = !ps.length ? '<p class="muted">「＋ 追加」から、スタジオを借りて開く回を、日にちごとに登録してね。レッスンノートやふりかえりも使えるよ</p>'
     : (up.length ? up.map(row).join('') : '<p class="muted">これからの予定はないよ</p>')
       + (past.length ? `<div class="lbl" style="margin-top:14px">これまで（${past.length}回）</div>${shownPast.map(row).join('')}`
         + (past.length > 3 ? `<button class="pmore" data-act="privall">${privAll ? '▲ とじる' : `▼ ぜんぶ見る（あと${past.length - 3}回）`}</button>` : '') : '');
@@ -532,7 +532,7 @@ function noteCtx() {
   return { c, k, n: getNote(curKey) };
 }
 function prevNote(c, k) {
-  // プライベートは、同じ名前（同じグループ）の前の回を見る
+  // プライベートは、同じレッスン名の前の回を見る
   const ns = notes(), ids = isPriv(c) ? classes().filter(x => isPriv(x) && x.name === c.name).map(x => x.id) : [c.id];
   const list = Object.keys(ns).map(x => { const i = x.indexOf('_'); return { key: x, id: x.slice(0, i), k: x.slice(i + 1) }; })
     .filter(x => ids.includes(x.id) && x.k < k && ns[x.key].fb && ns[x.key].fb.done).sort((a, b) => a.k < b.k ? -1 : 1);
@@ -646,10 +646,10 @@ function openClass(id, priv) {
   csEdit = c ? c.id : null;
   csPriv = c ? isPriv(c) : !!priv;
   $('#csTitle').textContent = csPriv ? (c ? '🌟 プライベートレッスンの設定' : '🌟 プライベートレッスンを追加') : c ? 'クラスの設定' : 'クラスを追加';
-  $('#csNameLbl').textContent = csPriv ? 'グループ名（個人なら名前）' : 'クラス名';
-  $('#csName').placeholder = csPriv ? '例：〇〇ちゃんたちグループ' : '例：K-POP 初級';
+  $('#csNameLbl').textContent = csPriv ? 'レッスン名' : 'クラス名';
+  $('#csName').placeholder = csPriv ? '例：自主開催 K-POP' : '例：K-POP 初級';
   $('#csLevelLbl').textContent = csPriv ? '内容・メモ' : 'レベル・ジャンル';
-  $('#csLevel').placeholder = csPriv ? '例：発表会の振り' : '例：初級・K-POP';
+  $('#csLevel').placeholder = csPriv ? '例：初級・単発ワークショップ' : '例：初級・K-POP';
   $('#csRegular').hidden = csPriv; $('#csPrivate').hidden = !csPriv;
   $('#csCopy').hidden = !csPriv || !!c || !classes().some(isPriv);
   $('#csDel').textContent = csPriv ? 'このレッスンを削除' : 'このクラスを削除';
