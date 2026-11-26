@@ -182,7 +182,7 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 
   <div id="vLesson">
     <section class="card next" id="next"></section>
-    <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px">2週間</small></h3><div id="upcoming"></div></section>
+    <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px">1週間</small></h3><div id="upcoming"></div></section>
     <section class="card mini"><h3>📖 ふりかえりの記録 <button class="link" data-act="history">ぜんぶ見る →</button></h3><div id="fbRecent"></div></section>
     <section class="card mini"><h3>🎵 いまの振り付け</h3><div id="pieces"></div></section>
     <section class="card mini"><h3>👯 レギュラークラス <button class="link" data-act="addclass">＋ 追加</button></h3><div id="classes"></div></section>
@@ -338,12 +338,12 @@ function statusChip(l) {
   return pr.ok ? '<span class="chip2 ok">準備OK</span>' : `<span class="chip2">準備 ${pr.done}/${pr.total}</span>`;
 }
 function renderUpcoming() {
-  const ls = upcomingList(14);
+  const ls = upcomingList(7);
   $('#upcoming').innerHTML = ls.length ? ls.map(l => {
     const d = parseKey(l.date), isT = l.date === today();
     return `<div class="lrow" data-note="${l.key}"><div class="ldate${isT ? ' today' : ''}">${isT ? '今日' : `${d.getMonth() + 1}/${d.getDate()}`}<small>${WD[d.getDay()]}曜</small></div>
       <div class="lmain"><b>${isPriv(l.c) ? '🌟 ' : ''}${esc(l.c.name)}</b><small>${l.c.start}〜${l.c.end}${l.c.place ? ' ・ ' + esc(l.c.place) : ''}</small></div>${statusChip(l)}</div>`;
-  }).join('') : '<p class="muted">クラスを登録すると、ここに並ぶよ</p>';
+  }).join('') : `<p class="muted">${classes().length ? '1週間以内のレッスンはないよ' : 'クラスを登録すると、ここに並ぶよ'}</p>`;
 }
 function renderPieces() {
   const cs = classes().filter(c => !isPriv(c));
