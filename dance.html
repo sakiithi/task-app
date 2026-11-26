@@ -84,6 +84,11 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 .tin.w{width:100%}
 .lbl{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 6px}
 .lbl:first-child{margin-top:0}
+.ckh{display:flex;align-items:center;gap:6px;margin:12px 0 4px;font-size:12px;font-weight:900;color:var(--sub)}
+.ckrow{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.ckrow input{flex:1;min-width:0}
+.ckrow button{flex:none;width:36px;height:36px;border-radius:50%;background:var(--line);font-weight:900;color:var(--sub)}
+.ckedit{font-size:12px;font-weight:700;color:var(--pink);background:none;margin-left:auto}
 .ck{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border-bottom:1px dashed var(--line);font-weight:700;font-size:15px}
 .ck:last-child{border:0}
 .ck .box{width:28px;height:28px;flex:none;border-radius:9px;border:2.5px solid var(--accent);display:grid;place-items:center;color:#fff;font-weight:900}
@@ -187,7 +192,7 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 
   <div id="vLesson">
     <section class="card next" id="next"></section>
-    <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px">1週間</small></h3><div id="upcoming"></div></section>
+    <section class="card mini"><h3>📅 これからのレッスン <small class="muted" style="font-size:12px" id="upTitle">1週間</small></h3><div id="upcoming"></div></section>
     <section class="card mini"><h3>📖 ふりかえりの記録 <button class="link" data-act="history">ぜんぶ見る →</button></h3><div id="fbRecent"></div></section>
     <section class="card mini"><h3>🎵 いまの振り付け</h3><div id="pieces"></div></section>
     <section class="card mini"><h3>👯 レギュラークラス <button class="link" data-act="addclass">＋ 追加</button></h3><div id="classes"></div></section>
@@ -345,7 +350,7 @@ function renderNext() {
     return;
   }
   if (!l) { $('#next').innerHTML = '<div class="nlabel">次のレッスン</div><p class="muted" style="margin-top:6px">2週間以内のレッスンはないよ</p>'; return; }
-  const c = l.c, n = l.note, pr = lessonPrep(c, n), isToday = l.date === today();
+  const c = l.c, n = l.note, pr = lessonPrep(c, n, l.date), isToday = l.date === today();
   const leaveAt = atDayKey(l.date, c.start) - (c.travel || 0) * MIN;
   const left = leaveAt - Date.now();
   const d = parseKey(l.date);
@@ -361,16 +366,25 @@ function renderNext() {
 function statusChip(l) {
   if (l.note.canceled) return '<span class="chip2 off">休講</span>';
   if (l.note.fb && l.note.fb.done) return '<span class="chip2 fb">ふりかえり済</span>';
-  const pr = lessonPrep(l.c, l.note);
+  const pr = lessonPrep(l.c, l.note, l.date);
   return pr.ok ? '<span class="chip2 ok">準備OK</span>' : `<span class="chip2">準備 ${pr.done}/${pr.total}</span>`;
 }
+// ふだんは1週間。「もっと先まで見る」で1か月（31日）先まで
+let upAll = false;
 function renderUpcoming() {
-  const ls = upcomingList(7);
-  $('#upcoming').innerHTML = ls.length ? ls.map(l => {
+  const ls = upcomingList(upAll ? 31 : 7), more = upAll ? 0 : upcomingList(31).length - ls.length;
+  $('#upTitle').textContent = upAll ? '1か月' : '1週間';
+  const btn = upAll ? '<button class="pmore" data-act="upall">▲ 1週間にもどす</button>' : more ? `<button class="pmore" data-act="upall">▼ もっと先まで見る（1か月で あと${more}回）</button>` : '';
+  let lastWeek = null;
+  $('#upcoming').innerHTML = (ls.length ? ls.map(l => {
+    // 1か月表示のときは、週の切れ目に見出し
+    const wk = Math.floor((parseKey(l.date) - parseKey(today())) / (7 * 864e5));
+    const head = upAll && wk !== lastWeek && wk > 0 ? `<div class="ckh">${wk === 1 ? '来週' : wk + '週間後'}</div>` : '';
+    lastWeek = wk;
     const d = parseKey(l.date), isT = l.date === today();
-    return `<div class="lrow" data-note="${l.key}"><div class="ldate${isT ? ' today' : ''}">${isT ? '今日' : `${d.getMonth() + 1}/${d.getDate()}`}<small>${WD[d.getDay()]}曜</small></div>
+    return head + `<div class="lrow" data-note="${l.key}"><div class="ldate${isT ? ' today' : ''}">${isT ? '今日' : `${d.getMonth() + 1}/${d.getDate()}`}<small>${WD[d.getDay()]}曜</small></div>
       <div class="lmain"><b>${isPriv(l.c) ? '🌟 ' : ''}${esc(l.c.name)}</b><small>${l.c.start}〜${l.c.end}${l.c.place ? ' ・ ' + esc(l.c.place) : ''}</small></div>${statusChip(l)}</div>`;
-  }).join('') : `<p class="muted">${classes().length ? '1週間以内のレッスンはないよ' : 'クラスを登録すると、ここに並ぶよ'}</p>`;
+  }).join('') : `<p class="muted">${classes().length ? (upAll ? '1か月以内' : '1週間以内') + 'のレッスンはないよ' : 'クラスを登録すると、ここに並ぶよ'}</p>`) + btn;
 }
 function renderPieces() {
   const since = keyOf(-30), names = [];
@@ -558,7 +572,7 @@ $('#hQuery').addEventListener('input', renderHist);
 // ---------- レッスンノート ----------
 let curKey = null;
 function openNote(key) {
-  curKey = key; renderNote(); $('#note').hidden = false; $('#note').scrollTop = 0;
+  curKey = key; ckEditing = false; renderNote(); $('#note').hidden = false; $('#note').scrollTop = 0;
 }
 function closeNote() { $('#note').hidden = true; curKey = null; render(); }
 function noteCtx() {
@@ -579,7 +593,7 @@ function renderNote(soft) {
   if (!c) { closeNote(); return; }
   if (soft && document.activeElement && $('#note').contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
   const d = parseKey(k), plan = planOf(c, n), total = plan.reduce((a, b) => a + (+b.min || 0), 0), L = lenMin(c);
-  const pr = lessonPrep(c, n), checks = lessonChecks(c, n), pv = prevNote(c, k), p = activePiece(c, k);
+  const pr = lessonPrep(c, n, k), checks = lessonChecks(c, n, k), pv = prevNote(c, k), p = activePiece(c, k);
   let t = minOf(c.start);
   const fb = n.fb || {};
   const ended = Date.now() > atDayKey(k, c.end) - 10 * MIN;
@@ -621,9 +635,9 @@ function renderNote(soft) {
       <textarea class="tin" data-f="teach" placeholder="例：最初はゆっくりカウントで → 8カウントずつ → 曲に合わせる&#10;注意：ひじの角度、目線">${esc(n.teach || '')}</textarea>
     </section>
 
-    <section class="card mini sec"><h3>✅ 準備チェック <small class="muted" style="font-size:12px">${pr.ok ? '✓ 準備OK！ +10pt' : `${pr.done}/${pr.total}`}</small></h3>
-      ${checks.map(x => `<button class="ck${(n.checks || {})[x.id] ? ' on' : ''}" data-ck="${x.id}"><span class="box">${(n.checks || {})[x.id] ? '✓' : ''}</span><span>${esc(x.text)}</span></button>`).join('')}
-      <div class="rowbtns"><button class="pill" data-act="ckadd">＋ この日だけの準備を足す</button></div>
+    <section class="card mini sec"><h3>✅ 準備チェック <small class="muted" style="font-size:12px">${pr.ok ? '✓ 準備OK！ +10pt' : `${pr.done}/${pr.total}`}</small><button class="ckedit" data-act="ckedit">${ckEditing ? '✓ 編集おわり' : '✏️ 編集'}</button></h3>
+      ${ckEditing ? ckEditHtml(c, n) : checks.map(x => `<button class="ck${(n.checks || {})[x.id] ? ' on' : ''}" data-ck="${x.id}"><span class="box">${(n.checks || {})[x.id] ? '✓' : ''}</span><span>${esc(x.text)}</span></button>`).join('')
+        + `<div class="rowbtns"><button class="pill" data-act="ckadd">＋ この日だけの準備を足す</button></div>`}
     </section>
 
     ${!ended && !n.canceled ? fbSec : ''}
@@ -641,11 +655,34 @@ function moneySec(c, n) {
     <div class="mres" id="mRes">${moneyLine(m)}</div></section>`;
 }
 const moneyLine = m => `売上 <b>${yen(m.sales)}</b> − スタジオ代 ${yen(m.studio)} ＝ <b class="${m.net < 0 ? 'neg' : ''}">${yen(m.net)}</b>`;
+// ---------- 準備チェックの編集 ----------
+// all：いつもの準備（全部のレッスン）／ priv：自主開催だけ ／ items：このクラスの持ち物 ／ extra：この日だけ
+let ckEditing = false;
+function ckEditHtml(c, n) {
+  const p = prepLists(), row = (g, i, t) => `<div class="ckrow"><input class="tin" data-ckg="${g}" data-cki="${i}" value="${esc(t)}"><button data-ckdel="${g}" data-cki="${i}" aria-label="削除">✕</button></div>`;
+  const grp = (g, title, list) => `<div class="ckh">${title}</div>${list.map((t, i) => row(g, i, t)).join('')}<div class="rowbtns" style="margin-top:2px"><button class="pill" data-ckadd2="${g}">＋ 足す</button></div>`;
+  return grp('all', '⭐ いつもの準備（全部のレッスン）', p.all.map(x => x.text))
+    + (isPriv(c) ? grp('priv', '🌟 自主開催のときだけ', p.priv.map(x => x.text)) : '')
+    + grp('items', `🎒 持ち物（${esc(c.name)}）`, c.items || [])
+    + grp('extra', '📌 この日だけ', (n.extra || []).map(x => x.text))
+    + '<p class="muted" style="font-size:12px;margin-top:10px">「いつもの準備」に足した項目は、今日からのレッスンに出るよ</p>';
+}
+function ckGet(g, c, n) { const p = prepLists(); return g === 'all' || g === 'priv' ? p[g].map(x => Object.assign({}, x)) : g === 'items' ? (c.items || []).slice() : (n.extra || []).map(x => Object.assign({}, x)); }
+function ckPut(g, c, list) {
+  if (g === 'all' || g === 'priv') { const p = prepLists(); p[g] = list; store('dance:prep', p); }
+  else if (g === 'items') { const cs = classes(), cc = cs.find(x => x.id === c.id); if (cc) { cc.items = list; saveClasses(cs); } }
+  else setNote(curKey, { extra: list });
+}
 // 書いているあいだは、そのまま保存（画面は描き直さない）
 $('#noteBody').addEventListener('input', e => {
   const el = e.target;
   if (el.dataset.f) setNote(curKey, { [el.dataset.f]: el.value });
   if (el.dataset.fb) { const n = getNote(curKey); setNote(curKey, { fb: Object.assign({}, n.fb || {}, { [el.dataset.fb]: el.value }) }); }
+  if (el.dataset.ckg) {
+    const { c, n } = noteCtx(), g = el.dataset.ckg, i = +el.dataset.cki, list = ckGet(g, c, n);
+    if (g === 'items') list[i] = el.value; else list[i].text = el.value;
+    ckPut(g, c, list);
+  }
   if (el.dataset.m) {
     const n = getNote(curKey), v = el.value === '' ? null : Math.max(0, parseInt(el.value, 10) || 0);
     const nn = setNote(curKey, { money: Object.assign({}, n.money || {}, { [el.dataset.m]: v }) });
@@ -666,12 +703,30 @@ $('#noteBody').addEventListener('click', e => {
   if (act === 'tsave') { const tp = load(T_KEY, {}); tp[tplId(c)] = plan; store(T_KEY, tp); toast('次からこの流れで始まるよ'); return; }
   const ck = e.target.closest('[data-ck]');
   if (ck) {
-    const before = lessonPrep(c, n).ok;
+    const before = lessonPrep(c, n, k).ok;
     const checks = Object.assign({}, n.checks || {}); checks[ck.dataset.ck] = !checks[ck.dataset.ck];
     const nn = setNote(curKey, { checks });
-    if (!before && lessonPrep(c, nn).ok) { confetti(); toast('💃 準備OK！ +10pt'); }
+    if (!before && lessonPrep(c, nn, k).ok) { confetti(); toast('💃 準備OK！ +10pt'); }
     try { navigator.vibrate && navigator.vibrate(15); } catch (er) {}
     renderNote(); return;
+  }
+  if (act === 'ckedit') {
+    if (ckEditing) { // 空っぽの項目は消す
+      ['all', 'priv', 'items', 'extra'].forEach(g => { const l = ckGet(g, c, getNote(curKey)), f = l.filter(x => String(g === 'items' ? x : x.text).trim()); if (f.length !== l.length) ckPut(g, c, f); });
+    }
+    ckEditing = !ckEditing; renderNote(); return;
+  }
+  const cd = e.target.closest('[data-ckdel]');
+  if (cd) {
+    const g = cd.dataset.ckdel, list = ckGet(g, c, n); list.splice(+cd.dataset.cki, 1); ckPut(g, c, list); renderNote(); return;
+  }
+  const ca = e.target.closest('[data-ckadd2]');
+  if (ca) {
+    const g = ca.dataset.ckadd2, list = ckGet(g, c, n);
+    if (g === 'items') list.push(''); else list.push(Object.assign({ id: (g === 'extra' ? 'x' : 'p') + uid(), text: g === 'extra' ? '📌 ' : '' }, g === 'extra' ? {} : { since: today() }));
+    ckPut(g, c, list); renderNote();
+    const ins = $('#noteBody').querySelectorAll(`[data-ckg="${g}"]`); if (ins.length) ins[ins.length - 1].focus();
+    return;
   }
   if (act === 'ckadd') {
     const tx = prompt('この日だけの準備（例：新しい振りの動画を撮る）'); if (!tx || !tx.trim()) return;
@@ -792,6 +847,7 @@ document.body.addEventListener('click', e => {
   const a = e.target.closest('[data-act]'), act = a && a.dataset.act;
   if (act === 'addclass') openClass(null);
   if (act === 'addpriv') openClass(null, true);
+  if (act === 'upall') { upAll = !upAll; renderUpcoming(); return; }
   if (act === 'privall') { privAll = !privAll; renderPrivs(); return; }
   const pv = e.target.closest('[data-priv]'); if (pv) { openClass(pv.dataset.priv); return; }
   if (act === 'history') openHist();

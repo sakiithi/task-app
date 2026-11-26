@@ -159,7 +159,7 @@ function renderTomorrow() {
   } else $('#bed').innerHTML = '⏰ 起きる時間を入れると、何時までに寝ればいいか教えるよ';
   const tt = getTasks().filter(t => !t.done && t.due && t.due >= sod(1) && t.due < sod(2)).sort((a, b) => a.due - b.due);
   const tl = lessonsOn(keyOf(1));
-  $('#tmrTasks').innerHTML = (tl.length ? `<span class="fl">💃 明日のレッスン</span>` + tl.map(l => { const pr = lessonPrep(l.c, l.note); return `<div class="row"><div class="t">${l.c.start} ${esc(l.c.name)}<small>📍 ${esc(l.c.place || '')} ・ ${pr.ok ? '✓ 準備OK' : `準備 ${pr.done}/${pr.total}`}</small></div><button class="pill" data-dnote="${l.key}">準備</button></div>`; }).join('') : '')
+  $('#tmrTasks').innerHTML = (tl.length ? `<span class="fl">💃 明日のレッスン</span>` + tl.map(l => { const pr = lessonPrep(l.c, l.note, l.date); return `<div class="row"><div class="t">${l.c.start} ${esc(l.c.name)}<small>📍 ${esc(l.c.place || '')} ・ ${pr.ok ? '✓ 準備OK' : `準備 ${pr.done}/${pr.total}`}</small></div><button class="pill" data-dnote="${l.key}">準備</button></div>`; }).join('') : '')
     + (tt.length ? `<span class="fl">📋 明日の予定</span>` + tt.map(t => `<div class="row"><div class="t">${taskEmoji(t)} ${esc(t.title)}<small>${t.allDay ? '終日' : hm(t.due)}</small></div></div>`).join('') : '');
 }
 
