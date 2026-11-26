@@ -111,6 +111,11 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 .pdot{width:48px!important;background:linear-gradient(135deg,#ffb3d1,#ffd28a)!important;font-size:12px!important;line-height:1.15;text-align:center;letter-spacing:-.02em}
 .pdot small{display:block;font-size:10px;font-weight:700}
 .crow .edit{flex:none;background:var(--line);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+.msum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--c4);border-radius:16px;padding:10px 6px;margin-bottom:10px;text-align:center}
+.msum b{display:block;font-size:16px;font-weight:900}
+.msum small{font-size:11px;color:var(--sub);font-weight:700}
+.neg{color:var(--warn,#ff5d7a)}
+.mres{margin-top:12px;background:var(--c4);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px;text-align:center}
 .pmore{display:block;width:100%;text-align:center;font-size:13px;font-weight:700;color:var(--sub);padding:8px 0 0}
 .danger{width:100%;margin-top:10px;padding:12px;color:var(--warn);font-weight:700}
 .offbtn{width:100%;padding:11px;border-radius:14px;background:var(--line);font-weight:700;color:var(--sub);margin-top:14px}
@@ -209,7 +214,7 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 <div id="classSheet" class="sheet-wrap" hidden>
   <div class="sheet">
     <h3 id="csTitle">クラスを追加</h3>
-    <span class="lbl" id="csNameLbl">クラス名</span><input class="tin w" id="csName" placeholder="例：K-POP 初級">
+    <span class="lbl" id="csNameLbl">クラス名</span><input class="tin w" id="csName" placeholder="例：JAZZ 初級">
     <div id="csRegular">
       <span class="lbl">曜日</span><div class="days7" id="csDow"></div>
       <span class="lbl">毎週？ 第何週？（隔週なら第2・第4のように選ぶ）</span><div class="weeks6" id="csNth"></div>
@@ -217,13 +222,17 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
     <div id="csPrivate" hidden>
       <span class="lbl">日にち</span><input class="tin w" type="date" id="csDate">
       <button class="pill" id="csCopy" type="button" style="margin-top:8px">📋 前回のプライベートからコピー</button>
+      <div class="grid2f">
+        <div><span class="lbl">スタジオ代（円）</span><input class="tin w" type="number" inputmode="numeric" id="csStudio" placeholder="例：6000"></div>
+        <div><span class="lbl">参加費（1人・円）</span><input class="tin w" type="number" inputmode="numeric" id="csPrice" placeholder="例：2500"></div>
+      </div>
     </div>
     <span class="lbl">時間</span><div class="grid2f"><input class="tin" type="time" id="csStart"><input class="tin" type="time" id="csEnd"></div>
     <span class="lbl">場所</span><input class="tin w" id="csPlace" placeholder="例：〇〇スタジオ 3F">
     <span class="lbl">地図のリンク（あれば）</span><input class="tin w" id="csMap" placeholder="Googleマップのリンクなど" inputmode="url">
     <div class="grid2f">
       <div><span class="lbl">移動の時間（分）</span><input class="tin w" type="number" inputmode="numeric" id="csTravel" placeholder="30"></div>
-      <div><span class="lbl" id="csLevelLbl">レベル・ジャンル</span><input class="tin w" id="csLevel" placeholder="例：初級・K-POP"></div>
+      <div><span class="lbl" id="csLevelLbl">レベル・ジャンル</span><input class="tin w" id="csLevel" placeholder="例：初級・JAZZ"></div>
     </div>
     <span class="lbl">いつもの持ち物（「、」で区切る）</span><input class="tin w" id="csItems" placeholder="例：スピーカー、タオル、着替え">
     <button class="big" id="csSave" style="margin-top:16px">保存</button>
@@ -236,11 +245,11 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
   <div class="sheet">
     <h3>🎵 新しい曲</h3>
     <p class="muted" id="psFor"></p>
-    <span class="lbl">曲名</span><input class="tin w" id="psTitle" placeholder="例：Dynamite">
-    <span class="lbl">アーティスト</span><input class="tin w" id="psArtist" placeholder="例：BTS">
+    <span class="lbl">曲名</span><input class="tin w" id="psTitle" placeholder="例：Feeling Good">
+    <span class="lbl">アーティスト</span><input class="tin w" id="psArtist" placeholder="例：Michael Bublé">
     <div class="grid2f">
       <div><span class="lbl">BPM（あれば）</span><input class="tin w" type="number" inputmode="numeric" id="psBpm" placeholder="114"></div>
-      <div><span class="lbl">何週でやる？</span><input class="tin w" type="number" inputmode="numeric" id="psWeeks" value="2"></div>
+      <div><span class="lbl" id="psWeeksLbl">何週でやる？</span><input class="tin w" type="number" inputmode="numeric" id="psWeeks" value="2"></div>
     </div>
     <span class="lbl">リンク（YouTube・Spotify など）</span><input class="tin w" id="psLink" inputmode="url" placeholder="https://">
     <button class="big" id="psSave" style="margin-top:16px">この曲ではじめる</button>
@@ -268,6 +277,23 @@ const colorOf = c => isPriv(c) ? '#ffa8cb' : COLORS[Math.max(0, classes().findIn
 const nthLabel = c => c.nth && c.nth.length ? '第' + c.nth.slice().sort().join('・') : '';
 // 「いつもの流れ」はプライベート全部で1つ
 const tplId = c => isPriv(c) ? 'private' : c.id;
+// 曲はプライベートなら「同じレッスン名」でつながる（何回目かで数える）
+const pid = c => isPriv(c) ? 'priv:' + c.name : c.id;
+const unitW = c => isPriv(c) ? '回' : '週';
+function ownerOf(id) {
+  if (!String(id).startsWith('priv:')) return classes().find(x => x.id === id) || null;
+  const name = id.slice(5), ps = classes().filter(x => isPriv(x) && x.name === name).sort((a, b) => a.date < b.date ? 1 : -1);
+  return ps[0] || { id, kind: 'private', name };
+}
+const yen = n => '¥' + Math.round(n || 0).toLocaleString('ja-JP');
+// 自主開催のお金：スタジオ代・参加費・人数（ノートに入れた値 → なければクラスの値・ふりかえりの人数）
+function moneyOf(c, n) {
+  const m = n.money || {}, fb = n.fb || {};
+  const studio = m.studio != null ? m.studio : c.studio || 0, price = m.price != null ? m.price : c.price || 0;
+  const people = m.people != null ? m.people : fb.count != null ? fb.count : null;
+  const sales = price * (people || 0);
+  return { studio, price, people, sales, net: sales - studio };
+}
 function getNote(key) { return notes()[key] || {}; }
 function setNote(key, patch) { const all = notes(); all[key] = Object.assign({}, all[key] || {}, patch); store(N_KEY, all); return all[key]; }
 function defaultPlan(c) {
@@ -279,12 +305,13 @@ const planOf = (c, n) => n.plan || (load(T_KEY, {})[tplId(c)] || defaultPlan(c))
 // ---------- 振り付けの曲（だいたい2週で1曲）----------
 function activePiece(c, k) {
   // その日の時点で進めている曲（はじめた日 ≤ その日、まだ完成していない or 完成日 ≥ その日）
-  const ps = pieces().filter(p => p.classId === c.id && p.start <= k && (!p.doneAt || p.doneAt >= k));
+  const ps = pieces().filter(p => p.classId === pid(c) && p.start <= k && (!p.doneAt || p.doneAt >= k));
   return ps.sort((a, b) => a.start < b.start ? 1 : -1)[0] || null;
 }
 function weekOf(p, c, k) {
   // はじめた日からその日まで、休講をのぞいて何回目か
   const ns = notes(); let n = 0;
+  if (isPriv(c)) return Math.max(1, classes().filter(x => isPriv(x) && x.name === c.name && x.date >= p.start && x.date <= k && !(ns[x.id + '_' + x.date] || {}).canceled).length);
   const d = parseKey(p.start), end = parseKey(k);
   while (d <= end) { const kk = dayKey(d); if (classOn(c, kk) && !(ns[c.id + '_' + kk] || {}).canceled) n++; d.setDate(d.getDate() + 1); }
   return Math.max(1, n);
@@ -293,7 +320,7 @@ function pieceLine(c, k) {
   const p = activePiece(c, k);
   if (!p) return '';
   const w = weekOf(p, c, k);
-  return `🎵 ${esc(p.title)}${p.artist ? ' / ' + esc(p.artist) : ''} ・ <b>${w}週目</b>／${p.weeks}週の予定`;
+  return `🎵 ${esc(p.title)}${p.artist ? ' / ' + esc(p.artist) : ''} ・ <b>${w}${unitW(c)}目</b>／${p.weeks}${unitW(c)}の予定`;
 }
 
 // ---------- 画面 ----------
@@ -346,15 +373,17 @@ function renderUpcoming() {
   }).join('') : `<p class="muted">${classes().length ? '1週間以内のレッスンはないよ' : 'クラスを登録すると、ここに並ぶよ'}</p>`;
 }
 function renderPieces() {
-  const cs = classes().filter(c => !isPriv(c));
+  const since = keyOf(-30), names = [];
+  classes().filter(c => isPriv(c) && c.date >= since).forEach(c => { if (!names.includes(c.name)) names.push(c.name); });
+  const cs = classes().filter(c => !isPriv(c)).concat(names.map(nm => ownerOf('priv:' + nm)));
   $('#pieces').innerHTML = cs.length ? cs.map(c => {
-    const p = activePiece(c, today());
-    if (!p) return `<div class="song"><span class="e">🎵</span><div class="t">${esc(c.name)}<small>まだ曲が決まってないよ</small></div><button class="link" data-newpiece="${c.id}">＋ 曲を決める</button></div>`;
+    const p = activePiece(c, today()), U = unitW(c);
+    if (!p) return `<div class="song"><span class="e">🎵</span><div class="t">${isPriv(c) ? '🌟 ' : ''}${esc(c.name)}<small>まだ曲が決まってないよ</small></div><button class="link" data-newpiece="${pid(c)}">＋ 曲を決める</button></div>`;
     const w = weekOf(p, c, today());
     let bars = ''; for (let i = 1; i <= Math.max(p.weeks, w); i++) bars += `<i class="${i <= w ? 'on' : ''}"></i>`;
-    return `<div class="pinfo" style="margin-bottom:8px"><small>${esc(c.name)}</small><b>🎵 ${esc(p.title)}</b>${p.artist ? `<small>${esc(p.artist)}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small>` : ''}
-      <div class="pweeks">${bars}</div><small>${w}週目／${p.weeks}週の予定${w > p.weeks ? '（のびてるよ）' : ''}</small>
-      <div class="rowbtns"><button class="pill" data-extend="${p.id}">＋1週のばす</button><button class="pill go" data-finish="${p.id}">完成！次の曲へ</button>${p.link ? `<a class="pill" href="${esc(p.link)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">▶ 曲</a>` : ''}</div></div>`;
+    return `<div class="pinfo" style="margin-bottom:8px"><small>${isPriv(c) ? '🌟 ' : ''}${esc(c.name)}</small><b>🎵 ${esc(p.title)}</b>${p.artist ? `<small>${esc(p.artist)}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small>` : ''}
+      <div class="pweeks">${bars}</div><small>${w}${U}目／${p.weeks}${U}の予定${w > p.weeks ? '（のびてるよ）' : ''}</small>
+      <div class="rowbtns"><button class="pill" data-extend="${p.id}">＋1${U}のばす</button><button class="pill go" data-finish="${p.id}">完成！次の曲へ</button>${p.link ? `<a class="pill" href="${esc(p.link)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">▶ 曲</a>` : ''}</div></div>`;
   }).join('') : '<p class="muted">クラスを登録すると、曲の進み具合が出るよ</p>';
 }
 function classStats(c) {
@@ -380,18 +409,24 @@ function renderPrivs() {
     const d = parseKey(c.date), n = ns[c.id + '_' + c.date] || {};
     const st = n.canceled ? '<span class="chip2 off">お休み</span>' : n.fb && n.fb.done ? '<span class="chip2 fb">ふりかえり済</span>' : '';
     return `<div class="crow" data-note="${c.id}_${c.date}"><div class="cdot pdot">${d.getMonth() + 1}/${d.getDate()}<small>${WD[d.getDay()]}</small></div>
-      <div class="t">${esc(c.name)}<small>${c.start}〜${c.end}${c.place ? ' ・ ' + esc(c.place) : ''}${c.memo ? ' ・ ' + esc(c.memo) : ''}</small></div>${st}<button class="edit" data-priv="${c.id}">✏️</button></div>`;
+      <div class="t">${esc(c.name)}<small>${c.start}〜${c.end}${c.place ? ' ・ ' + esc(c.place) : ''}${c.memo ? ' ・ ' + esc(c.memo) : ''}</small>${(() => { const m = moneyOf(c, n); return (m.studio || m.price) && m.people != null ? `<small>💰 ${m.people}人 ・ 残り ${yen(m.net)}</small>` : ''; })()}</div>${st}<button class="edit" data-priv="${c.id}">✏️</button></div>`;
   };
   const shownPast = privAll ? past : past.slice(0, 3);
-  $('#privs').innerHTML = !ps.length ? '<p class="muted">「＋ 追加」から、スタジオを借りて開く回を、日にちごとに登録してね。レッスンノートやふりかえりも使えるよ</p>'
+  // 今月のお金（お休みはのぞく）
+  const mon = t.slice(0, 7), mine = ps.filter(c => c.date.startsWith(mon) && !(ns[c.id + '_' + c.date] || {}).canceled);
+  // 人数が入った回だけ数える（これからの回でスタジオ代だけ引かれないように）
+  const mm = mine.map(c => moneyOf(c, ns[c.id + '_' + c.date] || {})).filter(m => m.people != null);
+  const sum = mm.reduce((a, m) => ({ sales: a.sales + m.sales, net: a.net + m.net, people: a.people + (m.people || 0) }), { sales: 0, net: 0, people: 0 });
+  const money = mm.length && mm.some(m => m.studio || m.price) ? `<div class="msum"><div><b>${mm.length}</b><small>今月の回数</small></div><div><b>${yen(sum.sales)}</b><small>売上</small></div><div><b class="${sum.net < 0 ? 'neg' : ''}">${yen(sum.net)}</b><small>スタジオ代を引くと</small></div></div>` : '';
+  $('#privs').innerHTML = money + (!ps.length ? '<p class="muted">「＋ 追加」から、スタジオを借りて開く回を、日にちごとに登録してね。レッスンノートやふりかえりも使えるよ</p>'
     : (up.length ? up.map(row).join('') : '<p class="muted">これからの予定はないよ</p>')
       + (past.length ? `<div class="lbl" style="margin-top:14px">これまで（${past.length}回）</div>${shownPast.map(row).join('')}`
-        + (past.length > 3 ? `<button class="pmore" data-act="privall">${privAll ? '▲ とじる' : `▼ ぜんぶ見る（あと${past.length - 3}回）`}</button>` : '') : '');
+        + (past.length > 3 ? `<button class="pmore" data-act="privall">${privAll ? '▲ とじる' : `▼ ぜんぶ見る（あと${past.length - 3}回）`}</button>` : '') : ''));
 }
 function renderSongs() {
   const cs = classes(), ps = pieces().slice().sort((a, b) => a.start < b.start ? 1 : -1);
   $('#songs').innerHTML = ps.length ? ps.map(p => {
-    const c = cs.find(x => x.id === p.classId);
+    const c = ownerOf(p.classId);
     return `<div class="song"><span class="e">${p.doneAt ? '✅' : '🎵'}</span><div class="t">${esc(p.title)}${p.artist ? ' / ' + esc(p.artist) : ''}<small>${c ? esc(c.name) + ' ・ ' : ''}${shortDate(p.start)}〜${p.doneAt ? shortDate(p.doneAt) : 'いま'}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small></div>${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">▶</a>` : ''}</div>`;
   }).join('') : '<p class="muted">曲を決めると、ここにたまっていくよ</p>';
 }
@@ -446,7 +481,7 @@ function hCard(e, q) {
   if (fb.mood != null && MOODS[fb.mood]) info.push(`${MOODS[fb.mood][0]} ${MOODS[fb.mood][1]}`);
   return `<div class="hcard${open ? ' open' : ''}" data-hk="${e.key}" style="border-left-color:${col}">
     <div class="hhead"><div class="hdate">${d.getMonth() + 1}/${d.getDate()}<small>${WD[d.getDay()]}曜</small></div>
-      <div class="hmeta"><b>${isPriv(e.c) ? '🌟 ' : ''}${hl(e.c.name, q)}</b><small>${isPriv(e.c) ? `🌟 プライベート${e.c.memo ? ' ・ ' + hl(e.c.memo, q) : ''}` : e.p ? `🎵 ${hl(e.p.title, q)} ・ ${e.w}週目／${e.p.weeks}週` : '🎵 曲の記録なし'}</small></div>
+      <div class="hmeta"><b>${isPriv(e.c) ? '🌟 ' : ''}${hl(e.c.name, q)}</b><small>${e.p ? `🎵 ${hl(e.p.title, q)} ・ ${e.w}${unitW(e.c)}目／${e.p.weeks}${unitW(e.c)}` : isPriv(e.c) ? `🌟 プライベート${e.c.memo ? ' ・ ' + hl(e.c.memo, q) : ''}` : '🎵 曲の記録なし'}</small></div>
       <span class="hface">${moodFace(fb)}</span></div>
     ${info.length ? `<div class="hinfo">${info.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
     ${lines.map(([cls, lab, tx]) => `<div class="hline ${cls}"><em>${lab}</em><span>${hl(String(tx).trim(), q)}</span></div>`).join('')}
@@ -561,13 +596,14 @@ function renderNote(soft) {
       <h2>${isPriv(c) ? '🌟 ' : ''}${esc(c.name)}<small>${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${c.start}〜${c.end}${c.place ? ' ・ ' + esc(c.place) : ''}</small></h2></div>
     ${n.canceled ? '<div class="card" style="text-align:center;font-weight:900">この日は休講だよ 🌙</div>' : ''}
     ${ended && !n.canceled ? fbSec : ''}
+    ${isPriv(c) && !n.canceled ? moneySec(c, n) : ''}
     ${pv && pv.n.fb.next ? `<section class="card mini sec"><h3>📌 前回（${shortDate(pv.k)}）の「次回やること」</h3><div class="prev">${esc(pv.n.fb.next)}</div></section>` : ''}
 
-    <section class="card mini sec"><h3>🎵 ${isPriv(c) ? '使う曲' : '振り付けの曲'}</h3>
-      ${isPriv(c) ? '' : p ? `<div class="pinfo"><b>${esc(p.title)}</b><small>${p.artist ? esc(p.artist) : ''}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small><small>${weekOf(p, c, k)}週目／${p.weeks}週の予定</small>
+    <section class="card mini sec"><h3>🎵 振り付けの曲</h3>
+      ${p ? `<div class="pinfo"><b>${esc(p.title)}</b><small>${p.artist ? esc(p.artist) : ''}${p.bpm ? ' ・ BPM ' + p.bpm : ''}</small><small>${weekOf(p, c, k)}${unitW(c)}目／${p.weeks}${unitW(c)}の予定</small>
         ${p.link ? `<div class="rowbtns"><a class="pill" href="${esc(p.link)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">▶ 曲をひらく</a></div>` : ''}</div>`
-        : `<p class="muted">まだ曲が決まってないよ</p><div class="rowbtns"><button class="pill go" data-newpiece="${c.id}" data-from="${k}">＋ 曲を決める</button></div>`}
-      <span class="lbl">${isPriv(c) ? '曲・内容のメモ' : 'ほかに使う曲（アップ・クールダウンなど）'}</span><textarea class="tin" data-f="music" placeholder="例：アップ → Butter / クールダウン → ゆったりめのR&B">${esc(n.music || '')}</textarea>
+        : `<p class="muted">まだ曲が決まってないよ</p><div class="rowbtns"><button class="pill go" data-newpiece="${pid(c)}" data-from="${k}">＋ 曲を決める</button></div>`}
+      <span class="lbl">ほかに使う曲（アップ・クールダウンなど）</span><textarea class="tin" data-f="music" placeholder="例：アップ → Sing, Sing, Sing / クールダウン → ゆったりめのバラード">${esc(n.music || '')}</textarea>
     </section>
 
     <section class="card mini sec"><h3>⏱ 時間の使い方</h3>
@@ -594,11 +630,27 @@ function renderNote(soft) {
     <button class="offbtn${n.canceled ? ' on' : ''}" data-act="cancel">${isPriv(c) ? (n.canceled ? 'お休みを取り消す' : 'この日はお休み（キャンセル）にする') : n.canceled ? '休講を取り消す' : 'この日は休講にする'}</button>
     <div style="height:20px"></div>`;
 }
+function moneySec(c, n) {
+  const m = moneyOf(c, n);
+  return `<section class="card mini sec"><h3>💰 お金</h3>
+    <div class="grid2f">
+      <div><span class="lbl">スタジオ代（円）</span><input class="tin w" type="number" inputmode="numeric" data-m="studio" value="${m.studio || ''}" placeholder="0"></div>
+      <div><span class="lbl">参加費（1人・円）</span><input class="tin w" type="number" inputmode="numeric" data-m="price" value="${m.price || ''}" placeholder="0"></div>
+    </div>
+    <span class="lbl">参加した人数</span><div class="stepper"><button data-pcnt="-1">−</button><b>${m.people != null ? m.people : '—'}</b><button data-pcnt="1">＋</button><span class="muted">人</span></div>
+    <div class="mres" id="mRes">${moneyLine(m)}</div></section>`;
+}
+const moneyLine = m => `売上 <b>${yen(m.sales)}</b> − スタジオ代 ${yen(m.studio)} ＝ <b class="${m.net < 0 ? 'neg' : ''}">${yen(m.net)}</b>`;
 // 書いているあいだは、そのまま保存（画面は描き直さない）
 $('#noteBody').addEventListener('input', e => {
   const el = e.target;
   if (el.dataset.f) setNote(curKey, { [el.dataset.f]: el.value });
   if (el.dataset.fb) { const n = getNote(curKey); setNote(curKey, { fb: Object.assign({}, n.fb || {}, { [el.dataset.fb]: el.value }) }); }
+  if (el.dataset.m) {
+    const n = getNote(curKey), v = el.value === '' ? null : Math.max(0, parseInt(el.value, 10) || 0);
+    const nn = setNote(curKey, { money: Object.assign({}, n.money || {}, { [el.dataset.m]: v }) });
+    const r = $('#mRes'); if (r) r.innerHTML = moneyLine(moneyOf(noteCtx().c, nn));
+  }
   if (el.dataset.lab != null) { const { c, n } = noteCtx(); const plan = planOf(c, n).map(x => Object.assign({}, x)); plan[+el.dataset.lab].label = el.value; setNote(curKey, { plan }); }
 });
 $('#noteBody').addEventListener('click', e => {
@@ -627,6 +679,8 @@ $('#noteBody').addEventListener('click', e => {
   }
   const cn = e.target.closest('[data-cnt]');
   if (cn) { const fb = Object.assign({}, n.fb || {}); fb.count = Math.max(0, (fb.count != null ? fb.count : (prevNote(c, k) || { n: { fb: {} } }).n.fb.count || 8) + (fb.count != null ? +cn.dataset.cnt : 0)); setNote(curKey, { fb }); renderNote(); return; }
+  const pc = e.target.closest('[data-pcnt]');
+  if (pc) { const m0 = moneyOf(c, n), money = Object.assign({}, n.money || {}); money.people = Math.max(0, m0.people != null ? m0.people + +pc.dataset.pcnt : 8); setNote(curKey, { money }); renderNote(); return; }
   const md = e.target.closest('[data-mood]');
   if (md) { const fb = Object.assign({}, n.fb || {}); fb.mood = fb.mood === +md.dataset.mood ? null : +md.dataset.mood; setNote(curKey, { fb }); renderNote(); return; }
   if (act === 'fbsave') {
@@ -647,9 +701,9 @@ function openClass(id, priv) {
   csPriv = c ? isPriv(c) : !!priv;
   $('#csTitle').textContent = csPriv ? (c ? '🌟 プライベートレッスンの設定' : '🌟 プライベートレッスンを追加') : c ? 'クラスの設定' : 'クラスを追加';
   $('#csNameLbl').textContent = csPriv ? 'レッスン名' : 'クラス名';
-  $('#csName').placeholder = csPriv ? '例：自主開催 K-POP' : '例：K-POP 初級';
+  $('#csName').placeholder = csPriv ? '例：自主開催 JAZZ' : '例：JAZZ 初級';
   $('#csLevelLbl').textContent = csPriv ? '内容・メモ' : 'レベル・ジャンル';
-  $('#csLevel').placeholder = csPriv ? '例：初級・単発ワークショップ' : '例：初級・K-POP';
+  $('#csLevel').placeholder = csPriv ? '例：初級・単発ワークショップ' : '例：初級・JAZZ';
   $('#csRegular').hidden = csPriv; $('#csPrivate').hidden = !csPriv;
   $('#csCopy').hidden = !csPriv || !!c || !classes().some(isPriv);
   $('#csDel').textContent = csPriv ? 'このレッスンを削除' : 'このクラスを削除';
@@ -665,6 +719,7 @@ function fillClass(c) {
   $('#csPlace').value = c ? c.place || '' : ''; $('#csMap').value = c ? c.map || '' : '';
   $('#csTravel').value = c && c.travel ? c.travel : ''; $('#csLevel').value = c ? (csPriv ? c.memo : c.level) || '' : '';
   $('#csItems').value = c ? (c.items || []).join('、') : '';
+  $('#csStudio').value = c && c.studio ? c.studio : ''; $('#csPrice').value = c && c.price ? c.price : '';
 }
 function renderDow() {
   $('#csDow').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => `<button data-dow="${d}" class="${d === csDow ? 'on' : ''}">${WD[d]}</button>`).join('');
@@ -699,7 +754,8 @@ $('#csSave').addEventListener('click', () => {
       const all = notes(), ok = old.id + '_' + old.date;
       if (all[ok] && !all[old.id + '_' + nd]) { all[old.id + '_' + nd] = all[ok]; delete all[ok]; store(N_KEY, all); }
     }
-    Object.assign(data, { kind: 'private', date: nd, dow: parseKey(nd).getDay(), memo: $('#csLevel').value.trim() });
+    Object.assign(data, { kind: 'private', date: nd, dow: parseKey(nd).getDay(), memo: $('#csLevel').value.trim(),
+      studio: parseInt($('#csStudio').value, 10) || 0, price: parseInt($('#csPrice').value, 10) || 0 });
   } else Object.assign(data, { dow: csDow, nth: csNth.slice(), level: $('#csLevel').value.trim() });
   if (csEdit) Object.assign(cs.find(x => x.id === csEdit), data); else cs.push(Object.assign({ id: uid() }, data));
   saveClasses(cs); $('#classSheet').hidden = true; toast('保存したよ'); render();
@@ -713,8 +769,9 @@ $('#csDel').addEventListener('click', () => {
 let psClass = null, psFrom = null;
 function openPiece(cid, from) {
   psClass = cid; psFrom = from || today();
-  const c = classes().find(x => x.id === cid);
+  const c = ownerOf(cid);
   $('#psFor').textContent = c ? `${c.name} ・ ${shortDate(psFrom)}から` : '';
+  $('#psWeeksLbl').textContent = isPriv(c) ? '何回でやる？' : '何週でやる？';
   ['#psTitle', '#psArtist', '#psBpm', '#psLink'].forEach(id => { $(id).value = ''; });
   $('#psWeeks').value = 2; $('#pieceSheet').hidden = false;
 }
@@ -722,7 +779,7 @@ $('#psSave').addEventListener('click', () => {
   const title = $('#psTitle').value.trim(); if (!title) { toast('曲名を入れてね'); return; }
   const ps = pieces();
   // 進めていた曲があれば、前の日で完成にする
-  const c = classes().find(x => x.id === psClass), cur = c && activePiece(c, psFrom);
+  const c = ownerOf(psClass), cur = c && activePiece(c, psFrom);
   if (cur && !cur.doneAt) { const d = parseKey(psFrom); d.setDate(d.getDate() - 1); ps.find(x => x.id === cur.id).doneAt = dayKey(d); }
   ps.push({ id: uid(), classId: psClass, title, artist: $('#psArtist').value.trim(), bpm: parseInt($('#psBpm').value, 10) || null,
     link: $('#psLink').value.trim(), weeks: Math.max(1, parseInt($('#psWeeks').value, 10) || 2), start: psFrom });
@@ -742,7 +799,7 @@ document.body.addEventListener('click', e => {
   const cl = e.target.closest('[data-class]'); if (cl) openClass(cl.dataset.class);
   const np = e.target.closest('[data-newpiece]'); if (np) openPiece(np.dataset.newpiece, np.dataset.from);
   const ex = e.target.closest('[data-extend]');
-  if (ex) { const ps = pieces(), p = ps.find(x => x.id === ex.dataset.extend); p.weeks++; savePieces(ps); toast(`${p.weeks}週にのばしたよ`); render(); }
+  if (ex) { const ps = pieces(), p = ps.find(x => x.id === ex.dataset.extend); p.weeks++; savePieces(ps); toast(`${p.weeks}${String(p.classId).startsWith('priv:') ? '回' : '週'}にのばしたよ`); render(); }
   const fi = e.target.closest('[data-finish]');
   if (fi) {
     const ps = pieces(), p = ps.find(x => x.id === fi.dataset.finish);
