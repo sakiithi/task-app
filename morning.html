@@ -844,7 +844,7 @@ function render() {
   const dls = dcs.filter(c => onToday(c) && !(dns[c.id + '_' + today()] || {}).canceled).sort((a, b) => minOf(a.start) - minOf(b.start));
   $('#dlesson').hidden = !dls.length;
   $('#dlesson').innerHTML = '<h3>💃 今日のレッスン</h3>' + dls.map(c => {
-    const n = dns[c.id + '_' + today()] || {}, ids = ['music', 'choreo', 'flow'].concat((c.items || []).map((x, i) => 'item' + i)).concat((n.extra || []).map(x => x.id));
+    const n = dns[c.id + '_' + today()] || {}, ids = (c.kind === 'private' ? ['studio', 'announce', 'members'] : []).concat(['music', 'choreo', 'flow']).concat((c.items || []).map((x, i) => 'item' + i)).concat((n.extra || []).map(x => x.id));
     const done = ids.filter(id => (n.checks || {})[id]).length;
     return `<div class="tlist" style="padding:4px 0"><button data-dl="${c.id}_${today()}" style="width:100%;text-align:left;display:flex;gap:8px;align-items:baseline">
       <b>${c.start}〜${c.end}</b><span style="flex:1">${esc(c.name)}<br><small style="color:var(--sub)">📍 ${esc(c.place || '')}${c.travel ? ` ・ 🚃 ${minToHm(minOf(c.start) - c.travel)}に出発` : ''}</small></span>

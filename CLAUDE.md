@@ -98,7 +98,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 ## 💃 ダンス（レッスン）の機能
 - オーナーはダンスのレギュラーレッスン（オープンクラス）を持っている。**だいたい2週で1曲**、リクエストで3週になることもある。生徒は日によって来たり来なかったりなので、1人ずつではなく「だいたいの人数・雰囲気」を残す
 - **レギュラークラス**：曜日・時間・場所・地図リンク・移動時間・レベル/ジャンル・いつもの持ち物・**毎週 or 第何週**（例：第2・第4だけの隔週）
-- **🌟 プライベートレッスン**：個人レッスンではなく、**自分でスタジオを借りて開くグループレッスン**（レギュラーの自主開催版・不定期）。日にちごとに1回ずつ登録（レッスン名・日にち・時間・場所・内容メモ・持ち物、「前回からコピー」）。中身はレギュラーと同じレッスンノートが使えて、今日・朝・夜にも出る。「前回の次回やること」は同じレッスン名の前の回から出す。「いつもの流れ」はプライベートで1つ。いまの振り付け・曲の管理には出さない。ふりかえりの記録では「🌟 プライベート」1つにまとめてしぼれる
+- **🌟 プライベートレッスン**：個人レッスンではなく、**自分でスタジオを借りて開くグループレッスン**（レギュラーの自主開催版・不定期）。日にちごとに1回ずつ登録（レッスン名・日にち・時間・場所・内容メモ・持ち物、「前回からコピー」）。中身はレギュラーと同じレッスンノートが使えて、今日・朝・夜にも出る。**💰お金**：スタジオ代・参加費（クラスに入れた値が初期値、ノートで回ごとに変えられる `note.money:{studio,price,people}`）と参加人数（なければふりかえりの人数）→ 売上・スタジオ代を引いた残り。プライベート欄の上に今月の合計（人数が入った回だけ）。準備チェックに最初から「スタジオ予約・告知・参加者の確認」。**曲**は同じレッスン名でつながり（`pieces.classId` は `'priv:レッスン名'`）、「何回目」で数える。「前回の次回やること」は同じレッスン名の前の回から出す。「いつもの流れ」はプライベートで1つ。いまの振り付けには、ここ30日とこれからの回があるレッスン名を出す。ふりかえりの記録では「🌟 プライベート」1つにまとめてしぼれる
 - その日にレッスンがあるかは `classOn(c, 日付)`（shared.js。morning.html は自分の中に同じ判定）で見る
 - **レッスンノート**（クラス×日付で自動）：振り付けの曲（何週目／何週の予定）、ほかに使う曲、⏱時間の使い方（ブロックを並べて帯グラフ・開始からの時刻、「いつもの流れにする」でクラスのテンプレート）、教え方・ポイント、✅準備チェック（曲・振り・流れ＋持ち物＋その日だけ）、前回の「次回やること」、💬ふりかえり（人数・雰囲気・よかった・むずかしかった・次回やること）、休講
 - **曲**：「＋1週のばす」「完成！次の曲へ」。使った曲の一覧
@@ -134,7 +134,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - `habits:list` … `[{ id, emoji, name }]` ／ `habits:checks` … `{ 'YYYY-MM-DD': [習慣id] }`
 - `night:records` … `{ 'YYYY-MM-DD': { mood(0-3), good:[文字], memo, done, at } }` ／ `night:tomorrow` … `{ date, wake:'HH:MM' }`
 - `pet:name` ／ `pet:seenLevel`
-- `dance:classes` … `[{ id, name, dow(0-6), nth:[1-5]（第何週・空なら毎週）, start, end, place, map, travel(分), level, items:[] }]`。プライベートは `kind:'private', date:'YYYY-MM-DD', memo` がつく（dow は date の曜日） ／ `dance:notes` … `{ 'クラスid_YYYY-MM-DD': { plan:[{label,min}], music, teach, checks:{id:true}, extra:[{id,text}], canceled, fb:{ count, mood(0-3), good, hard, next, done, at } } }` ／ `dance:pieces` … `[{ id, classId, title, artist, bpm, link, weeks, start, doneAt }]` ／ `dance:templates` … `{ クラスid: [{label,min}] }`
+- `dance:classes` … `[{ id, name, dow(0-6), nth:[1-5]（第何週・空なら毎週）, start, end, place, map, travel(分), level, items:[] }]`。プライベートは `kind:'private', date:'YYYY-MM-DD', memo, studio(円), price(1人・円)` がつく（dow は date の曜日） ／ `dance:notes` … `{ 'クラスid_YYYY-MM-DD': { plan:[{label,min}], music, teach, checks:{id:true}, extra:[{id,text}], canceled, fb:{ count, mood(0-3), good, hard, next, done, at } } }` ／ `dance:pieces` … `[{ id, classId, title, artist, bpm, link, weeks, start, doneAt }]` ／ `dance:templates` … `{ クラスid: [{label,min}] }`
 - `sync:auth`（ログイン情報）／ `sync:meta`（キーごとの最終変更時刻）／ `sync:dirty`（まだ送っていないキー）／ `sync:state` ／ `sync:last` … 同期用。端末ごとのもので、同期しない
 - `food:log` … `{ 'YYYY-MM-DD': [{ id, meal:'b'|'l'|'d'|'s', emoji, name, unit, kcal, p, f, c, qty, at }] }`（kcal などは1人前の値、qty は倍率）／ `food:fav` … 「よく食べる」に固定した名前（最初は `['カフェラテ']`）／ `food:custom` … 自分で入力した食べもの ／ `food:settings` … `{ kcal, preset:'bal'|'pro'|'low' }` ／ `body:view`
 - `body:records` … `{ 'YYYY-MM-DD': { fat, waist, steps, water, period(0-3), memo } }` ／ `body:settings` … `{ height, goal, goalFrom, hide, fields:[] }` ／ `body:range`
