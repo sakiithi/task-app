@@ -83,15 +83,23 @@ function lessonsOn(k, withCanceled) {
     .map(c => ({ c, date: k, key: c.id + '_' + k, note: ns[c.id + '_' + k] || {} }))
     .filter(l => withCanceled || !l.note.canceled);
 }
-// 自主開催（プライベート）は、スタジオ予約・告知・参加者の確認も最初から入る
-const PRIV_CHECKS = [{ id: 'studio', text: '🏢 スタジオを予約した' }, { id: 'announce', text: '📣 告知した' }, { id: 'members', text: '👥 参加者を確認した' }];
-function lessonChecks(c, n) {
-  return (c.kind === 'private' ? PRIV_CHECKS : []).concat([{ id: 'music', text: '🎵 曲を用意した' }, { id: 'choreo', text: '💃 振りを確認した' }, { id: 'flow', text: '⏱ 流れを決めた' }])
+// いつもの準備（dance:prep。ダンスのノートで編集できる）
+// all：全部のレッスン ／ priv：自主開催（プライベート）だけ。since（日付）がある項目は、その日からのレッスンだけに出す
+// （あとから足した項目で、前のレッスンの「準備OK」やポイントが消えないように）
+const PREP_DEFAULT = {
+  all: [{ id: 'music', text: '🎵 曲を用意した' }, { id: 'choreo', text: '💃 振りを確認した' }, { id: 'flow', text: '⏱ 流れを決めた' },
+    { id: 'cross', text: '🔀 クロスフロアの曲と振りを用意した', since: '2026-11-27' }],
+  priv: [{ id: 'studio', text: '🏢 スタジオを予約した' }, { id: 'announce', text: '📣 告知した' }, { id: 'members', text: '👥 参加者を確認した' }],
+};
+function prepLists() { const p = load('dance:prep', null) || {}; return { all: p.all || PREP_DEFAULT.all, priv: p.priv || PREP_DEFAULT.priv }; }
+function lessonChecks(c, n, k) {
+  const p = prepLists(), on = x => !k || !x.since || x.since <= k;
+  return (c.kind === 'private' ? p.priv : []).concat(p.all).filter(on)
     .concat((c.items || []).map((t, i) => ({ id: 'item' + i, text: '🎒 ' + t })))
     .concat(n.extra || []);
 }
-function lessonPrep(c, n) {
-  const l = lessonChecks(c, n), done = l.filter(x => (n.checks || {})[x.id]).length;
+function lessonPrep(c, n, k) {
+  const l = lessonChecks(c, n, k), done = l.filter(x => (n.checks || {})[x.id]).length;
   return { done, total: l.length, ok: done === l.length };
 }
 function openDance(action) { if (EMBED) tellParent({ type: 'tab', tab: 'dance', action }); else location.href = 'dance.html' + (action ? '#' + action : ''); }
@@ -113,7 +121,7 @@ function xpOf(day) {
     const k = key.slice(key.indexOf('_') + 1), n = dn[key], c = dc.find(x => key.startsWith(x.id + '_'));
     if (!inDay(k) || !c) return;
     if (n.fb && n.fb.done) xp += 20;
-    if (lessonPrep(c, n).ok) xp += 10;
+    if (lessonPrep(c, n, k).ok) xp += 10;
   });
   return xp;
 }

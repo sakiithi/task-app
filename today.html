@@ -230,7 +230,7 @@ function renderSchedule() {
       if (it.kind === 'break') return `<li><div class="tm">${hm(it.s)}</div><div class="blk brk">☕ ひと休み 10分</div></li>`;
       if (it.kind === 'move') return `<li><div class="tm">${hm(it.s)}</div><div class="blk brk">🚃 移動 ${it.l.c.travel}分${it.l.c.place ? '（' + esc(it.l.c.place) + 'へ）' : ''}</div></li>`;
       if (it.kind === 'lesson') {
-        const pr = lessonPrep(it.l.c, it.l.note), isNowL = now >= it.s && now < it.e;
+        const pr = lessonPrep(it.l.c, it.l.note, it.l.date), isNowL = now >= it.s && now < it.e;
         return `<li><div class="tm">${hm(it.s)}</div><div class="blk lesson${isNowL ? ' now' : ''}"><span class="e">💃</span>
           <div class="t">${esc(it.l.c.name)}<small>〜${hm(it.e)} ・ ${pr.ok ? '準備OK' : `準備 ${pr.done}/${pr.total}`}</small></div>
           <button class="est" data-lesson="${it.l.key}">ノート</button></div></li>`;
@@ -348,7 +348,7 @@ function renderLessons() {
   $('#lessons').hidden = !ls.length;
   if (!ls.length) return;
   $('#lessons').innerHTML = '<h3>💃 今日のレッスン</h3>' + ls.map(l => {
-    const pr = lessonPrep(l.c, l.note);
+    const pr = lessonPrep(l.c, l.note, l.date);
     return `<div class="lessonrow" data-lesson="${l.key}"><span class="tt">${l.c.start}</span>
       <div class="t">${esc(l.c.name)}<small>📍 ${esc(l.c.place || '')}${l.c.travel ? ` ・ 🚃 ${hm(atDay(l.c.start) - l.c.travel * MIN)}に出発` : ''}</small></div>
       <span class="st${pr.ok ? ' ok' : ''}">${pr.ok ? '準備OK' : `準備 ${pr.done}/${pr.total}`}</span></div>`;
