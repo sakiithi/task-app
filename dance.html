@@ -127,6 +127,42 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 .offbtn.on{background:var(--warn);color:#fff}
 .stat{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .stat span{background:var(--c1);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700}
+.str-today{text-align:center;padding:20px 18px}
+.str-meta{font-size:12px;font-weight:700;color:var(--sub)}
+.str-emoji{font-size:76px;line-height:1.1;margin:8px 0 2px}
+.str-name{font-size:26px;font-weight:900}
+.str-sub{font-size:13px;color:var(--sub);font-weight:700;margin-top:4px}
+.str-find{display:flex;align-items:center;gap:8px;justify-content:center;margin:12px 0 4px;flex-wrap:wrap;font-size:13px;font-weight:700}
+.str-find code{background:var(--c1);border-radius:8px;padding:3px 8px;font-family:inherit}
+.str-memo{background:var(--c4);border-radius:14px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:10px;text-align:left;white-space:pre-wrap}
+.str-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.str-btns button{padding:14px 0;border-radius:18px;font-weight:900;font-size:15px;background:var(--c1)}
+.str-btns button.on{background:var(--grad);color:#fff}
+.str-btns2{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.str-btns2 button{font-size:12px;font-weight:700;background:var(--line);border-radius:999px;padding:7px 11px;white-space:nowrap}
+.str-btns2 button.on{background:var(--grad);color:#fff}
+.str-stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-bottom:12px}
+.str-stats b{display:block;font-size:22px;font-weight:900}
+.str-stats small{font-size:11px;color:var(--sub);font-weight:700}
+.str-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.str-cal div{aspect-ratio:1;border-radius:10px;background:var(--line);display:grid;place-items:center;font-size:18px;position:relative}
+.str-cal div.on{background:var(--c1)}
+.str-cal div.two{background:var(--c4)}
+.str-cal div.t{outline:2px solid var(--pink)}
+.str-cal div small{position:absolute;top:1px;left:4px;font-size:9px;color:var(--sub);font-weight:700}
+.str-wd{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10px;color:var(--sub);font-weight:700;margin-bottom:4px}
+.str-stage{padding:10px 0;border-bottom:1px dashed var(--line)}
+.str-stage:last-child{border-bottom:0}
+.str-stage .h{display:flex;align-items:center;gap:8px;font-weight:900}
+.str-stage .h small{font-size:12px;color:var(--sub);font-weight:700}
+.str-stage .h .go{margin-left:auto;font-size:12px;font-weight:700;color:var(--pink);background:none}
+.str-stage .bar{height:6px;border-radius:9px;background:var(--line);margin:6px 0;overflow:hidden}
+.str-stage .bar i{display:block;height:100%;background:var(--grad)}
+.str-chips{display:flex;flex-wrap:wrap;gap:6px}
+.str-chips button{background:var(--c1);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}
+.str-chips button.now{background:var(--grad);color:#fff}
+.str-player video{width:100%;border-radius:16px;background:#000;margin-top:10px;max-height:60vh}
+.str-player .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .soon{text-align:center;color:var(--sub);font-weight:700;padding:30px 10px}
 
 /* ふりかえりの記録 */
@@ -199,6 +235,16 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
     <section class="card mini"><h3>🌟 プライベートレッスン <button class="link" data-act="addpriv">＋ 追加</button></h3><div id="privs"></div></section>
     <section class="card mini"><h3>📚 使った曲</h3><div id="songs"></div></section>
   </div>
+  <div id="vStretch" hidden>
+    <section class="card str-today" id="strToday"></section>
+    <section class="card mini str-player"><h3>🎬 ここで再生（小窓OK）</h3>
+      <p class="muted" style="font-size:13px">写真アプリ・ファイルから動画を選ぶと、この画面で再生できるよ。「小窓にする」で、ほかのアプリを使いながら見られる</p>
+      <label class="pill" style="display:inline-block;margin-top:10px;cursor:pointer">📂 動画を選ぶ<input type="file" accept="video/*" id="strFile" hidden></label>
+      <div id="strPlay"></div>
+    </section>
+    <section class="card mini"><h3>📅 きろく</h3><div id="strLog"></div></section>
+    <section class="card mini"><h3>🗺 プログラム <small class="muted" style="font-size:12px">講座のカレンダーの順番</small></h3><div id="strStages"></div></section>
+  </div>
   <div id="vSoon" hidden><div class="card soon" id="soonMsg"></div></div>
 </div>
 
@@ -246,6 +292,20 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 </div>
 
 <!-- 新しい曲 -->
+<div id="strSheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h2 id="smTitle">メニュー</h2>
+    <div class="grid2f">
+      <div><span class="lbl">絵文字</span><input class="tin w" id="smE"></div>
+      <div><span class="lbl">名前</span><input class="tin w" id="smN"></div>
+      <div><span class="lbl">動画の番号</span><input class="tin w" id="smNum" placeholder="例：(004)"></div>
+      <div><span class="lbl">動画の長さ</span><input class="tin w" id="smDur" placeholder="例：33:58"></div>
+    </div>
+    <span class="lbl">メモ（使う道具・効くところ・コツなど）</span><textarea class="tin w" id="smMemo" rows="3" placeholder="例：ストレッチコード使う／前もも"></textarea>
+    <button class="big" id="smToday" style="margin-top:12px;background:var(--surface);color:var(--text)">今日はこのメニューにする</button>
+    <button class="big" id="smSave">保存</button>
+  </div>
+</div>
 <div id="pieceSheet" class="sheet-wrap" hidden>
   <div class="sheet">
     <h3>🎵 新しい曲</h3>
@@ -264,6 +324,7 @@ textarea.tin{width:100%;min-height:84px;resize:vertical;line-height:1.6}
 <div id="toast" class="toast"></div>
 
 <script src="shared.js"></script>
+<script src="stretch.js"></script>
 <script>
 const C_KEY = 'dance:classes', N_KEY = 'dance:notes', P_KEY = 'dance:pieces', T_KEY = 'dance:templates';
 const COLORS = ['#ff8cc0', '#b896ff', '#ffb38a', '#6fd6ae', '#ffd166', '#8fd3ff', '#f7a1c4'];
@@ -866,18 +927,135 @@ document.body.addEventListener('click', e => {
   if (v) setView(v.dataset.view);
 });
 document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) w.hidden = true; }));
+let view = 'lesson';
 function setView(v) {
+  view = v;
   document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
-  $('#vLesson').hidden = v !== 'lesson'; $('#vSoon').hidden = v === 'lesson';
-  $('#soonMsg').innerHTML = v === 'practice' ? '🩰 練習のページは、次に作るよ' : '🧘 ストレッチ・アップ・ヨガのページは、次に作るよ';
+  $('#vLesson').hidden = v !== 'lesson'; $('#vStretch').hidden = v !== 'stretch'; $('#vSoon').hidden = v !== 'practice';
+  $('#soonMsg').innerHTML = '🩰 練習のページは、次に作るよ';
+  if (v === 'stretch') renderStretch();
 }
+
+// ---------- 🧘 ストレッチ ----------
+const nowSlot = () => new Date().getHours() < 15 ? 'am' : 'pm';
+function renderStretch() {
+  const s = strLoad(), d = strDay(today(), s), m = d.menu, e = d.entry, stg = STR_STAGES[d.st];
+  if (d.finished) {
+    $('#strToday').innerHTML = `<div class="str-emoji">🎉</div><div class="str-name">1周おわり！</div>
+      <p class="muted" style="margin-top:6px">${s.cycle}周目の${STR_SEQ.length}日ぶん、ぜんぶやったよ。おつかれさま！</p>
+      <button class="big" data-str2="again">🔁 ${s.cycle + 1}周目をはじめる</button>
+      <p class="muted" style="font-size:12px;margin-top:8px">好きなステージからやり直すなら、下の「プログラム」で「ここから」を押してね</p>`;
+  } else {
+    $('#strToday').innerHTML = `<div class="str-meta">${s.cycle > 1 ? s.cycle + '周目 ・ ' : ''}${d.day}日目／${d.total} ・ ステージ${d.st + 1}（${esc(stg.ch)}${stg.theme ? ' ' + esc(stg.theme) : ''}）</div>
+      <div class="str-emoji">${m.e}</div><div class="str-name">${esc(m.n)}</div>
+      <div class="str-sub">${esc(m.ch)}${m.num ? ' ' + esc(m.num) : ''}${m.dur ? ' ・ ' + esc(m.dur) : ' ・ 長さ未登録'}</div>
+      <div class="str-find">iCapで <code>${esc(m.search)}</code> を検索 → サムネの「${esc(m.n)}」<button class="pill" data-str2="copy">📋 コピー</button></div>
+      ${m.memo ? `<div class="str-memo">${esc(m.memo)}</div>` : ''}
+      <div class="str-btns"><button class="${e.am ? 'on' : ''}" data-str2="am">${e.am ? '✓ ' : ''}☀️ 朝やった</button><button class="${e.pm ? 'on' : ''}" data-str2="pm">${e.pm ? '✓ ' : ''}🌙 夜やった</button></div>
+      <div class="str-btns2"><button class="${e.mini ? 'on' : ''}" data-str2="mini">⏱ ミニでやった</button><button class="${e.rest ? 'on' : ''}" data-str2="rest">💤 今日はおやすみ</button><button data-strmenu="${m.id}">✏️ メニュー</button></div>
+      ${e.am && e.pm ? '<p class="muted" style="margin-top:10px;font-weight:700">✨ 今日はダブル！</p>' : ''}
+      <input class="tin" data-strmemo style="width:100%;margin-top:12px" placeholder="ひとこと（例：肩まわりが軽い）" value="${esc(e.memo || '')}">`;
+  }
+  // きろく：4週間ぶん
+  const st = strStats(s);
+  let cal = '<div class="str-wd">' + [1, 2, 3, 4, 5, 6, 0].map(w => `<span>${WD[w]}</span>`).join('') + '</div><div class="str-cal">';
+  const back = 21 + ((new Date().getDay() + 6) % 7);
+  for (let i = back; i >= -((6 - (new Date().getDay() + 6) % 7)); i--) {
+    const k = keyOf(-i), le = s.log[k], dd = Number(k.slice(8));
+    const fut = i < 0, done = strDone(le);
+    cal += `<div class="${done ? (le.am && le.pm ? 'two' : 'on') : ''}${i === 0 ? ' t' : ''}"${fut ? ' style="opacity:.35"' : ''}><small>${dd}</small>${done ? strMenu(le.menu, s).e : le && le.rest ? '💤' : ''}</div>`;
+  }
+  cal += '</div>';
+  const memos = Object.keys(s.log).filter(k => s.log[k].memo).sort().reverse().slice(0, 5);
+  $('#strLog').innerHTML = `<div class="str-stats"><div><b>${st.week}<span style="font-size:13px">/7</span></b><small>この7日</small></div><div><b>${st.total}</b><small>やった日の合計</small></div><div><b>${st.double}</b><small>ダブルの日</small></div></div>${cal}`
+    + (memos.length ? `<div class="lbl" style="margin-top:12px">ひとこと</div>` + memos.map(k => `<div class="muted" style="font-size:13px;padding:3px 0">${shortDate(k)} ${strMenu(s.log[k].menu, s).e} ${esc(s.log[k].memo)}</div>`).join('') : '');
+  // プログラム
+  $('#strStages').innerHTML = STR_STAGES.map((g, i) => {
+    const start = strStageStart(i), cur = !d.finished && d.st === i, prog = Math.max(0, Math.min(g.days, (d.finished ? STR_SEQ.length : d.idx) - start));
+    return `<div class="str-stage"><div class="h">ステージ${i + 1} <small>${esc(g.ch)}${g.theme ? ' ' + esc(g.theme) : ''} ・ ${g.days}日</small>${cur ? '<small style="color:var(--pink)">いまここ</small>' : `<button class="go" data-strjump="${i}">ここから →</button>`}</div>
+      <div class="bar"><i style="width:${Math.round(prog / g.days * 100)}%"></i></div>
+      <div class="str-chips">${g.menus.map(id => { const mm = strMenu(id, s); return `<button class="${!d.finished && mm.id === m.id ? 'now' : ''}" data-strmenu="${id}">${mm.e} ${esc(mm.n)}${mm.dur ? ` <small>${esc(mm.dur)}</small>` : ''}</button>`; }).join('')}</div></div>`;
+  }).join('') + '<p class="muted" style="font-size:12px;margin-top:8px">動物をタップすると、名前・番号・長さ・メモを直せるよ</p>';
+}
+document.getElementById('vStretch').addEventListener('click', e => {
+  const b = e.target.closest('[data-str2]');
+  if (b) {
+    const a = b.dataset.str2, d = strDay(today());
+    if (a === 'copy') { const t = d.menu.search; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(`「${t}」をコピーしたよ。iCapの検索に貼ってね`), () => toast(`iCapで「${t}」を検索してね`)); return; }
+    if (a === 'again') { const s = strLoad(); s.pos = 0; s.cycle = (s.cycle || 1) + 1; delete s.log[today()]; strSave(s); toast(`🔁 ${s.cycle}周目スタート！`); renderStretch(); return; }
+    const r = strMark(today(), a);
+    if (r.first) { confetti(); toast(`🧘 ${d.menu.e} ${d.menu.n} できた！ +10pt`); }
+    else if (a === 'rest' && r.entry.rest) toast('💤 今日はおやすみ。明日は続きからね');
+    else if ((a === 'am' || a === 'pm') && r.entry.am && r.entry.pm) { confetti(); toast('✨ ダブル！ +5pt'); }
+    try { navigator.vibrate && navigator.vibrate(15); } catch (er) {}
+    renderStretch(); return;
+  }
+  const mn = e.target.closest('[data-strmenu]'); if (mn) { openStrMenu(mn.dataset.strmenu); return; }
+  const j = e.target.closest('[data-strjump]');
+  if (j) {
+    const i = +j.dataset.strjump; if (!confirm(`ステージ${i + 1}（${STR_STAGES[i].ch}）からにする？\n（今までのきろくはそのまま残るよ）`)) return;
+    const s = strLoad(), le = s.log[today()];
+    if (le && !strDone(le)) delete s.log[today()];
+    if (le && strDone(le)) { toast('今日の分はやったから、明日からこのステージになるよ'); }
+    s.pos = strStageStart(i); strSave(s); renderStretch(); return;
+  }
+});
+document.getElementById('vStretch').addEventListener('input', e => {
+  if (!e.target.matches('[data-strmemo]')) return;
+  const s = strLoad(), d = strDay(today(), s), le = Object.assign({}, s.log[today()] || {});
+  le.memo = e.target.value; le.idx = d.idx; le.menu = d.menu.id; le.pick = true; s.log[today()] = le; strSave(s);
+});
+let smId = null;
+function openStrMenu(id) {
+  smId = id; const m = strMenu(id);
+  $('#smTitle').textContent = `${m.e} ${m.n}（ステージ${m.st + 1}・${m.ch}）`;
+  $('#smE').value = m.e; $('#smN').value = m.n; $('#smNum').value = m.num; $('#smDur').value = m.dur; $('#smMemo').value = m.memo;
+  const d = strDay(today()); $('#smToday').hidden = d.finished || d.menu.id === id;
+  $('#strSheet').hidden = false;
+}
+$('#smSave').addEventListener('click', () => {
+  const s = strLoad();
+  s.edits = s.edits || {};
+  s.edits[smId] = { e: $('#smE').value.trim() || '🧘', n: $('#smN').value.trim() || '？', num: $('#smNum').value.trim(), dur: $('#smDur').value.trim(), memo: $('#smMemo').value.trim() };
+  strSave(s); $('#strSheet').hidden = true; toast('保存したよ'); renderStretch();
+});
+$('#smToday').addEventListener('click', () => {
+  // 今日だけ別のメニューにする（進み方はそのまま）
+  const s = strLoad(), d = strDay(today(), s), le = Object.assign({}, s.log[today()] || {});
+  le.idx = d.idx; le.menu = smId; le.pick = true; s.log[today()] = le; strSave(s);
+  $('#strSheet').hidden = true; toast(`今日は ${strMenu(smId, s).e} ${strMenu(smId, s).n} にしたよ`); renderStretch();
+});
+// 動画をこの画面で再生（ファイルは保存しない。小窓＝ピクチャーインピクチャー）
+let strUrl = null;
+$('#strFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  if (strUrl) URL.revokeObjectURL(strUrl);
+  strUrl = URL.createObjectURL(f);
+  const canPip = document.pictureInPictureEnabled || (HTMLVideoElement.prototype.webkitSupportsPresentationMode !== undefined);
+  $('#strPlay').innerHTML = `<video id="strVideo" src="${strUrl}" controls playsinline autopictureinpicture></video>
+    <div class="row2">${canPip ? '<button class="pill go" data-pip>🪟 小窓にする</button>' : ''}<button class="pill" data-rate="0.75">0.75倍</button><button class="pill" data-rate="1">1倍</button><button class="pill" data-mirror>↔️ 左右反転</button></div>
+    ${canPip ? '' : '<p class="muted" style="font-size:12px;margin-top:6px">このブラウザは小窓に対応していないみたい</p>'}`;
+  e.target.value = '';
+});
+$('#strPlay').addEventListener('click', e => {
+  const v = $('#strVideo'); if (!v) return;
+  if (e.target.closest('[data-pip]')) {
+    try {
+      if (v.requestPictureInPicture && document.pictureInPictureEnabled) v.requestPictureInPicture().catch(() => toast('再生してからもう一度押してね'));
+      else if (v.webkitSetPresentationMode) v.webkitSetPresentationMode(v.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture');
+    } catch (er) { toast('小窓にできなかった…'); }
+  }
+  const r = e.target.closest('[data-rate]'); if (r) { v.playbackRate = +r.dataset.rate; toast(r.dataset.rate + '倍'); }
+  if (e.target.closest('[data-mirror]')) v.style.transform = v.style.transform ? '' : 'scaleX(-1)';
+});
 function doAction(a) {
   if (!a) return;
   if (a.startsWith('note=')) openNote(a.slice(5));
   if (a === 'next') { const l = nextLesson(); if (l) openNote(l.key); }
+  if (a === 'stretch') { if (!$('#note').hidden) closeNote(); setView('stretch'); }
 }
 window.addEventListener('message', e => { if (e.origin === location.origin && e.data && e.data.type === 'action') doAction(e.data.action); });
-onDataChange(render);
+onDataChange(() => { render(); if (view === 'stretch' && !(document.activeElement && document.activeElement.matches('[data-strmemo]'))) renderStretch(); });
 render();
 if (location.hash) doAction(decodeURIComponent(location.hash.slice(1)));
 </script>
