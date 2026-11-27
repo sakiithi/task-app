@@ -224,6 +224,19 @@
   .prio button.on { border-color: transparent; color: #fff; background: var(--grad); }
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 8px; }
 
+  /* 🪟 小窓（Mac の Chrome・Edge） */
+  .pip-holder { flex: 1; display: grid; place-items: center; text-align: center; color: var(--muted); font-weight: 700; gap: 10px; align-content: center; }
+  body.in-pip { height: 100vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  body.in-pip .stage { flex: 1; }
+  .pip-menu { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); }
+  .pip-menu > div { background: var(--surface); border: 1.5px solid var(--line); border-radius: 20px; padding: 12px 14px; width: min(320px, 90vw); box-shadow: var(--shadow); text-align: center; }
+  .pip-menu b { display: block; margin-bottom: 10px; font-size: 15px; }
+  .pip-menu .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pip-menu button { border: 1.5px solid var(--line); background: var(--bg); color: var(--text); border-radius: 14px; padding: 9px 0; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .pip-menu button.go { background: var(--grad); color: #fff; border-color: transparent; }
+  .pip-menu .close { margin-top: 6px; width: 100%; background: none; border: 0; color: var(--muted); }
+  .pip-msg { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 700; z-index: 6; white-space: nowrap; }
+
   /* 今やる1つ */
   .focus {
     position: absolute; inset: 0; z-index: 2;
@@ -429,6 +442,7 @@
     <button class="chip" id="doneBtn">🏆 できたこと</button>
     <button class="chip" id="pause" aria-pressed="false">⏸ 一時停止</button>
     <button class="chip" id="speedBtn"></button>
+    <button class="chip" id="pipBtn" hidden>🪟 小窓</button>
     <button class="chip" id="settingsBtn" aria-label="設定">⚙️</button>
   </div>
 
@@ -607,7 +621,7 @@ let view = [], slots = [];
 let focusMode = false, skipped = new Set(), current = null;
 
 const $ = id => document.getElementById(id);
-const track = $('track'), stage = $('stage');
+const track = $('track'), stage = $('stage'), emptyEl = $('empty'), tipEl = $('tip');
 const save = () => { write(KEY, tasks); write(LOG_KEY, log); };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const pad = n => String(n).padStart(2, '0');
@@ -862,8 +876,8 @@ function render() {
   $('count').innerHTML = tasks.length ? `今日 <b>${todayN}</b> ・ 残り <b>${left}</b>` : 'タスク 0 🫧';
   const s = streak(), td = todayDone();
   $('doneBtn').textContent = `🏆 できたこと${td ? ` ${td}` : ''}${s >= 2 ? ` · 🔥${s}日` : ''}`;
-  $('empty').style.display = view.length || focusMode ? 'none' : 'grid';
-  $('tip').hidden = !view.length || focusMode;
+  emptyEl.style.display = view.length || focusMode ? 'none' : 'grid';
+  tipEl.hidden = !view.length || focusMode || !!pipWin;
 
   renderOverview();
   track.innerHTML = '';
@@ -945,7 +959,8 @@ function placeSlots() {
 }
 
 let prev = performance.now();
-function tick(now) {
+function tick() {
+  const now = performance.now();   // 小窓のときも同じ時計を使う
   const dt = Math.min(now - prev, 100) / 1000;
   prev = now;
   if (slots.length) {
@@ -957,7 +972,8 @@ function tick(now) {
     } else if (!paused && !dragging && !focusMode && now > holdUntil) offset += stage.clientWidth / (crossMinutes * 60) * dt;
     placeSlots();
   }
-  requestAnimationFrame(tick);
+  // 小窓のあいだは小窓のほうで動かす（元の画面が隠れても止まらないように）
+  (pipWin || window).requestAnimationFrame(tick);
 }
 
 /* ───────── なぞる・タップ・長押し ───────── */
@@ -986,7 +1002,7 @@ stage.addEventListener('pointerdown', e => {
     }, 550);
   }
 });
-window.addEventListener('pointermove', e => {
+const onPMove = e => {
   if (!dragging) return;
   const dx = e.clientX - lastX;
   lastX = e.clientX;
@@ -1005,8 +1021,8 @@ window.addEventListener('pointermove', e => {
   moved += Math.abs(dx);
   offset -= dx;
   if (moved > 8) cancelPress();
-});
-window.addEventListener('pointerup', () => {
+};
+const onPUp = () => {
   if (!dragging) return;
   dragging = false;
   const card = pressCard;
@@ -1015,14 +1031,80 @@ window.addEventListener('pointerup', () => {
     card.style.translate = '';
     const t = tasks.find(t => t.id === card.dataset.id);
     if (t && Math.abs(swipeY) > 36) setLevel(t, baseLv(t) + (swipeY < 0 ? 1 : -1));
-  } else if (!pressFired && moved < 8 && axis !== 'y' && card) openTask(card.dataset.id);
+  } else if (!pressFired && moved < 8 && axis !== 'y' && card) (pipWin ? pipMenu : openTask)(card.dataset.id);
   pressCard = null; axis = null;
-});
-window.addEventListener('pointercancel', () => {
+};
+const onPCancel = () => {
   dragging = false; cancelPress();
   if (pressCard) pressCard.style.translate = '';
   pressCard = null; axis = null;
-});
+};
+window.addEventListener('pointermove', onPMove);
+window.addEventListener('pointerup', onPUp);
+window.addEventListener('pointercancel', onPCancel);
+
+/* ───────── 🪟 小窓（Document Picture-in-Picture：Mac の Chrome・Edge だけ） ───────── */
+// タイムライン（#stage）をそのまま小窓に移して流す。小窓を閉じると元の場所に戻る
+let pipWin = null, pipHolder = null;
+$('pipBtn').hidden = !('documentPictureInPicture' in window);
+$('pipBtn').onclick = async () => {
+  if (pipWin) { pipWin.close(); return; }
+  try {
+    pipWin = await documentPictureInPicture.requestWindow({ width: 560, height: 280 });
+  } catch (e) { toast('小窓をひらけなかった…'); return; }
+  const d = pipWin.document;
+  d.title = 'LIFE タイムライン';
+  // 見た目（色・フォント）をそのまま持っていく
+  document.head.querySelectorAll('style, link[rel="stylesheet"]').forEach(n => d.head.appendChild(n.cloneNode(true)));
+  d.body.className = 'in-pip';
+  pipHolder = document.createElement('div');
+  pipHolder.className = 'pip-holder';
+  pipHolder.innerHTML = '<div>🪟 小窓で流してるよ</div><button class="chip" type="button">もどす</button>';
+  pipHolder.querySelector('button').onclick = () => pipWin && pipWin.close();
+  stage.before(pipHolder);
+  d.body.appendChild(stage);
+  pipWin.addEventListener('pointermove', onPMove);
+  pipWin.addEventListener('pointerup', onPUp);
+  pipWin.addEventListener('pointercancel', onPCancel);
+  pipWin.addEventListener('resize', render);
+  pipWin.addEventListener('pagehide', () => {
+    pipHolder.replaceWith(stage);
+    pipHolder = null; pipWin = null;
+    $('pipBtn').textContent = '🪟 小窓';
+    render();
+    requestAnimationFrame(tick);
+  });
+  $('pipBtn').textContent = '🪟 もどす';
+  render();   // 動かす続きは、次のコマから小窓のほうで回る（tick の中で切りかわる）
+};
+// 小窓の中でタップしたときの小さいメニュー（完了・延期）
+function pipMsg(text) {
+  if (!pipWin) return;
+  const d = pipWin.document, m = d.createElement('div');
+  m.className = 'pip-msg'; m.textContent = text; d.body.appendChild(m);
+  setTimeout(() => m.remove(), 2200);
+}
+function pipMenu(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !pipWin) return;
+  const d = pipWin.document, ov = d.createElement('div');
+  ov.className = 'pip-menu';
+  ov.innerHTML = `<div><b></b><div class="row3"><button class="go" data-a="done">✓ 完了</button><button data-a="h1">⏰ 1時間後</button><button data-a="tmr">🌙 明日</button></div><button class="close" data-a="x">とじる</button></div>`;
+  ov.querySelector('b').textContent = `${emojiFor(t)} ${t.title}`;
+  ov.addEventListener('click', e => {
+    const a = e.target.dataset && e.target.dataset.a;
+    if (!a && e.target !== ov) return;
+    ov.remove();
+    if (a === 'done') { complete(t, innerWidth / 2, innerHeight / 2); pipMsg(`🎉「${t.title}」完了！`); }
+    if (a === 'h1' || a === 'tmr') {
+      snoozeTarget = t;
+      if (a === 'h1') snoozeTo(Date.now() + 3600000, false);
+      else { const b = new Date(t.due || Date.now()), n = new Date(); n.setDate(n.getDate() + 1); n.setHours(t.due && !t.allDay ? b.getHours() : 0, t.due && !t.allDay ? b.getMinutes() : 0, 0, 0); snoozeTo(n.getTime(), !t.due || t.allDay); }
+      pipMsg(`⏰ ${dueLabel(t)} に延期したよ`);
+    }
+  });
+  d.body.appendChild(ov);
+}
 
 /* ───────── お知らせ（取り消し付き） ───────── */
 let toastTimer, undoFn = null;
