@@ -12,7 +12,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 ## ファイル構成
 - 下のタブ：**📋タスク / ☀️朝 / 🗓今日 / 🌙夜 / 💪からだ / 💃ダンス**（増えたら横にスクロール）。タスク以外は別ファイルを `index.html` の中に iframe で表示している（同じサイトなので localStorage を共有できる）
 - `index.html` … アプリ本体（📋タスク）。HTML・CSS・JavaScript をこの1ファイルに書いている（ビルドなし・外部ライブラリなし）
-  - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / low / due / allDay / est）
+  - **タスクのデータ（`task-app:tasks` / `task-app:log`）を書き換えるのはこの画面だけ**。ほかの画面は `postMessage({type:'task', op:'complete'|'update'|'add', id, patch})` で頼む（`update` で変えられるのは star / low / due / allDay / est / memo）
   - ほかに受け取るメッセージ：`{type:'tab', tab, action}`（タブ切り替え）、`{type:'running', on}`（朝の実行中は下のタブを隠す）。iframe には `{type:'refresh'}` / `{type:'action', action}` を送る
   - `?add=テキスト` で開くとタスクを追加する（Siri のショートカット用）
 - `morning.html` … ☀️朝「Good Morning Routine」。単体で開いても動く
@@ -46,6 +46,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 - 流れる速さ：1つのカードが画面を横切る時間（分）で設定
 - **優先度**：🔥高（＝⭐大事）・🌷中（ふつう）・☁️低の3段階。締切まで3日を切った（過ぎた）ものは自動で1つ上げる（繰り返しタスクはのぞく）。タイムラインは優先度→期限の順。高はピンクに光って少し大きく、低は少し小さく薄く
 - **一覧**：タイムラインの上に、残りのタスクを優先度ごと（高・中・低の行）にチップで表示。見出しをタップでたたむ。チップをタップするとタイムラインがそのカードまで動いて4秒止まる
+- **くわしく**：タスクに ☑チェックリスト（`sub`）と 📝メモ（`memo`）。タップのメニューで書く・✓する・✕で消す（「、」区切りでいっぺんに足せる）。カードと一覧のチップには ☑2/5・📝 の印と進み具合のバー。全部✓したら「完了にする？」と聞く。繰り返しタスクは次の回でチェックリストがまっさらに。追加のとき「タイトル：Aこと、Bこと」と書くと、「：」のあとがチェックリストになる（2つ以上のとき・「10:30」の「:」では分けない）
 - タップでメニュー（完了・名前変更・日時変更・優先度・延期・削除）、長押しで完了、**カードを上下にスワイプで優先度を上げる／下げる**
 - **🪟 小窓**（Mac の Chrome・Edge だけ。Document Picture-in-Picture に対応しているときだけボタンが出る）：タイムライン（`#stage`）をそのまま小窓に移して流す。小窓の中は長押しで完了・上下スワイプで優先度、タップで小さいメニュー（完了・1時間後・明日）。小窓のあいだは小窓の requestAnimationFrame で動かす。閉じると元に戻る。iPhone・iPad は仕組みがないので作れない（iPad は Slide Over で代わりになる）
 - 今やる1つ：優先度の一番高いタスクを1枚表示。右スワイプで完了、左で延期。集中タイマー（15/25/50分）
@@ -129,6 +130,7 @@ GitHub Pages で公開している：https://sakiithi.github.io/task-app/
 **保存済みのデータを壊さないこと。** 形を変えるときは、古いデータを読み込んだときの引き継ぎ処理を書く。
 - `task-app:tasks` … タスクの配列
   - `{ id, title, due(ミリ秒|null), allDay, repeat, star, created, done, doneAt, notified }`
+  - 任意で `memo`（文字）と `sub:[{ id, text, done }]`（チェックリスト）
   - 任意で `low: true`（☁️低）。🔥高は `star: true` をそのまま使う
   - `repeat` は `null` か `{type:'daily'}` / `{type:'weekdays'}` / `{type:'weekly', days:[0-6]}` / `{type:'monthly', day:1-31}`
 - `task-app:log` … 完了の記録 `{ id, taskId, title, at, repeat }`
