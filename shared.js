@@ -106,12 +106,13 @@ function lessonPrep(c, n, k) {
 function openDance(action) { if (EMBED) tellParent({ type: 'tab', tab: 'dance', action }); else location.href = 'dance.html' + (action ? '#' + action : ''); }
 
 // ---------- 育てるキャラ ----------
-// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）・レッスンの準備OK10・フィードバック20・ストレッチ10（朝夜ダブルで+5）
+// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）・レッスンの準備OK10・フィードバック20・ストレッチ10（朝夜ダブルで+5）・ナイトルーティーン20（全部できたら+10）
 function xpOf(day) {
   const inDay = k => !day || k === day;
   let xp = 0;
   getTaskLog().forEach(e => { if (inDay(dayKey(e.at))) xp += 10; });
   load('morning:log', []).forEach(l => { if (inDay(l.date)) xp += 30 + (l.done === l.total ? 20 : 0); });
+  load('night:rlog', []).forEach(l => { if (inDay(l.date)) xp += 20 + (l.done === l.total ? 10 : 0); });   // 🌙 ナイトルーティーン
   const ch = getChecks(); Object.keys(ch).forEach(k => { if (inDay(k)) xp += ch[k].length * 5; });
   const nr = load('night:records', {}); Object.keys(nr).forEach(k => { if (inDay(k) && nr[k].done) xp += 20; });
   const t3 = load('plan:top3done', {}); Object.keys(t3).forEach(k => { if (inDay(k)) xp += 30; });

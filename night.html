@@ -22,6 +22,12 @@
 .bed{background:var(--c1);border-radius:16px;padding:12px 14px;font-weight:700;font-size:14px;line-height:1.6}
 .bed b{color:var(--pink);font-size:18px}
 .saved{color:var(--ok);font-weight:900;text-align:center;margin-top:8px}
+#nroutine{background:linear-gradient(135deg,#3a2d5f,#5b3f78);color:#f6efff}
+#nroutine h3{color:#fff}
+#nroutine .muted{color:#d9ccf2}
+#nroutine .nrbtn{display:block;width:100%;margin-top:12px;padding:14px;border-radius:999px;background:var(--grad);color:#fff;font-weight:900;font-size:17px}
+#nroutine .nrsteps{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+#nroutine .nrsteps span{background:rgba(255,255,255,.14);border-radius:999px;padding:2px 8px;font-size:12px}
 </style>
 </head>
 <body class="night">
@@ -30,6 +36,7 @@
     <div><div class="brand">Good Night</div><small id="date"></small><h1 id="greet">おつかれさま🌙</h1></div>
   </header>
 
+  <section class="card mini nr" id="nroutine"></section>
   <section class="card pet" id="pet"></section>
 
   <section class="card mini">
@@ -95,11 +102,27 @@ function toTomorrow(t) {
   return { due: sod(1), allDay: true };
 }
 
+// 🌙 ナイトルーティーン（中身は morning.html?mode=night。ここは入り口）
+function renderNightRoutine() {
+  const rs = load('night:routines', null), dow = new Date().getDay();
+  const r = Array.isArray(rs) && rs.length ? (rs.find(x => (x.days || []).includes(dow)) || rs[0]) : null;
+  const steps = r ? r.steps : [['🛁', 'お風呂', 30], ['🫧', '洗顔', 3], ['🧴', '保湿', 5], ['🦷', '歯みがき', 3], ['💆‍♀️', 'マッサージ', 10], ['🧘', 'ストレッチ', 15], ['🎒', '明日の準備', 10], ['🧺', 'おへやリセット', 5], ['💧', 'お水を1杯', 1], ['📓', 'ふりかえり', 5], ['📵', 'スマホにおやすみ', 1]].map(([emoji, title, min]) => ({ emoji, title, min }));
+  const tot = steps.reduce((a, x) => a + (+x.min || 0), 0);
+  const lg = load('night:rlog', []).find(l => l.date === today());
+  $('#nroutine').innerHTML = `<h3>🌙 ナイトルーティーン ${r ? `<small class="muted" style="font-size:12px">${esc(r.emoji || '')} ${esc(r.name || '')}</small>` : ''}</h3>
+    <div class="muted" style="font-size:13px;font-weight:700">${steps.length}こ ・ ${tot}分${lg ? ` ・ 今日は ${lg.done}/${lg.total} できた✨` : ''}</div>
+    <div class="nrsteps">${steps.map(x => `<span>${esc(x.emoji)} ${esc(x.title)}</span>`).join('')}</div>
+    <button class="nrbtn" data-nr="1">${lg ? 'ひらく ▶︎' : 'はじめる ▶︎'}</button>`;
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-nr]')) location.href = 'morning.html?mode=night'; });
+// ナイトルーティーンが終わったら、ふりかえりのところへ
+window.addEventListener('load', () => { if (location.hash === '#reflect') setTimeout(() => { const m = $('#mood'); if (m) m.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300); });
 function render() {
   const d = new Date(), h = d.getHours();
   $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
   $('#greet').textContent = h < 15 ? '夜の準備をしよう🌙' : 'おつかれさま🌙';
   $('#pet').innerHTML = petHtml();
+  renderNightRoutine();
   $('#dstretch').innerHTML = strCardHtml('pm');   // 🧘 今日のストレッチ（stretch.js）
 
   // ふりかえり
