@@ -106,7 +106,7 @@ function lessonPrep(c, n, k) {
 function openDance(action) { if (EMBED) tellParent({ type: 'tab', tab: 'dance', action }); else location.href = 'dance.html' + (action ? '#' + action : ''); }
 
 // ---------- 育てるキャラ ----------
-// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）・レッスンの準備OK10・フィードバック20
+// ポイント：タスク完了10・朝のルーティーン30（全部できたら+20）・習慣5・夜のふりかえり20・今日の3つ達成30・体重の記録5・ごはんの記録5（1日1回）・レッスンの準備OK10・フィードバック20・ストレッチ10（朝夜ダブルで+5）
 function xpOf(day) {
   const inDay = k => !day || k === day;
   let xp = 0;
@@ -124,6 +124,8 @@ function xpOf(day) {
     if (n.fb && n.fb.done) xp += 20;
     if (lessonPrep(c, n, k).ok) xp += 10;
   });
+  const sl = (load('dance:stretch', {}) || {}).log || {};
+  Object.keys(sl).forEach(k => { const e = sl[k]; if (inDay(k) && (e.am || e.pm || e.mini)) xp += 10 + (e.am && e.pm ? 5 : 0); });
   return xp;
 }
 const LEVEL_XP = L => 40 * L * (L - 1);

@@ -39,6 +39,7 @@
   </section>
 
   <section class="card mini" id="dlesson" hidden></section>
+  <section class="card mini" id="dstretch"></section>
   <section class="card mini left" id="left"></section>
 
   <section class="card mini">
@@ -70,6 +71,7 @@
 <div id="toast" class="toast"></div>
 
 <script src="shared.js"></script>
+<script src="stretch.js"></script>
 <script>
 const MOODS = [['😆', 'さいこう'], ['🙂', 'いい感じ'], ['😐', 'ふつう'], ['😪', 'いまいち']];
 let mood = null;
@@ -98,6 +100,7 @@ function render() {
   $('#date').textContent = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
   $('#greet').textContent = h < 15 ? '夜の準備をしよう🌙' : 'おつかれさま🌙';
   $('#pet').innerHTML = petHtml();
+  $('#dstretch').innerHTML = strCardHtml('pm');   // 🧘 今日のストレッチ（stretch.js）
 
   // ふりかえり
   const tl = getTaskLog().filter(e => dayKey(e.at) === today());
@@ -179,6 +182,11 @@ document.body.addEventListener('click', e => {
   }
 });
 ['wake', 'leave'].forEach(id => $('#' + id).addEventListener('input', renderTomorrow));
+$('#dstretch').addEventListener('click', e => {
+  const b = e.target.closest('[data-str]');
+  if (b) { const r = strMark(today(), b.dataset.str); if (r.first) { confetti(); toast('🧘 ストレッチできた！ +10pt'); } else if (r.entry.am && r.entry.pm) toast('✨ ダブル！ +5pt'); render(); return; }
+  if (e.target.closest('[data-strgo]')) openDance('stretch');
+});
 $('#save').addEventListener('click', () => {
   const all = load('night:records', {});
   const wasDone = all[today()] && all[today()].done;

@@ -109,6 +109,7 @@
 <div id="toast" class="toast"></div>
 
 <script src="shared.js"></script>
+<script src="stretch.js"></script>
 <script>
 const RANK = ['🥇', '🥈', '🥉'];
 
@@ -250,8 +251,10 @@ $('#dayEnd').addEventListener('change', e => { if (e.target.value) { store('plan
 
 // ---------- 習慣 ----------
 function renderHabits() {
-  const hs = getHabits(), ch = getChecks(), todays = ch[today()] || [];
+  // 「ストレッチ」という名前の習慣は、下の 🧘 ストレッチ（プログラム）と重なるので出さない（記録は残る）
+  const hs = getHabits().filter(h => h.name.trim() !== 'ストレッチ'), ch = getChecks(), todays = ch[today()] || [];
   $('#habits').innerHTML = `<h3>✅ 習慣チェック <button class="link" data-act="habedit">編集</button></h3>`
+    + strHabitRow()
     + (hs.length ? hs.map(h => {
       const on = todays.includes(h.id), st = habitStreak(h.id, ch);
       let dots = '';
@@ -259,6 +262,16 @@ function renderHabits() {
       return `<div class="hab${on ? ' on' : ''}"><button class="hb" data-hab="${h.id}">${on ? '✓' : esc(h.emoji)}</button>
         <div class="t">${esc(h.name)}<small>${st ? `🔥 ${st}日つづいてる` : 'きょうから始めよう'}</small></div><div class="dots">${dots}</div></div>`;
     }).join('') : '<p class="muted">「編集」から習慣を追加してね</p>');
+}
+// 🧘 ストレッチ（stretch.js）も習慣の1行として出す。タップで朝（15時まで）／夜にやったことにする
+function strHabitRow() {
+  const s = strLoad(), d = strDay(today(), s), e = d.entry, on = strDone(e);
+  let dots = '', st = 0;
+  for (let i = 6; i >= 0; i--) dots += `<i class="${strDone(s.log[keyOf(-i)]) ? 'on' : ''}"></i>`;
+  for (let i = on ? 0 : 1; strDone(s.log[keyOf(-i)]); i++) st++;
+  const label = d.finished ? '1周おわり🎉' : `${d.menu.e} ${esc(d.menu.n)}${e.am && e.pm ? ' ・ ✨ダブル' : ''}`;
+  return `<div class="hab${on ? ' on' : ''}"><button class="hb" data-strhab="1">${on ? '✓' : '🧘'}</button>
+    <div class="t">ストレッチ <small style="display:inline">${label}</small><small>${e.rest ? '💤 今日はおやすみ' : st ? `🔥 ${st}日つづいてる` : '今日の1本をやろう'}</small></div><div class="dots">${dots}</div></div>`;
 }
 function toggleHabit(id) {
   const ch = getChecks(), list = ch[today()] || [];
@@ -378,6 +391,16 @@ document.body.addEventListener('click', e => {
   }
   const hb = e.target.closest('[data-hab]');
   if (hb) toggleHabit(hb.dataset.hab);
+  if (e.target.closest('[data-strhab]')) {
+    const d = strDay(today()), e2 = d.entry;
+    if (d.finished) { openDance('stretch'); return; }
+    // まだなら今の時間帯（15時まで朝）にやったことにする。やってあれば、その印を外す
+    const slot = strDone(e2) ? (e2.am ? 'am' : e2.pm ? 'pm' : 'mini') : new Date().getHours() < 15 ? 'am' : 'pm';
+    const r = strMark(today(), slot);
+    if (r.first) { try { navigator.vibrate && navigator.vibrate(20); } catch (er) {} toast('🧘 +10pt ✨'); }
+    renderAll();
+  }
+  if (e.target.closest('.hab .t') && e.target.closest('.hab').querySelector('[data-strhab]')) openDance('stretch');
 });
 document.querySelectorAll('.sheet-wrap').forEach(w => w.addEventListener('click', e => { if (e.target === w) w.hidden = true; }));
 bindPet($('#pet'), renderAll);
