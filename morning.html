@@ -20,6 +20,31 @@
   --shadow:0 8px 24px rgba(120,90,200,.14);
   --blob1:rgba(196,168,255,.55); --blob2:rgba(165,135,250,.40); --blob3:rgba(255,180,220,.38);
 }
+/* 🌙 ナイトルーティーン：明るいモードでも、まぶしくない夜の色 */
+html.night{
+  --bg:#211a33; --surface:#2d2443; --ink:#f1eaff; --sub:#b9a9d8; --line:#3f3359; --ok:#6fd6ae;
+  --c0:#4a2a44; --c1:#3a2e5c; --c2:#45334a; --c3:#25404a; --c4:#43395c;
+  --shadow:0 8px 24px rgba(0,0,0,.35);
+  --blob1:rgba(110,90,200,.30); --blob2:rgba(70,60,160,.28); --blob3:rgba(200,110,170,.18);
+}
+html.night #wx, html.night #dlesson, html.night #dstretch, html.night #tasks, html.night #recCard, html.night .hist,
+html.night .geo-row, html.night .rec-set{display:none!important}
+.bagcard{margin-top:14px}
+.baghead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.baghead b{flex:1}
+.baghead small{color:var(--sub);font-weight:700}
+.bagedit{font-size:12px;font-weight:700;color:var(--pink);background:none}
+.baglesson{display:block;color:var(--sub);font-size:12px;font-weight:700;margin-bottom:6px}
+.bagrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:15px;font-weight:700;color:var(--ink);background:none}
+.bagrow .box{flex:none;width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;color:#fff;font-size:14px}
+.bagrow.on{color:var(--sub);text-decoration:line-through}
+.bagrow.on .box{background:var(--grad);border-color:transparent}
+.bagrow small{font-size:11px}
+.baggrp{font-size:12px;font-weight:900;color:var(--sub);margin:10px 0 4px}
+.bagerow{display:flex;gap:6px;margin-bottom:6px}
+.bagerow .tin{flex:1;min-width:0}
+.bagerow button{flex:none;width:36px;border-radius:12px;background:var(--line);font-weight:900;color:var(--sub)}
+.nback{font-size:13px;font-weight:700;color:var(--sub);background:var(--surface);border-radius:999px;padding:6px 12px;box-shadow:var(--shadow);margin-bottom:8px}
 @media (prefers-color-scheme:dark){
   :root{
     --bg:#1b1528; --surface:#2a2136; --ink:#f1eaff; --sub:#b3a5cf; --line:#3b2f4d; --ok:#6fd6ae;
@@ -320,6 +345,7 @@ ul{list-style:none;margin:0;padding:0}
   <section id="dstretch" class="card mini"></section>
   <section id="tasks" class="card mini" hidden></section>
   <section id="recCard" class="card mini"></section>
+  <section id="bagCard" class="card mini bagcard" hidden></section>
 
   <section class="card week" id="week"></section>
   <div class="streak" id="streak"></div>
@@ -414,12 +440,12 @@ ul{list-style:none;margin:0;padding:0}
     </div>
     <h4>自動で選ばれる曜日</h4>
     <div class="days" id="rDays"></div>
-    <h4>家を出る時間</h4>
+    <h4 id="rLeaveLbl">家を出る時間</h4>
     <div class="leaverow">
       <input id="rLeave" class="tin" type="time">
       <button id="rLeaveClear" class="pill">なし</button>
     </div>
-    <p class="hint">決めておくと「何時までに始めればいいか」と、やっている最中のペースを教えてくれるよ</p>
+    <p class="hint" id="rLeaveHint">決めておくと「何時までに始めればいいか」と、やっている最中のペースを教えてくれるよ</p>
     <button id="rSave" class="big" style="margin-top:18px">保存</button>
     <button id="rHist" class="pill" style="width:100%;margin-top:10px">🕘 前のステップにもどす</button>
     <button id="rDel" class="danger">このルーティーンを削除</button>
@@ -448,9 +474,9 @@ ul{list-style:none;margin:0;padding:0}
     <h3>設定</h3>
     <div class="setrow"><span>🔊 声で読み上げ</span><button id="tVoice" class="tog" aria-label="声で読み上げ"></button></div>
     <div class="setrow"><span>🎤 声で操作<small>やっている最中に「できた」などと話すと進む</small></span><button id="tMic" class="tog" aria-label="声で操作"></button></div>
-    <div class="setrow"><span>🌤️ 天気の場所<small id="geoNote"></small></span><button id="geoBtn" class="pill">📍 いまの場所</button></div>
-    <h4>きろくする項目</h4>
-    <div id="fieldToggles"></div>
+    <div class="setrow geo-row"><span>🌤️ 天気の場所<small id="geoNote"></small></span><button id="geoBtn" class="pill">📍 いまの場所</button></div>
+    <h4 class="rec-set">きろくする項目</h4>
+    <div id="fieldToggles" class="rec-set"></div>
     <button id="setClose" class="big" style="margin-top:18px">とじる</button>
   </div>
 </div>
@@ -460,11 +486,21 @@ ul{list-style:none;margin:0;padding:0}
 <script src="stretch.js"></script>
 <script>
 const $ = s => document.querySelector(s);
-const K = {
+// ?mode=night で開くと🌙ナイトルーティーン。仕組みは朝と同じで、保存する場所（キー）と見た目・言葉だけ変える
+const NIGHT = new URLSearchParams(location.search).get('mode') === 'night';
+const K = NIGHT ? {
+  routines: 'night:routines', oldSteps: 'night:noOldSteps', log: 'night:rlog', rec: 'morning:records',
+  voice: 'morning:voice', mic: 'morning:mic', geo: 'morning:geo', wx: 'morning:weather',
+  fields: 'morning:recFields', pick: 'night:rpick', dismiss: 'night:rdismiss', checks: 'night:rchecks'
+} : {
   routines: 'morning:routines', oldSteps: 'morning:steps', log: 'morning:log', rec: 'morning:records',
   voice: 'morning:voice', mic: 'morning:mic', geo: 'morning:geo', wx: 'morning:weather',
   fields: 'morning:recFields', pick: 'morning:pick', dismiss: 'morning:dismiss', checks: 'morning:checks'
 };
+if (NIGHT) {
+  document.documentElement.classList.add('night');
+  document.title = 'Good Night Routine';
+}
 const WD = '日月火水木金土';
 const RING_C = 2 * Math.PI * 108;
 const MIN = 60000;
@@ -500,6 +536,12 @@ const guessEmoji = t => { for (const [re, e] of EMOJI) if (re.test(t)) return e;
 // ---------- データ ----------
 // pre を渡すと決まった id（最初から入っている見本用）。見本は保存しないので、毎回同じ id にしておく
 const mk = (list, pre) => list.map(([emoji, title, min, star], i) => ({ id: pre ? pre + i : uid(), emoji, title, min, star: !!star }));
+// 🌙 ナイトルーティーンの見本（⭐はいそぎの日もやるもの）
+const DEFAULT_NIGHT = [
+  ['🛁', 'お風呂', 30, 1], ['🫧', '洗顔', 3, 1], ['🧴', '保湿', 5, 1], ['🦷', '歯みがき', 3, 1],
+  ['💆‍♀️', 'マッサージ', 10], ['🧘', 'ストレッチ', 15], ['🎒', '明日の準備', 10], ['🧺', 'おへやリセット', 5],
+  ['💧', 'お水を1杯', 1], ['📓', 'ふりかえり', 5], ['📵', 'スマホにおやすみ', 1, 1]
+];
 const DEFAULT_WEEKDAY = [
   ['🌤️', 'カーテンを開ける', 1], ['💧', 'お水を飲む', 1, 1], ['🫧', '顔を洗う', 3, 1],
   ['🧘‍♀️', 'ストレッチ', 5], ['🍳', '朝ごはん', 15], ['🪥', '歯みがき', 3, 1],
@@ -517,7 +559,9 @@ if (!Array.isArray(routines) || !routines.length) {
   const wd = hasOld
     ? old.map(s => Object.assign({ star: /水|顔|歯|着替/.test(s.title) }, s))
     : mk(DEFAULT_WEEKDAY, 'dw');
-  routines = [
+  routines = NIGHT ? [
+    { id: 'r-night', name: '毎晩', emoji: '🌙', days: [0, 1, 2, 3, 4, 5, 6], leave: null, steps: mk(DEFAULT_NIGHT, 'dn') }
+  ] : [
     { id: 'r-weekday', name: '平日', emoji: '💼', days: [1, 2, 3, 4, 5], leave: null, steps: wd },
     { id: 'r-holiday', name: '休日', emoji: '🌷', days: [0, 6], leave: null, steps: mk(DEFAULT_HOLIDAY, 'dh') }
   ];
@@ -534,6 +578,7 @@ const saveRec = () => store(K.rec, records);
 
 // 今日の最初にアプリを開いた時間（起きた時間の目安）
 (() => {
+  if (NIGHT) return;
   const h = new Date().getHours();
   const r = records[today()] || {};
   if (h >= 3 && h < 12 && !r.firstOpen) { r.firstOpen = hm(Date.now()); records[today()] = r; saveRec(); }
@@ -615,6 +660,7 @@ let wxBusy = false, wxErr = false, wxFailAt = 0;
 // 失敗したら10分はあける（すぐ読みに行き直すと、電波がないときにずっと繰り返してしまう）
 const wxWait = () => wxErr && Date.now() - wxFailAt < 10 * MIN;
 function fetchWeather(force) {
+  if (NIGHT) return;
   const geo = load(K.geo, null);
   if (!geo || wxBusy) return;
   if (!force && wxWait()) return;
@@ -817,12 +863,31 @@ function streak() {
   return n;
 }
 
+// 出る時間（夜は寝る時間）のミリ秒。夜は「明日起きる時間」から7時間半前も使う
+function leaveHM(r) {
+  if (r.leave) return r.leave;
+  if (!NIGHT) return null;
+  const t = load('night:tomorrow', null), d = new Date(); d.setDate(d.getDate() + 1);
+  if (!t || !t.wake || t.date !== dayKey(d)) return null;
+  const [h, m] = t.wake.split(':').map(Number), mm = ((h * 60 + m - 450) % 1440 + 1440) % 1440;
+  return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
+}
+function leaveTs(hhmm) {
+  let t = atToday(hhmm);
+  if (NIGHT && +hhmm.slice(0, 2) < 12 && new Date().getHours() >= 12) t += 24 * 3600e3;
+  return t;
+}
+const GO = NIGHT ? '寝る' : '出る';
 function render() {
   if (tlReordering() || sorting) return;   // カードをつかんでいる最中は描き直さない（指を離したら描き直す）
   const now = new Date(), h = now.getHours();
   $('#date').textContent = `${now.getMonth() + 1}月${now.getDate()}日（${WD[now.getDay()]}）`;
-  $('#greet').textContent = h < 4 ? 'まだ夜だよ🌙' : h < 11 ? 'おはよう☀️' : h < 17 ? 'こんにちは🌷' : 'こんばんは🌙';
+  $('#greet').textContent = NIGHT ? (h < 4 ? 'もう寝よう💤' : h < 17 ? 'ナイトルーティーン🌙' : 'おつかれさま🌙') : h < 4 ? 'まだ夜だよ🌙' : h < 11 ? 'おはよう☀️' : h < 17 ? 'こんにちは🌷' : 'こんばんは🌙';
   $('#voiceBtn').textContent = voiceOn ? '🔊' : '🔇';
+  if (NIGHT) {
+    const bc = $('#bagCard'); bc.hidden = false;
+    if (!bc.contains(document.activeElement)) bc.innerHTML = bagHtml();
+  }
   renderWeather();
 
   const r = activeRoutine(), rush = isRush(), plan = planOf(r, rush), tm = sumMin(plan);
@@ -838,15 +903,16 @@ function render() {
   const doneToday = log.some(l => l.date === today());
   $('#startBtn').textContent = doneToday ? 'もう一回 ▶︎' : 'はじめる ▶︎';
   let eta = '', base = Date.now();
-  if (r.leave) {
-    const leaveAt = atToday(r.leave), startBy = leaveAt - tm * MIN;
+  const lv = leaveHM(r);
+  if (lv) {
+    const leaveAt = leaveTs(lv), startBy = leaveAt - tm * MIN;
     if (Date.now() > leaveAt) eta = `今から始めると <b>${hm(Date.now() + tm * MIN)}</b> に終わるよ`;
     else if (Date.now() <= startBy) {
       base = startBy;
-      eta = `${r.leave} に出るなら<br><b>${hm(startBy)}</b> までに始めよう（あと ${durLabel(startBy - Date.now())}）`;
+      eta = `${lv} に${GO}なら<br><b>${hm(startBy)}</b> までに始めよう（あと ${durLabel(startBy - Date.now())}）`;
     } else {
       const late = Date.now() + tm * MIN - leaveAt;
-      eta = `${r.leave} に出るには <span class="late">${durLabel(late)} おくれそう</span>`;
+      eta = `${lv} に${GO}には <span class="late">${durLabel(late)} おくれそう</span>`;
       if (!rush && r.steps.some(s => s.star)) eta += `<br>🏃 いそぎなら <b>${hm(Date.now() + sumMin(planOf(r, true)) * MIN)}</b> に終わるよ`;
     }
   } else eta = `今から始めると <b>${hm(Date.now() + tm * MIN)}</b> に終わるよ`;
@@ -911,7 +977,8 @@ function render() {
 
   // ステップ一覧
   $('#listTitle').textContent = `${r.emoji} ${r.name}のルーティーン`;
-  $('#listSub').textContent = `${daysLabel(r.days)}に自動で選ばれる${r.leave ? ` ・ ${r.leave}に出発` : ''}`;
+  const lv2 = leaveHM(r);
+  $('#listSub').textContent = `${daysLabel(r.days)}に自動で選ばれる${lv2 ? ` ・ ${lv2}に${NIGHT ? '寝る' + (r.leave ? '' : '（明日起きる時間から）') : '出発'}` : ''}`;
   let t = base, no = 0;
   const fin = doneStepIds(), planIds = planOf(r, rush).map(x => x.id), finN = planIds.filter(id => fin.has(id)).length;
   if (finN) $('#listSub').textContent += ` ・ 今日 ${finN}/${planIds.length} 完了`;
@@ -1268,6 +1335,16 @@ $('#fNext').addEventListener('click', () => moveStep(1));
 
 // ---------- ルーティーン設定 ----------
 let rEdit = null, rIsNew = false, rDays = [];
+if (NIGHT) {
+  $('.brand').textContent = 'Good Night Routine';
+  $('#rLeaveLbl').textContent = '寝る時間';
+  $('#rLeaveHint').textContent = '空のままなら、🌙夜で決めた「明日起きる時間」の7時間半前を使うよ';
+  // 🌙夜の画面へもどるボタン
+  const nb = document.createElement('button');
+  nb.className = 'nback'; nb.textContent = '← 🌙 夜にもどる';
+  nb.onclick = () => { location.href = 'night.html'; };
+  document.querySelector('.wrap').prepend(nb);
+}
 function openRSheet(r, isNew) {
   rEdit = r; rIsNew = isNew; rDays = r.days.slice();
   $('#rTitle').textContent = isNew ? '新しいルーティーン' : 'ルーティーンの設定';
@@ -1445,7 +1522,7 @@ function startRun() {
   unlockAudio();
   run = {
     i: 0, start: Date.now(), routine: r, rush, steps: plan.map(s => Object.assign({}, s)),
-    plannedEnd: Date.now() + sumMin(plan) * MIN, leaveAt: r.leave && atToday(r.leave) > Date.now() ? atToday(r.leave) : null,
+    plannedEnd: Date.now() + sumMin(plan) * MIN, leaveAt: leaveHM(r) && leaveTs(leaveHM(r)) > Date.now() ? leaveTs(leaveHM(r)) : null,
     times: [], paused: false
   };
   show('#run');
@@ -1454,8 +1531,8 @@ function startRun() {
   $('#micBtn').classList.toggle('on', micOn);
   $('#micHint').hidden = !micOn;
   $('#rtlTrack').innerHTML = run.steps.map(s => `<div class="rcard"><div><span>${esc(s.emoji)}</span><small>${esc(s.title)}</small></div></div>`).join('');
-  const w = todayWx();
-  beginStep('おはよう！' + (w ? wxSpeech(w) : '') + 'まずは、');
+  const w = NIGHT ? null : todayWx();
+  beginStep(NIGHT ? '今日もおつかれさま。ゆっくりいこう。まずは、' : 'おはよう！' + (w ? wxSpeech(w) : '') + 'まずは、');
   clearInterval(timer);
   timer = setInterval(tick, 250);
   micStart();
@@ -1493,6 +1570,17 @@ function beginStep(prefix) {
       say.push(clothes(w).join('。').replace('☂️ ', ''));
     }
   }
+  if (/ストレッチ/.test(st.title) && typeof strDay === 'function') {
+    const d = strDay(today()), m = d.menu;
+    if (!d.finished) {
+      extra.push(`<div class="card">🧘 <b>今日のALA：${m.e} ${esc(m.n)}</b><br><small>${esc(m.ch)}${m.num ? ' ' + esc(m.num) : ''}${m.dur ? ' ・ ' + esc(m.dur) : ''} ・ iCapで「${esc(m.search)}」</small></div>`);
+      say.push(`今日のメニューは${m.n}だよ`);
+    }
+  }
+  if (/準備|荷物|持ち物/.test(st.title)) {
+    extra.push(`<div class="card bagcard">${bagHtml()}</div>`);
+    const b = bagItems(); if (b.length) say.push(`持ち物は${b.length}こ`);
+  }
   $('#runExtra').innerHTML = extra.join('');
   speak((prefix || '') + `${st.title}。${st.min}分だよ。` + say.join('。'));
   tick();
@@ -1528,7 +1616,7 @@ function tick() {
   const slack = target - projected;
   const p = $('#pace');
   let txt = Math.abs(slack) < MIN ? '👍 ちょうどいいペース' : slack > 0 ? `😊 ${durLabel(slack)} よゆう` : `😵 ${durLabel(-slack)} おくれ気味`;
-  if (run.leaveAt) txt = `🚪 ${hm(run.leaveAt)}まで あと${durLabel(run.leaveAt - Date.now())} ・ ` + txt;
+  if (run.leaveAt) txt = `${NIGHT ? '🛏' : '🚪'} ${hm(run.leaveAt)}まで あと${durLabel(run.leaveAt - Date.now())} ・ ` + txt;
   p.textContent = txt;
   p.className = 'pace ' + (slack >= 0 ? 'good' : 'bad');
 }
@@ -1537,6 +1625,11 @@ function nextStep(did) {
   if (!run) return;
   const st = run.steps[run.i];
   run.times.push({ id: st.id, title: st.title, min: st.min, ms: stepMs(), done: did });
+  // ストレッチのステップができたら、🧘 ストレッチにも「やった」をつける（夜は🌙、朝は☀️）
+  if (did && /ストレッチ/.test(st.title) && typeof strMark === 'function') {
+    const e = strDay(today()).entry, slot = NIGHT ? 'pm' : 'am';
+    if (!e[slot]) strMark(today(), slot);
+  }
   if (did) buzz(30);
   run.i++;
   if (run.i >= run.steps.length) finishRun(); else beginStep();
@@ -1589,17 +1682,24 @@ function finishRun() {
   $('#finDone').textContent = `${done} / ${total} こ できたよ`;
   $('#finStreak').textContent = s > 1 ? `🔥 ${s}日連続！すごい！` : '🌱 明日もこの調子で';
   renderMoods();
+  if (NIGHT) {
+    $('#finRec').hidden = true; $('#finTop3').hidden = true;
+    $('#finClose').textContent = 'ふりかえりへ 🌙';
+    $('#finStreak').textContent = s > 1 ? `🌙 ${s}日連続！` : '🌱 明日の夜もこの調子で';
+  }
   show('#finish');
   confetti(); chime(); buzz([60, 60, 60, 60, 120]);
-  speak((done === total ? 'ぜんぶできたね！' : 'おつかれさま！') + 'いまの気分をタップしてね');
+  speak((done === total ? 'ぜんぶできたね！' : 'おつかれさま！') + (NIGHT ? 'いまの気分をタップしたら、ふりかえりをしよう' : 'いまの気分をタップしてね'));
   render();
 }
 function renderMoods() {
-  const f = fieldDef('mood'), cur = (records[finDate] || {}).mood;
+  // 夜の気分は 🌙夜のふりかえり（night:records）に入れる
+  const f = fieldDef('mood'), cur = NIGHT ? (load('night:records', {})[finDate] || {}).mood : (records[finDate] || {}).mood;
   $('#finMood').innerHTML = f.opts.map((o, i) => `<button data-v="${i}" class="${cur === i ? 'on' : ''}">${f.emo[i]}<small>${o}</small></button>`).join('');
 }
 $('#finMood').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (NIGHT) { const nr = load('night:records', {}); nr[finDate] = Object.assign({}, nr[finDate], { mood: +b.dataset.v }); store('night:records', nr); renderMoods(); buzz(20); return; }
   const r = records[finDate] || {};
   r.mood = +b.dataset.v; records[finDate] = r; saveRec();
   renderMoods(); render(); buzz(20);
@@ -1609,7 +1709,68 @@ $('#finTop3').addEventListener('click', () => {
   hide('#finish');
   if (EMBED) tellParent({ type: 'tab', tab: 'today', action: 'pick3' }); else location.href = 'today.html#pick3';
 });
-$('#finClose').addEventListener('click', () => { hide('#finish'); try { speechSynthesis.cancel(); } catch (e) {} });
+$('#finClose').addEventListener('click', () => { hide('#finish'); try { speechSynthesis.cancel(); } catch (e) {} if (NIGHT) location.href = 'night.html#reflect'; });
+
+// ---------- 🎒 明日の持ち物（夜）：いつもの持ち物＋明日のレッスンの持ち物＋明日だけ。自由に編集できる ----------
+// night:bag = { always:[文字], once:{ 'YYYY-MM-DD':[文字] } } ／ night:bagChecks = { 'YYYY-MM-DD':{ 文字:true } }（日付は「明日」）
+const tmrKey = () => { const d = new Date(); if (d.getHours() >= 4) d.setDate(d.getDate() + 1); return dayKey(d); };
+function bagData() { return Object.assign({ always: ['お財布', '鍵', 'スマホの充電器', 'ハンカチ'], once: {} }, load('night:bag', {})); }
+function tmrLessons() {
+  const k = tmrKey(), d = new Date(k + 'T00:00'), nth = Math.ceil(d.getDate() / 7), ns = load('dance:notes', {});
+  return load('dance:classes', []).filter(c => (c.kind === 'private' ? c.date === k : c.dow === d.getDay() && (!c.nth || !c.nth.length || c.nth.includes(nth))) && !(ns[c.id + '_' + k] || {}).canceled);
+}
+function bagItems() {
+  const b = bagData(), k = tmrKey(), out = [];
+  b.always.forEach(t => out.push({ t, g: 'always' }));
+  tmrLessons().forEach(c => (c.items || []).forEach(t => { if (!out.some(x => x.t === t)) out.push({ t, g: 'lesson', c: c.name }); }));
+  (b.once[k] || []).forEach(t => out.push({ t, g: 'once' }));
+  return out;
+}
+let bagEditing = false;
+function bagHtml() {
+  const k = tmrKey(), ck = (load('night:bagChecks', {})[k]) || {}, items = bagItems(), b = bagData(), ls = tmrLessons();
+  const d = new Date(k + 'T00:00'), done = items.filter(x => ck[x.t]).length;
+  let h = `<div class="baghead"><b>🎒 明日（${d.getMonth() + 1}/${d.getDate()}）の持ち物</b><small>${done}/${items.length}</small><button class="bagedit" data-bag="edit">${bagEditing ? '✓ おわり' : '✏️ 編集'}</button></div>`;
+  if (ls.length) h += `<small class="baglesson">💃 明日は ${ls.map(c => esc(c.name)).join('・')}${ls.some(c => (c.items || []).length) ? '（持ち物を入れたよ）' : ''}</small>`;
+  if (!bagEditing) {
+    h += items.map(x => `<button class="bagrow${ck[x.t] ? ' on' : ''}" data-bagck="${esc(x.t)}"><span class="box">${ck[x.t] ? '✓' : ''}</span>${esc(x.t)}${x.g === 'lesson' ? ' <small>💃</small>' : x.g === 'once' ? ' <small>📌</small>' : ''}</button>`).join('') || '<p class="hint">「✏️ 編集」で持ち物を入れてね</p>';
+  } else {
+    const grp = (g, title, list) => `<div class="baggrp">${title}</div>` + list.map((t, i) => `<div class="bagerow"><input class="tin" data-bagg="${g}" data-bagi="${i}" value="${esc(t)}"><button data-bagdel="${g}" data-bagi="${i}" aria-label="消す">✕</button></div>`).join('')
+      + `<div class="bagerow"><input class="tin" data-bagnew="${g}" placeholder="＋ 足す（「、」で区切ると何こも）"><button data-bagadd="${g}">＋</button></div>`;
+    h += grp('always', '⭐ いつもの持ち物', b.always) + grp('once', '📌 明日だけ', b.once[k] || [])
+      + '<p class="hint">💃 レッスンの持ち物は、ダンスのクラス設定で変えられるよ</p>';
+  }
+  return h;
+}
+function bagPut(g, list) {
+  const b = bagData(), k = tmrKey();
+  if (g === 'always') b.always = list; else { b.once[k] = list; Object.keys(b.once).forEach(x => { if (x < today()) delete b.once[x]; }); }
+  store('night:bag', b);
+}
+const bagList = g => g === 'always' ? bagData().always.slice() : (bagData().once[tmrKey()] || []).slice();
+function rerenderBag() { document.querySelectorAll('.bagcard').forEach(el => { el.innerHTML = bagHtml(); }); }
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-bag="edit"]')) {
+    if (bagEditing) ['always', 'once'].forEach(g => { const l = bagList(g), f = l.filter(x => x.trim()); if (f.length !== l.length) bagPut(g, f); });
+    bagEditing = !bagEditing; rerenderBag(); return;
+  }
+  const c = t.closest('[data-bagck]');
+  if (c) { const all = load('night:bagChecks', {}), k = tmrKey(), m = all[k] || {}, n = c.dataset.bagck; if (m[n]) delete m[n]; else m[n] = true; all[k] = m; Object.keys(all).forEach(x => { if (x < today()) delete all[x]; }); store('night:bagChecks', all); buzz(15); rerenderBag(); return; }
+  const dl = t.closest('[data-bagdel]');
+  if (dl) { const l = bagList(dl.dataset.bagdel); l.splice(+dl.dataset.bagi, 1); bagPut(dl.dataset.bagdel, l); rerenderBag(); return; }
+  const ad = t.closest('[data-bagadd]');
+  if (ad) {
+    const g = ad.dataset.bagadd, inp = ad.parentElement.querySelector('[data-bagnew]'), v = inp.value.trim(); if (!v) return;
+    bagPut(g, bagList(g).concat(v.split(/[、,，]/).map(x => x.trim()).filter(Boolean))); rerenderBag();
+    const ni = document.querySelector(`[data-bagnew="${g}"]`); if (ni) ni.focus();
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.dataset || !t.dataset.bagg) return;
+  const l = bagList(t.dataset.bagg); l[+t.dataset.bagi] = t.value; bagPut(t.dataset.bagg, l);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.bagnew) { e.preventDefault(); const b = e.target.parentElement.querySelector('[data-bagadd]'); if (b) b.click(); } });
 
 function confetti() {
   const colors = ['#b896ff', '#ff8cc0', '#ffd166', '#8be0c2', '#ffb38a'];
