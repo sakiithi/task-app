@@ -56,7 +56,8 @@ const setTop3 = ids => store('plan:top3', { date: today(), ids });
 const DEFAULT_HABITS = [['💧', 'お水をたくさん飲む'], ['🧘‍♀️', 'ストレッチ'], ['📖', '本を読む']];
 function getHabits() {
   let h = load('habits:list', null);
-  if (!Array.isArray(h)) { h = DEFAULT_HABITS.map(([emoji, name]) => ({ id: uid(), emoji, name })); store('habits:list', h); }
+  // 最初の見本は保存しない（同期で本物を上書きしないように）。id は毎回同じにしておく
+  if (!Array.isArray(h)) h = DEFAULT_HABITS.map(([emoji, name], i) => ({ id: 'h-default-' + i, emoji, name }));
   return h;
 }
 const getChecks = () => load('habits:checks', {});
