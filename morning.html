@@ -251,6 +251,12 @@ ul{list-style:none;margin:0;padding:0}
 .days button.on{background:var(--grad);color:#fff}
 .leaverow{display:flex;gap:10px;align-items:center}
 .leaverow .tin{flex:1}
+.hv{border:1.5px solid var(--line);border-radius:18px;padding:10px 12px;margin-top:10px}
+.hv b{font-size:14px}
+.hv small{display:block;color:var(--sub);font-size:12px;font-weight:700;margin:2px 0 6px}
+.hv .chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.hv .chips span{background:var(--c1);border-radius:999px;padding:2px 8px;font-size:12px}
+.hv .pill.go{background:var(--grad);color:#fff}
 .hint{font-size:12px;color:var(--sub);margin:6px 2px 0}
 
 .fl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-weight:700;font-size:15px}
@@ -413,7 +419,15 @@ ul{list-style:none;margin:0;padding:0}
     </div>
     <p class="hint">決めておくと「何時までに始めればいいか」と、やっている最中のペースを教えてくれるよ</p>
     <button id="rSave" class="big" style="margin-top:18px">保存</button>
+    <button id="rHist" class="pill" style="width:100%;margin-top:10px">🕘 前のステップにもどす</button>
     <button id="rDel" class="danger">このルーティーンを削除</button>
+  </div>
+</div>
+<div id="hsheet" class="sheet-wrap" hidden>
+  <div class="sheet">
+    <h3>🕘 前のステップにもどす</h3>
+    <p class="hint">実際にやった日のきろくに残っているステップだよ。選ぶと、いまのルーティーンのステップがその形にもどる（家を出る時間・曜日はそのまま）</p>
+    <div id="hList"></div>
   </div>
 </div>
 
@@ -481,7 +495,8 @@ const EMOJI = [
 const guessEmoji = t => { for (const [re, e] of EMOJI) if (re.test(t)) return e; return '✨'; };
 
 // ---------- データ ----------
-const mk = list => list.map(([emoji, title, min, star]) => ({ id: uid(), emoji, title, min, star: !!star }));
+// pre を渡すと決まった id（最初から入っている見本用）。見本は保存しないので、毎回同じ id にしておく
+const mk = (list, pre) => list.map(([emoji, title, min, star], i) => ({ id: pre ? pre + i : uid(), emoji, title, min, star: !!star }));
 const DEFAULT_WEEKDAY = [
   ['🌤️', 'カーテンを開ける', 1], ['💧', 'お水を飲む', 1, 1], ['🫧', '顔を洗う', 3, 1],
   ['🧘‍♀️', 'ストレッチ', 5], ['🍳', '朝ごはん', 15], ['🪥', '歯みがき', 3, 1],
@@ -495,15 +510,17 @@ const DEFAULT_HOLIDAY = [
 let routines = load(K.routines, null);
 if (!Array.isArray(routines) || !routines.length) {
   // 前のバージョン（ステップが1つだけの形）から引き継ぐ
-  const old = load(K.oldSteps, null);
-  const wd = Array.isArray(old) && old.length
+  const old = load(K.oldSteps, null), hasOld = Array.isArray(old) && old.length;
+  const wd = hasOld
     ? old.map(s => Object.assign({ star: /水|顔|歯|着替/.test(s.title) }, s))
-    : mk(DEFAULT_WEEKDAY);
+    : mk(DEFAULT_WEEKDAY, 'dw');
   routines = [
-    { id: uid(), name: '平日', emoji: '💼', days: [1, 2, 3, 4, 5], leave: null, steps: wd },
-    { id: uid(), name: '休日', emoji: '🌷', days: [0, 6], leave: null, steps: mk(DEFAULT_HOLIDAY) }
+    { id: 'r-weekday', name: '平日', emoji: '💼', days: [1, 2, 3, 4, 5], leave: null, steps: wd },
+    { id: 'r-holiday', name: '休日', emoji: '🌷', days: [0, 6], leave: null, steps: mk(DEFAULT_HOLIDAY, 'dh') }
   ];
-  store(K.routines, routines);
+  // 最初の見本は保存しない（保存すると、同期のときに本物のルーティーンを上書きしてしまうことがあった）。
+  // 自分で変えたときに初めて保存する。前のバージョンから引き継ぐときだけは保存する
+  if (hasOld) store(K.routines, routines);
 }
 let log = load(K.log, []);         // { date, start, end, done, total, routineId, routineName, rush, steps:[{id,title,min,ms,done}] }
 let records = load(K.rec, {});     // { 'YYYY-MM-DD': { wake, bed, sleepQ, weight, temp, mood, body, goal, firstOpen } }
@@ -1272,6 +1289,41 @@ $('#rSave').addEventListener('click', () => {
   if (rIsNew) { setPick({ id: rEdit.id, rush: false }); }
   saveR(); hide('#rsheet'); render();
   if (rIsNew) toast('「＋ 追加」でステップを入れてね');
+});
+// ---------- 前のステップにもどす（きろく morning:log に残っているステップから） ----------
+function stepVersions() {
+  const seen = new Set(), out = [];
+  log.slice().sort((a, b) => a.date < b.date ? 1 : -1).forEach(l => {
+    if (!l.steps || !l.steps.length) return;
+    const sig = l.steps.map(s => s.title + ':' + s.min).join('|');
+    if (seen.has(sig)) return;
+    seen.add(sig); out.push(l);
+  });
+  return out.slice(0, 10);
+}
+$('#rHist').addEventListener('click', () => {
+  const vs = stepVersions();
+  $('#hList').innerHTML = vs.length ? vs.map((l, i) => {
+    const tot = l.steps.reduce((a, s) => a + (+s.min || 0), 0);
+    return `<div class="hv"><b>${l.date.slice(5).replace('-', '/')}（${WD[new Date(l.date + 'T00:00').getDay()]}）${l.routineName ? ' ・ ' + esc(l.routineName) : ''}</b>
+      <small>${l.steps.length}ステップ ・ ${tot}分${l.rush ? ' ・ いそぎモードの日' : ''}</small>
+      <div class="chips">${l.steps.map(s => `<span>${esc(s.title)} ${s.min}分</span>`).join('')}</div>
+      <button class="pill go" data-hv="${i}" style="width:100%">このステップにもどす</button></div>`;
+  }).join('') : '<p class="hint">まだきろくがないよ（ルーティーンを最後までやると残る）</p>';
+  hide('#rsheet'); show('#hsheet');
+});
+$('#hList').addEventListener('click', e => {
+  const b = e.target.closest('[data-hv]'); if (!b) return;
+  const l = stepVersions()[+b.dataset.hv]; if (!l) return;
+  if (l.rush && !confirm('この日は「いそぎモード」だったので、⭐のステップだけかもしれないよ。それでももどす？')) return;
+  const r = routines.find(x => x.id === rEdit.id) || rEdit, cur = r.steps;
+  r.steps = l.steps.map(s => {
+    const same = cur.find(c => c.id === s.id) || cur.find(c => c.title === s.title);
+    return { id: s.id || uid(), emoji: same ? same.emoji : guessEmoji(s.title), title: s.title, min: +s.min || 1, star: same ? !!same.star : false };
+  });
+  if (!routines.includes(r)) routines.push(r);
+  saveR(); hide('#hsheet'); render();
+  toast(`🕘 ${l.date.slice(5).replace('-', '/')}のステップにもどしたよ。⭐や絵文字はタップで直せるよ`);
 });
 $('#rDel').addEventListener('click', () => {
   if (!confirm(`「${rEdit.name}」を削除する？`)) return;

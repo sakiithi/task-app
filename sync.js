@@ -86,14 +86,16 @@
         remoteKeys.add(r.key);
         if (!synced(r.key)) continue;
         const rt = +r.client_at || 0, lt = meta[r.key] || 0;
-        if (dirty.has(r.key) && lt > rt) continue;          // こっちのほうが新しい → あとで送る
-        if (!inited && lt === 0 && ls.getItem(r.key) != null && r.value != null) {
+        // こっちのほうが新しい → あとで送る（ただし、その端末で初めての同期のときは雲のほうを優先して「まぜる」。
+        // 開いたばかりの端末の見本データが、本物を上書きしないように）
+        if (inited && dirty.has(r.key) && lt > rt) continue;
+        if (!inited && ls.getItem(r.key) != null && r.value != null) {
           const mixed = merge(ls.getItem(r.key), r.value);
           if (mixed !== ls.getItem(r.key)) { rawSet.call(ls, r.key, mixed); changed.push(r.key); }
           if (mixed !== r.value) { meta[r.key] = Date.now(); dirty.add(r.key); } else meta[r.key] = rt;
           continue;
         }
-        if (rt > lt || (!inited && lt === 0)) {
+        if (rt > lt || !inited) {
           if (r.value == null) rawRemove.call(ls, r.key); else rawSet.call(ls, r.key, r.value);
           meta[r.key] = rt; dirty.delete(r.key); changed.push(r.key);
         }
