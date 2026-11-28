@@ -169,6 +169,21 @@
   .slot.low .card { transform: scale(.93); opacity: .72; }
   .card.flash { animation: flash 1.6s ease-out; }
   @keyframes flash { 0%, 40% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 55%, transparent), var(--shadow); } }
+  .subbar { height: 5px; border-radius: 9px; background: var(--surface); margin-top: 8px; overflow: hidden; }
+  .subbar i { display: block; height: 100%; background: var(--ink, var(--accent)); border-radius: 9px; }
+  .detail { margin-top: 12px; padding: 12px; border-radius: 18px; background: var(--bg); border: 1.5px solid var(--line); }
+  .detail h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+  .detail textarea { width: 100%; min-height: 64px; resize: vertical; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px; font: inherit; font-size: 15px; background: var(--surface); color: var(--text); line-height: 1.6; }
+  .subrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .subrow:last-of-type { border-bottom: 0; }
+  .subrow .ck { flex: none; width: 28px; height: 28px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); color: #fff; font-weight: 900; }
+  .subrow.on .ck { background: var(--grad); border-color: transparent; }
+  .subrow .tx { flex: 1; min-width: 0; font-size: 15px; word-break: break-word; }
+  .subrow.on .tx { text-decoration: line-through; color: var(--muted); }
+  .subrow .x { flex: none; border: 0; background: none; color: var(--muted); font-size: 15px; padding: 4px 6px; }
+  .subadd { display: flex; gap: 6px; margin-top: 8px; }
+  .subadd input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 14px; padding: 9px 12px; font: inherit; font-size: 15px; background: var(--surface); color: var(--text); }
+  .subadd button { border: 0; border-radius: 14px; padding: 0 14px; background: var(--grad); color: #fff; font-weight: 700; }
   .slot.done .card { opacity: .55; }
   .slot.done .title { text-decoration: line-through; text-decoration-thickness: 2px; }
 
@@ -511,6 +526,15 @@
         <button type="button" data-lv="1">☁️ 低</button>
       </div>
       <div class="sub-preview" id="prioNote"></div>
+      <div class="detail">
+        <h4><span>☑ チェックリスト</span><span id="subCount"></span></h4>
+        <div id="subList"></div>
+        <form class="subadd" id="subForm" autocomplete="off"><input id="subInput" maxlength="80" placeholder="やることを足す" enterkeyhint="done"><button type="submit">＋</button></form>
+      </div>
+      <div class="detail">
+        <h4><span>📝 メモ</span><span id="memoSaved"></span></h4>
+        <textarea id="memoIn" maxlength="2000" placeholder="くわしい内容・場所・持ち物・URL など"></textarea>
+      </div>
       <div class="grid3">
         <button class="row center" id="editTitleBtn">✏️ 名前</button>
         <button class="row center" id="editDueBtn">📅 日時</button>
@@ -839,7 +863,25 @@ function metaHtml(t) {
     parts.push(`<span class="tag ${cls}">${isOverdue(t) ? '⚠ 期限切れ ' : '🕒 '}${dueLabel(t)}</span>`);
   }
   if (t.repeat) parts.push(`<span class="tag">🔁 ${repeatLabel(t.repeat)}</span>`);
-  return parts.length ? `<div class="meta">${parts.join('')}</div>` : '';
+  const sc = subCount(t);
+  if (sc) parts.push(`<span class="tag">☑ ${sc.done}/${sc.all}</span>`);
+  if (t.memo && t.memo.trim()) parts.push('<span class="tag">📝</span>');
+  return (parts.length ? `<div class="meta">${parts.join('')}</div>` : '')
+    + (sc && !t.done ? `<div class="subbar"><i style="width:${Math.round(sc.done / sc.all * 100)}%"></i></div>` : '');
+}
+// チェックリスト（t.sub）の進み具合
+function subCount(t) {
+  const l = Array.isArray(t.sub) ? t.sub : [];
+  return l.length ? { done: l.filter(x => x.done).length, all: l.length } : null;
+}
+// 「告知の準備：スタジオ予約、告知文、曲決め 金曜まで」→ タイトル＋チェックリスト（2つ以上に分かれるときだけ）
+// 打ったままの文（raw）で見る。日時の言葉は parseJa で取りのぞく。「10:30」のような時刻の「:」では分けない
+function splitSubs(raw) {
+  const m = raw.match(/^(.+?)(?:：|:(?!\d))\s*(.+)$/);
+  if (!m) return null;
+  const items = m[2].split(/[、,，]/).map(x => parseJa(x).title.trim()).filter(Boolean);
+  const title = parseJa(m[1]).title.trim();
+  return items.length >= 2 && title ? { title, sub: items.map(text => ({ id: newId(), text, done: false })) } : null;
 }
 
 /* ───────── 記録（できたこと） ───────── */
@@ -924,7 +966,8 @@ function renderOverview() {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'ov-chip' + (isOverdue(t) ? ' overdue' : '');
-      b.textContent = `${emojiFor(t)} ${t.title}`;
+      const sc = subCount(t);
+      b.textContent = `${emojiFor(t)} ${t.title}${sc ? ` ☑${sc.done}/${sc.all}` : ''}${t.memo ? ' 📝' : ''}`;
       b.onclick = () => jump(t.id);
       chips.appendChild(b);
     });
@@ -1158,10 +1201,12 @@ function addTask(raw) {
   const p = parseJa(raw);
   if (!p.title) return;
   const t = { id: newId(), title: p.title, due: p.due, allDay: p.allDay, repeat: p.repeat, star: p.star, created: Date.now(), done: false };
+  const sp = splitSubs(raw);
+  if (sp) { t.title = sp.title; t.sub = sp.sub; }
   tasks.push(t);
   refresh();
   const extra = [dueLabel(t), repeatLabel(t.repeat) && `🔁${repeatLabel(t.repeat)}`].filter(Boolean).join(' ');
-  toast(`${t.star ? '⭐' : emojiFor(t)} ${t.title}${extra ? `（${extra}）` : ''} を追加`, () => {
+  toast(`${t.star ? '⭐' : emojiFor(t)} ${t.title}${extra ? `（${extra}）` : ''}${t.sub ? ` ☑${t.sub.length}こ` : ''} を追加`, () => {
     tasks = tasks.filter(x => x.id !== t.id);
     refresh();
   });
@@ -1174,7 +1219,8 @@ function updatePreview() {
   if (!v) { $('preview').textContent = ''; return; }
   const p = parseJa(v);
   const extra = describe(p);
-  $('preview').textContent = extra ? `${extra}　「${p.title}」` : '';
+  const sp = splitSubs(v);
+  $('preview').textContent = sp ? `${extra ? extra + '　' : ''}「${sp.title}」＋ ☑ ${sp.sub.map(x => x.text).join('・')}` : extra ? `${extra}　「${p.title}」` : '';
 }
 $('input').addEventListener('input', updatePreview);
 $('form').addEventListener('submit', e => {
@@ -1193,10 +1239,11 @@ function complete(t, x, y) {
   log.push(entry);
   const dropEntry = () => { log = log.filter(e => e.id !== entry.id); };
   if (t.repeat && t.due) {
-    const prevDue = t.due;
+    const prevDue = t.due, prevSub = t.sub ? t.sub.map(x => ({ ...x })) : null;
     t.due = nextDue(t);
+    if (t.sub) t.sub.forEach(x => { x.done = false; });   // 次の回はチェックリストもまっさらに
     refresh();
-    toast(`${cheer()} 次は ${dueLabel(t)} 🔁`, () => { t.due = prevDue; dropEntry(); refresh(); });
+    toast(`${cheer()} 次は ${dueLabel(t)} 🔁`, () => { t.due = prevDue; if (prevSub) t.sub = prevSub; dropEntry(); refresh(); });
   } else {
     t.done = true;
     t.doneAt = entry.at;
@@ -1454,7 +1501,54 @@ function fillTaskSheet(t) {
   $('prioNote').textContent = autoUp(t) ? `⏰ 締切が近いので、いまは ${LV[lv(t)]} として並んでるよ` : '';
   $('sheetDue').textContent = [t.due ? `🕒 ${dueLabel(t)}` : '期限なし', t.repeat && `🔁 ${repeatLabel(t.repeat)}`].filter(Boolean).join('　');
   $('toggleDone').textContent = t.done ? '↩︎ 未完了に戻す' : t.repeat ? '完了して次の回へ 🔁' : '完了にする 💖';
+  renderSubs(t);
+  if (document.activeElement !== $('memoIn')) $('memoIn').value = t.memo || '';
+  $('memoSaved').textContent = '';
 }
+/* ───────── くわしく（チェックリスト・メモ） ───────── */
+function renderSubs(t) {
+  const l = Array.isArray(t.sub) ? t.sub : [], sc = subCount(t);
+  $('subCount').textContent = sc ? `${sc.done}/${sc.all}` : '';
+  $('subList').innerHTML = l.map(x => `<div class="subrow${x.done ? ' on' : ''}" data-sub="${x.id}"><button class="ck" type="button" aria-label="できた">${x.done ? '✓' : ''}</button><span class="tx"></span><button class="x" type="button" aria-label="消す">✕</button></div>`).join('')
+    || '<p class="hint" style="margin:0">小分けにしたいことを足してね</p>';
+  $('subList').querySelectorAll('.subrow').forEach((row, i) => { row.querySelector('.tx').textContent = l[i].text; });
+}
+$('subList').addEventListener('click', e => {
+  const t = selected(), row = e.target.closest('.subrow');
+  if (!t || !row) return;
+  const x = (t.sub || []).find(s => s.id === row.dataset.sub);
+  if (!x) return;
+  if (e.target.closest('.x')) { t.sub = t.sub.filter(s => s !== x); if (!t.sub.length) delete t.sub; refresh(); renderSubs(t); return; }
+  if (e.target.closest('.ck') || e.target.closest('.tx')) {
+    x.done = !x.done;
+    try { navigator.vibrate && navigator.vibrate(12); } catch (er) {}
+    refresh(); renderSubs(t);
+    const sc = subCount(t);
+    if (x.done && sc.done === sc.all && !t.done) {
+      setTimeout(() => {
+        if (confirm(`☑ ぜんぶできた！「${t.title}」も完了にする？`)) { closeAll(); complete(t); }
+      }, 150);
+    }
+  }
+});
+$('subForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = selected(), v = $('subInput').value.trim();
+  if (!t || !v) return;
+  // 「、」で区切ると、いっぺんに足せる
+  v.split(/[、,，]/).map(x => x.trim()).filter(Boolean).forEach(text => { (t.sub = t.sub || []).push({ id: newId(), text, done: false }); });
+  $('subInput').value = '';
+  refresh(); renderSubs(t);
+});
+let memoTimer = null;
+$('memoIn').addEventListener('input', () => {
+  const t = selected();
+  if (!t) return;
+  t.memo = $('memoIn').value;
+  if (!t.memo.trim()) delete t.memo;
+  clearTimeout(memoTimer);
+  memoTimer = setTimeout(() => { refresh(); $('memoSaved').textContent = '✓ 保存したよ'; }, 500);
+});
 function openTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
@@ -1902,7 +1996,7 @@ function taskOp(d) {
   if (!t) return;
   if (d.op === 'complete' && !t.done) complete(t);
   else if (d.op === 'update' && d.patch) {
-    ['star', 'low', 'due', 'allDay', 'est'].forEach(k => { if (k in d.patch) t[k] = d.patch[k]; });
+    ['star', 'low', 'due', 'allDay', 'est', 'memo'].forEach(k => { if (k in d.patch) t[k] = d.patch[k]; });
     if ('due' in d.patch) t.notified = false;
     refresh();
   }
